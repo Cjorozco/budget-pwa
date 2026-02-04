@@ -63,6 +63,8 @@ export default function Dashboard() {
         return { income, expense };
     });
 
+    const quickTemplates = useLiveQuery(() => db.quickTemplates.toArray()) || [];
+
     // 3. Fetch Recent Transactions
     const recentTransactions = useLiveQuery(async () => {
         const txs = await db.transactions.orderBy('date').reverse().limit(5).toArray();
@@ -160,47 +162,26 @@ export default function Dashboard() {
             </div>
 
             {/* Quick Templates */}
-            <section>
-                <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Plantillas Rápidas</h2>
-                <div className="grid grid-cols-3 gap-3">
-                    <button
-                        onClick={() => handleQuickTemplate({
-                            description: 'Snack Oxxo',
-                            type: 'expense',
-                            categoryId: '', // AI will handle or user can pick
-                            amount: 15000
-                        })}
-                        className="flex flex-col items-center gap-2 p-4 bg-white dark:bg-slate-900 rounded-2xl border-2 border-slate-100 dark:border-slate-800 hover:border-blue-200 transition-all active:scale-95"
-                    >
-                        <span className="text-2xl">🏪</span>
-                        <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400">Oxxo</span>
-                    </button>
-                    <button
-                        onClick={() => handleQuickTemplate({
-                            description: 'Almuerzo Corriente',
-                            type: 'expense',
-                            categoryId: '',
-                            amount: 20000
-                        })}
-                        className="flex flex-col items-center gap-2 p-4 bg-white dark:bg-slate-900 rounded-2xl border-2 border-slate-100 dark:border-slate-800 hover:border-blue-200 transition-all active:scale-95"
-                    >
-                        <span className="text-2xl">🍽️</span>
-                        <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400">Almuerzo</span>
-                    </button>
-                    <button
-                        onClick={() => handleQuickTemplate({
-                            description: 'Uber / Didi',
-                            type: 'expense',
-                            categoryId: '',
-                            amount: 12000
-                        })}
-                        className="flex flex-col items-center gap-2 p-4 bg-white dark:bg-slate-900 rounded-2xl border-2 border-slate-100 dark:border-slate-800 hover:border-blue-200 transition-all active:scale-95"
-                    >
-                        <span className="text-2xl">🚗</span>
-                        <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400">Transporte</span>
-                    </button>
-                </div>
-            </section>
+            {quickTemplates.length > 0 && (
+                <section>
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">Plantillas Rápidas</h2>
+                        <Link to="/settings" className="text-xs text-blue-600 font-medium">Editar</Link>
+                    </div>
+                    <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                        {quickTemplates.map(template => (
+                            <button
+                                key={template.id}
+                                onClick={() => handleQuickTemplate(template)}
+                                className="flex flex-col items-center gap-2 p-4 bg-white dark:bg-slate-900 rounded-2xl border-2 border-slate-100 dark:border-slate-800 hover:border-blue-200 transition-all active:scale-95 shrink-0 min-w-[100px]"
+                            >
+                                <span className="text-2xl">{template.icon}</span>
+                                <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400">{template.name}</span>
+                            </button>
+                        ))}
+                    </div>
+                </section>
+            )}
 
             {/* Recent Transactions */}
             <section>

@@ -79,3 +79,16 @@ export interface AppConfig {
     minConfidenceThreshold: number; // 0.7
     enableAISuggestions: boolean;
 }
+
+export interface QuickTemplate {
+    id: string;
+    name: string;
+    icon: string;
+    description: string;
+    amount: number;
+    type: 'income' | 'expense';
+    categoryId?: string;
+    accountId?: string;
+    createdAt: number;
+    updatedAt: number;
+}

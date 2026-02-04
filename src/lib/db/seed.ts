@@ -214,6 +214,9 @@ export const seedInitialData = async () => {
 
         // Always seed tags if empty (Phase 2)
         await seedTags();
+
+        // Always seed quick templates if empty
+        await seedQuickTemplates();
     });
 
     // Cleanup duplicates (Self-correcting)
@@ -292,4 +295,45 @@ export async function seedTags() {
 
     await db.tags.bulkAdd(tags as any);
     console.log('✅ Tags iniciales creados');
+}
+
+export async function seedQuickTemplates() {
+    const existingTemplates = await db.quickTemplates.count();
+    if (existingTemplates > 0) return;
+
+    const templates = [
+        {
+            id: uuidv4(),
+            name: 'Supermercado',
+            icon: '🛒',
+            description: 'Compra semanal o diaria de víveres',
+            amount: 50000,
+            type: 'expense',
+            createdAt: Date.now(),
+            updatedAt: Date.now()
+        },
+        {
+            id: uuidv4(),
+            name: 'Almuerzo',
+            icon: '🍽️',
+            description: 'Almuerzo ejecutivo o corrientazo',
+            amount: 20000,
+            type: 'expense',
+            createdAt: Date.now(),
+            updatedAt: Date.now()
+        },
+        {
+            id: uuidv4(),
+            name: 'Transporte',
+            icon: '🚗',
+            description: 'Uber, Didi o transporte público',
+            amount: 15000,
+            type: 'expense',
+            createdAt: Date.now(),
+            updatedAt: Date.now()
+        }
+    ];
+
+    await db.quickTemplates.bulkAdd(templates as any);
+    console.log('✅ Plantillas rápidas iniciales creadas');
 }

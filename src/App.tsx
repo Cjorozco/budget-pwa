@@ -7,6 +7,7 @@ import AccountsPage from '@/pages/Accounts';
 import CategoriesPage from '@/pages/Categories';
 import SettingsPage from '@/pages/Settings';
 import AmbiguousReview from '@/pages/AmbiguousReview';
+import TemplatesPage from '@/pages/Templates';
 import { seedInitialData } from '@/lib/db/seed';
 import { InstallPWA } from '@/components/InstallPWA';
 import { Toaster } from '@/components/Toaster';
@@ -27,6 +28,7 @@ function App() {
           <Route path="accounts" element={<AccountsPage />} />
           <Route path="categories" element={<CategoriesPage />} />
           <Route path="review" element={<AmbiguousReview />} />
+          <Route path="templates" element={<TemplatesPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
       </Routes>

@@ -118,22 +118,41 @@ export default function SettingsPage() {
 
             <section className="space-y-4">
                 <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Gestión</h2>
-                <Link to="/categories">
-                    <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer text-left w-full block">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                                    <FolderTree className="text-blue-600 dark:text-blue-400" size={20} />
+                <div className="grid grid-cols-1 gap-3">
+                    <Link to="/categories" className="block">
+                        <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer text-left w-full">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                                        <FolderTree className="text-blue-600 dark:text-blue-400" size={20} />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-medium text-slate-900 dark:text-white text-sm">Categorías</h3>
+                                        <p className="text-[10px] text-slate-500">Gestiona tus categorías de ingresos y gastos</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h3 className="font-medium text-slate-900 dark:text-white">Categorías</h3>
-                                    <p className="text-xs text-slate-500">Gestiona tus categorías de ingresos y gastos</p>
-                                </div>
+                                <span className="text-slate-400">→</span>
                             </div>
-                            <span className="text-slate-400">→</span>
                         </div>
-                    </div>
-                </Link>
+                    </Link>
+
+                    <Link to="/templates" className="block">
+                        <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer text-left w-full">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                                        <RefreshCw className="text-purple-600 dark:text-purple-400" size={20} />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-medium text-slate-900 dark:text-white text-sm">Plantillas Rápidas</h3>
+                                        <p className="text-[10px] text-slate-500">Configura accesos rápidos para tus gastos frecuentes</p>
+                                    </div>
+                                </div>
+                                <span className="text-slate-400">→</span>
+                            </div>
+                        </div>
+                    </Link>
+                </div>
             </section>
 
             <section className="space-y-4">

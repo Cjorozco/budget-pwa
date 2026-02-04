@@ -7,6 +7,7 @@ import {
     type Tag,
     type Reserve,
     type AppConfig,
+    type QuickTemplate,
 } from '../types';
 
 // Database definition
@@ -18,6 +19,7 @@ export class PersonalBudgetDB extends Dexie {
     tags!: EntityTable<Tag, 'id'>;
     reserves!: EntityTable<Reserve, 'id'>;
     appConfig!: EntityTable<AppConfig, 'id'>;
+    quickTemplates!: EntityTable<QuickTemplate, 'id'>;
 
     constructor() {
         super('PersonalBudgetDB');
@@ -48,6 +50,10 @@ export class PersonalBudgetDB extends Dexie {
 
         this.version(5).stores({
             reserves: 'id, accountId, isActive, createdAt',
+        });
+
+        this.version(6).stores({
+            quickTemplates: 'id, name, type',
         });
     }
 }
