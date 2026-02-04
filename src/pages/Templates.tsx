@@ -147,16 +147,22 @@ export default function TemplatesPage() {
                             <label className="block text-xs font-bold text-slate-500 mb-1">MONTO SUGERIDO</label>
                             <Input
                                 type="number"
-                                value={editingTemplate.amount}
-                                onChange={e => setEditingTemplate({ ...editingTemplate, amount: Number(e.target.value) })}
+                                inputMode="decimal"
+                                value={editingTemplate.amount === 0 ? '' : editingTemplate.amount}
+                                onChange={e => {
+                                    const val = e.target.value;
+                                    setEditingTemplate({ ...editingTemplate, amount: val === '' ? 0 : Number(val) });
+                                }}
                                 placeholder="0"
                             />
                         </div>
 
-                        <Button type="submit" className="w-full">
-                            <Save size={18} className="mr-2" />
-                            Guardar Plantilla
-                        </Button>
+                        <div className="pt-2">
+                            <Button type="submit" className="w-full h-14 text-lg" isLoading={false}>
+                                <Save size={20} className="mr-2" />
+                                Guardar Plantilla
+                            </Button>
+                        </div>
                     </form>
                 )}
             </Modal>
