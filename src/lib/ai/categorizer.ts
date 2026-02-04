@@ -1,5 +1,5 @@
 import { db } from '../db';
-import type { Transaction, Category, Tag } from '../types';
+
 
 interface SuggestionResult {
     categoryId: string;
