@@ -113,7 +113,7 @@ export function AccountCard({ account, onEdit, onReconcile, onViewHistory, onAdd
                 <div className="space-y-4 mt-auto">
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight block mb-1">Total (Saldo Real)</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight block mb-1">Saldo REAL en Banco</span>
                             <div className="text-sm font-bold text-slate-900 dark:text-white truncate">
                                 {account.actualBalance !== undefined ? formatCurrency(account.actualBalance) : formatCurrency(account.calculatedBalance)}
                             </div>

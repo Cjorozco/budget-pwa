@@ -76,7 +76,7 @@ export function AccountForm({ onSuccess, onCancel, initialData }: AccountFormPro
             />
 
             <Input
-                label="Saldo actual (Inicial)"
+                label="Saldo Real en Banco / Efectivo"
                 type="number"
                 placeholder="0"
                 step="0.01"
