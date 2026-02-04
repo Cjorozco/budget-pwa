@@ -1,0 +1,237 @@
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '@/lib/db';
+import { formatCurrency } from '@/lib/utils';
+import { startOfMonth, endOfMonth, format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { ArrowDownCircle, ArrowUpCircle, Wallet, AlertTriangle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { Modal } from '@/components/ui/Modal';
+import { TransactionForm } from '@/components/forms/TransactionForm';
+
+export default function Dashboard() {
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [templateData, setTemplateData] = useState<any>(null);
+
+    const accounts = useLiveQuery(() => db.accounts.filter(a => a.isActive).toArray()) || [];
+    const totalBalance = accounts.reduce((acc, curr) => acc + curr.calculatedBalance, 0);
+
+    const handleQuickTemplate = (data: any) => {
+        setTemplateData({
+            ...data,
+            date: Date.now(),
+            accountId: accounts[0]?.id || ''
+        });
+        setIsModalOpen(true);
+    };
+
+    const ambiguousTxCount = useLiveQuery(() =>
+        db.transactions
+            .filter(tx => tx.isAmbiguous === true || (tx.aiConfidence !== undefined && tx.aiConfidence < 0.7))
+            .count()
+    ) || 0;
+
+    // 2. Fetch Transactions for Current Month Stats
+    const stats = useLiveQuery(async () => {
+        const now = new Date();
+        const start = startOfMonth(now).getTime();
+        const end = endOfMonth(now).getTime();
+
+        if (isNaN(start) || isNaN(end)) return { income: 0, expense: 0 };
+
+        const txs = await db.transactions
+            .where('date')
+            .between(start, end)
+            .toArray();
+
+        const income = txs
+            .filter(t => t.type === 'income')
+            .reduce((acc, t) => acc + t.amount, 0);
+
+        const expense = txs
+            .filter(t => t.type === 'expense')
+            .reduce((acc, t) => acc + t.amount, 0);
+
+        return { income, expense };
+    });
+
+    // 3. Fetch Recent Transactions
+    const recentTransactions = useLiveQuery(async () => {
+        const txs = await db.transactions.orderBy('date').reverse().limit(5).toArray();
+        const cats = await db.categories.toArray();
+        const catMap = new Map(cats.map(c => [c.id, c]));
+
+        return txs.map(tx => ({
+            ...tx,
+            categoryName: catMap.get(tx.categoryId)?.name || 'Sin Categoría',
+            categoryColor: catMap.get(tx.categoryId)?.color || 'gray'
+        }));
+    });
+
+    return (
+        <div className="p-4 space-y-6">
+            <header className="flex justify-between items-center">
+                <div>
+                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Resumen</h1>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                        {format(new Date(), "MMMM yyyy", { locale: es })}
+                    </p>
+                </div>
+                <div className="h-10 w-10 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center">
+                    <Wallet className="text-slate-600 dark:text-slate-300" size={20} />
+                </div>
+            </header>
+
+            {/* AI Review Notice */}
+            {ambiguousTxCount > 0 && (
+                <Link
+                    to="/review"
+                    className="flex items-center justify-between p-4 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-200 dark:border-amber-800 rounded-2xl animate-pulse"
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-amber-200 dark:bg-amber-800 rounded-lg text-amber-700 dark:text-amber-300">
+                            <AlertTriangle size={20} />
+                        </div>
+                        <div>
+                            <p className="text-sm font-bold text-amber-900 dark:text-amber-100">
+                                {ambiguousTxCount} transacciones por revisar
+                            </p>
+                            <p className="text-xs text-amber-700 dark:text-amber-400">
+                                La IA no está segura de algunas categorías
+                            </p>
+                        </div>
+                    </div>
+                    <span className="text-amber-600 font-bold">→</span>
+                </Link>
+            )}
+
+            {/* Total Balance Card */}
+            <div className="bg-gradient-to-br from-blue-600 to-blue-700 text-white p-6 rounded-3xl shadow-lg shadow-blue-200 dark:shadow-none">
+                <p className="text-blue-100 text-sm font-medium mb-1">Balance Total</p>
+                <div className="text-4xl font-bold tracking-tight">
+                    {formatCurrency(totalBalance)}
+                </div>
+            </div>
+
+            {/* Monthly Stats */}
+            <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center gap-2 mb-2">
+                        <ArrowUpCircle className="text-green-500" size={20} />
+                        <span className="text-sm text-slate-500 font-medium">En Cuentas</span>
+                    </div>
+                    <p className="text-lg font-bold text-slate-900 dark:text-white">
+                        {formatCurrency(totalBalance)}
+                    </p>
+                </div>
+                <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center gap-2 mb-2">
+                        <ArrowDownCircle className="text-red-500" size={20} />
+                        <span className="text-sm text-slate-500 font-medium">Gastos (mes)</span>
+                    </div>
+                    <p className="text-lg font-bold text-slate-900 dark:text-white">
+                        {stats ? formatCurrency(stats.expense) : '-'}
+                    </p>
+                </div>
+            </div>
+
+            {/* Quick Templates */}
+            <section>
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Plantillas Rápidas</h2>
+                <div className="grid grid-cols-3 gap-3">
+                    <button
+                        onClick={() => handleQuickTemplate({
+                            description: 'Snack Oxxo',
+                            type: 'expense',
+                            categoryId: '', // AI will handle or user can pick
+                            amount: 15000
+                        })}
+                        className="flex flex-col items-center gap-2 p-4 bg-white dark:bg-slate-900 rounded-2xl border-2 border-slate-100 dark:border-slate-800 hover:border-blue-200 transition-all active:scale-95"
+                    >
+                        <span className="text-2xl">🏪</span>
+                        <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400">Oxxo</span>
+                    </button>
+                    <button
+                        onClick={() => handleQuickTemplate({
+                            description: 'Almuerzo Corriente',
+                            type: 'expense',
+                            categoryId: '',
+                            amount: 20000
+                        })}
+                        className="flex flex-col items-center gap-2 p-4 bg-white dark:bg-slate-900 rounded-2xl border-2 border-slate-100 dark:border-slate-800 hover:border-blue-200 transition-all active:scale-95"
+                    >
+                        <span className="text-2xl">🍽️</span>
+                        <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400">Almuerzo</span>
+                    </button>
+                    <button
+                        onClick={() => handleQuickTemplate({
+                            description: 'Uber / Didi',
+                            type: 'expense',
+                            categoryId: '',
+                            amount: 12000
+                        })}
+                        className="flex flex-col items-center gap-2 p-4 bg-white dark:bg-slate-900 rounded-2xl border-2 border-slate-100 dark:border-slate-800 hover:border-blue-200 transition-all active:scale-95"
+                    >
+                        <span className="text-2xl">🚗</span>
+                        <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400">Transporte</span>
+                    </button>
+                </div>
+            </section>
+
+            {/* Recent Transactions */}
+            <section>
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">Recientes</h2>
+                    <Link to="/transactions" className="text-sm text-blue-600 font-medium">Ver todo</Link>
+                </div>
+                <div className="space-y-3">
+                    {recentTransactions?.map(tx => (
+                        <div key={tx.id} className="flex items-center justify-between p-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-50 dark:border-slate-800/50">
+                            <div className="flex items-center gap-3">
+                                <div
+                                    className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm`}
+                                    style={{ backgroundColor: tx.categoryColor }}
+                                >
+                                    {tx.categoryName[0]?.toUpperCase()}
+                                </div>
+                                <div>
+                                    <p className="font-semibold text-slate-900 dark:text-slate-100 text-sm line-clamp-1">
+                                        {tx.description}
+                                    </p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                                        {format(tx.date, "d MMM", { locale: es })}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className={`font-semibold text-sm ${tx.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                                {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
+                            </div>
+                        </div>
+                    ))}
+                    {(!recentTransactions || recentTransactions.length === 0) && (
+                        <div className="text-center py-6 text-slate-400 text-sm bg-slate-50 dark:bg-slate-900 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
+                            Sin movimientos recientes
+                        </div>
+                    )}
+                </div>
+            </section>
+
+            <Modal
+                isOpen={isModalOpen}
+                onClose={() => {
+                    setIsModalOpen(false);
+                    setTemplateData(null);
+                }}
+                title="Nueva Transacción"
+            >
+                <TransactionForm
+                    initialData={templateData}
+                    onSuccess={() => {
+                        setIsModalOpen(false);
+                        setTemplateData(null);
+                    }}
+                />
+            </Modal>
+        </div>
+    );
+}
