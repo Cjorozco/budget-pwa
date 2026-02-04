@@ -10,7 +10,9 @@ import { TagSelector } from './TagSelector';
 import { suggestCategoryAndTags } from '@/lib/ai/categorizer';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
-import { Sparkles, AlertCircle } from 'lucide-react';
+import { format } from 'date-fns';
+import { PiggyBank, Sparkles, AlertCircle } from 'lucide-react';
+import { formatCurrency } from '@/lib/utils';
 import type { Transaction } from '@/lib/types';
 
 type TransactionFormData = z.infer<typeof TransactionSchema>;
@@ -64,6 +66,15 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
     const type = watch('type');
     const description = watch('description');
     const tagIds = watch('tagIds') || [];
+    const accountId = watch('accountId');
+
+    // Fetch active reserves for the selected account
+    const activeReserves = useLiveQuery(
+        () => accountId
+            ? db.reserves.where('accountId').equals(accountId).and(r => r.isActive).toArray()
+            : Promise.resolve([] as any[]),
+        [accountId]
+    ) || [];
 
     // AI Suggestions Logic
     useEffect(() => {
@@ -160,11 +171,12 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                 });
             } else {
                 // CREATE MODE
-                await db.transaction('rw', db.transactions, db.accounts, async () => {
+                await db.transaction('rw', db.transactions, db.accounts, db.reserves, async () => {
                     // Enrich with AI metadata if applicable
+                    const txId = uuidv4();
                     const finalData = {
                         ...data,
-                        id: uuidv4(),
+                        id: txId,
                         suggestedCategoryId: aiSuggestion?.categoryId,
                         wasCategorySuggestionAccepted: aiSuggestion && data.categoryId === aiSuggestion.categoryId,
                         aiConfidence: aiSuggestion?.confidence,
@@ -187,6 +199,16 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
 
                         await db.accounts.update(data.accountId, {
                             calculatedBalance: newBalance,
+                        });
+                    }
+
+                    // 3. Fulfill Reserve if selected
+                    if (data.fulfilledReserveId) {
+                        await db.reserves.update(data.fulfilledReserveId, {
+                            isActive: false,
+                            fulfilledAt: Date.now(),
+                            fulfilledTransactionId: txId,
+                            updatedAt: Date.now(),
                         });
                     }
                 });
@@ -375,14 +397,39 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
             <Input
                 label="Fecha"
                 type="date"
-                defaultValue={initialData ? new Date(initialData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]}
+                defaultValue={format(watch('date') || Date.now(), 'yyyy-MM-dd')}
                 onChange={(e) => {
-                    const date = new Date(e.target.value).getTime();
+                    const [y, m, d] = e.target.value.split('-').map(Number);
+                    const date = new Date(y, m - 1, d).getTime();
                     if (!isNaN(date)) {
                         setValue('date', date);
                     }
                 }}
             />
+
+            {/* Reserve Fulfillment Selector */}
+            {type === 'expense' && activeReserves.length > 0 && (
+                <div className="p-3 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 rounded-xl space-y-2">
+                    <label className="flex items-center gap-2 text-xs font-bold text-amber-800 dark:text-amber-400 uppercase tracking-wider">
+                        <PiggyBank size={14} />
+                        ¿Cumplir una reserva?
+                    </label>
+                    <select
+                        className="w-full px-3 py-2 border border-amber-200 dark:border-amber-800 rounded-lg bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                        {...register('fulfilledReserveId')}
+                    >
+                        <option value="">No, es un gasto nuevo</option>
+                        {activeReserves.map((r) => (
+                            <option key={r.id} value={r.id}>
+                                {r.description} ({formatCurrency(r.amount)})
+                            </option>
+                        ))}
+                    </select>
+                    <p className="text-[10px] text-amber-700 dark:text-amber-500 italic">
+                        Selecciona si este gasto es el pago de algo que ya habías reservado.
+                    </p>
+                </div>
+            )}
 
             <TagSelector
                 selectedTagIds={tagIds}

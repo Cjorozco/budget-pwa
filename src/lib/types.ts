@@ -12,6 +12,8 @@ export interface Transaction {
     aiConfidence?: number; // 0–1
     isAmbiguous?: boolean; // aiConfidence < threshold
     needsReview?: boolean;
+    isAdjustment?: boolean;
+    reconciliationId?: string;
     createdAt: number;
     updatedAt: number;
 }
@@ -54,6 +56,19 @@ export interface Tag {
     name: string;
     color: string;
     usageCount: number;
+    createdAt: number;
+    updatedAt: number;
+}
+
+export interface Reserve {
+    id: string;
+    accountId: string;
+    amount: number;
+    description: string;
+    categoryId?: string;
+    isActive: boolean;
+    fulfilledAt?: number;
+    fulfilledTransactionId?: string;
     createdAt: number;
     updatedAt: number;
 }

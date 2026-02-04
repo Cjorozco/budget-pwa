@@ -1,6 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
-import { formatCurrency } from '@/lib/utils';
+import { cn, formatCurrency } from '@/lib/utils';
 import { startOfMonth, endOfMonth, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ArrowDownCircle, ArrowUpCircle, Wallet, AlertTriangle } from 'lucide-react';
@@ -14,7 +14,15 @@ export default function Dashboard() {
     const [templateData, setTemplateData] = useState<any>(null);
 
     const accounts = useLiveQuery(() => db.accounts.filter(a => a.isActive).toArray()) || [];
-    const totalBalance = accounts.reduce((acc, curr) => acc + curr.calculatedBalance, 0);
+    const reserves = useLiveQuery(() =>
+        db.reserves
+            .filter(r => r.isActive)
+            .toArray()
+    ) || [];
+
+    const totalRealBalance = accounts.reduce((acc, curr) => acc + (curr.actualBalance ?? curr.calculatedBalance), 0);
+    const totalReserved = reserves.reduce((acc, curr) => acc + curr.amount, 0);
+    const totalAvailable = totalRealBalance - totalReserved;
 
     const handleQuickTemplate = (data: any) => {
         setTemplateData({
@@ -106,11 +114,27 @@ export default function Dashboard() {
             )}
 
             {/* Total Balance Card */}
-            <div className="bg-gradient-to-br from-blue-600 to-blue-700 text-white p-6 rounded-3xl shadow-lg shadow-blue-200 dark:shadow-none">
-                <p className="text-blue-100 text-sm font-medium mb-1">Balance Total</p>
+            <div className={cn(
+                "p-6 rounded-3xl shadow-lg transition-colors border-2",
+                totalAvailable < 0
+                    ? "bg-gradient-to-br from-red-600 to-red-700 text-white shadow-red-200 border-red-500 animate-pulse"
+                    : "bg-gradient-to-br from-indigo-600 to-indigo-700 text-white shadow-indigo-200 border-indigo-500"
+            )}>
+                <p className={cn(
+                    "text-sm font-medium mb-1",
+                    totalAvailable < 0 ? "text-red-100" : "text-indigo-100"
+                )}>Total Disponible</p>
                 <div className="text-4xl font-bold tracking-tight">
-                    {formatCurrency(totalBalance)}
+                    {formatCurrency(totalAvailable)}
                 </div>
+                {totalReserved > 0 && (
+                    <div className={cn(
+                        "mt-2 text-[10px] font-medium",
+                        totalAvailable < 0 ? "text-red-200" : "text-indigo-100/80"
+                    )}>
+                        Tu riqueza real es {formatCurrency(totalRealBalance)}, pero has apartado {formatCurrency(totalReserved)}.
+                    </div>
+                )}
             </div>
 
             {/* Monthly Stats */}
@@ -121,7 +145,7 @@ export default function Dashboard() {
                         <span className="text-sm text-slate-500 font-medium">En Cuentas</span>
                     </div>
                     <p className="text-lg font-bold text-slate-900 dark:text-white">
-                        {formatCurrency(totalBalance)}
+                        {formatCurrency(totalRealBalance)}
                     </p>
                 </div>
                 <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">

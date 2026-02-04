@@ -5,6 +5,7 @@ import {
     type Reconciliation,
     type Category,
     type Tag,
+    type Reserve,
     type AppConfig,
 } from '../types';
 
@@ -15,6 +16,7 @@ export class PersonalBudgetDB extends Dexie {
     reconciliations!: EntityTable<Reconciliation, 'id'>;
     categories!: EntityTable<Category, 'id'>;
     tags!: EntityTable<Tag, 'id'>;
+    reserves!: EntityTable<Reserve, 'id'>;
     appConfig!: EntityTable<AppConfig, 'id'>;
 
     constructor() {
@@ -42,6 +44,10 @@ export class PersonalBudgetDB extends Dexie {
         this.version(4).stores({
             transactions: 'id, type, accountId, categoryId, date, createdAt, isAmbiguous, needsReview',
             tags: 'id, name, usageCount, createdAt',
+        });
+
+        this.version(5).stores({
+            reserves: 'id, accountId, isActive, createdAt',
         });
     }
 }

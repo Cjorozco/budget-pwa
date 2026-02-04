@@ -81,13 +81,47 @@ export function AccountForm({ onSuccess, onCancel, initialData }: AccountFormPro
                 {...register('calculatedBalance', { valueAsNumber: true })}
             />
 
-            <div className="flex gap-3 pt-4 justify-end">
-                <Button type="button" variant="ghost" onClick={onCancel}>
-                    Cancelar
-                </Button>
-                <Button type="submit" isLoading={isSubmitting}>
-                    Guardar Cuenta
-                </Button>
+            <div className="flex gap-3 pt-4 justify-between">
+                <div>
+                    {initialData?.id && (
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                            onClick={async () => {
+                                if (confirm('¿Estás seguro de reiniciar esta cuenta? Se borrarán TODAS las transacciones, reconciliaciones y reservas de esta cuenta.')) {
+                                    try {
+                                        await db.transaction('rw', [db.transactions, db.reconciliations, db.reserves, db.accounts], async () => {
+                                            const id = initialData.id!;
+                                            await db.transactions.where('accountId').equals(id).delete();
+                                            await db.reconciliations.where('accountId').equals(id).delete();
+                                            await db.reserves.where('accountId').equals(id).delete();
+                                            await db.accounts.update(id, {
+                                                calculatedBalance: 0,
+                                                actualBalance: undefined,
+                                                lastReconciliationDate: undefined
+                                            });
+                                        });
+                                        onSuccess();
+                                    } catch (error) {
+                                        console.error('Error resetting account:', error);
+                                        alert('Error al reiniciar la cuenta');
+                                    }
+                                }
+                            }}
+                        >
+                            Reiniciar Historial
+                        </Button>
+                    )}
+                </div>
+                <div className="flex gap-3">
+                    <Button type="button" variant="ghost" onClick={onCancel}>
+                        Cancelar
+                    </Button>
+                    <Button type="submit" isLoading={isSubmitting}>
+                        {initialData?.id ? 'Actualizar Cuenta' : 'Guardar Cuenta'}
+                    </Button>
+                </div>
             </div>
         </form>
     );

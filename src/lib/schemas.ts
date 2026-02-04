@@ -23,4 +23,7 @@ export const TransactionSchema = z.object({
     aiConfidence: z.number().optional(),
     isAmbiguous: z.boolean().optional(),
     needsReview: z.boolean().optional(),
+    isAdjustment: z.boolean().optional(),
+    reconciliationId: z.string().optional(),
+    fulfilledReserveId: z.string().optional(),
 });

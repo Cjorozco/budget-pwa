@@ -4,26 +4,26 @@ import { db } from '@/lib/db';
 import { Button } from '@/components/ui/Button';
 import { AccountForm } from '@/components/forms/AccountForm';
 import { Modal } from '@/components/ui/Modal';
-import { Plus, Wallet, CreditCard, Banknote, Pencil, History, CheckCircle2 } from 'lucide-react';
-import { cn, formatCurrency } from '@/lib/utils';
+import { Plus, Wallet } from 'lucide-react';
+import { AccountCard } from '@/components/accounts/AccountCard';
 import { ReconciliationForm } from '@/components/forms/ReconciliationForm';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { ReconciliationHistory } from '@/components/accounts/ReconciliationHistory';
+import { ReserveForm } from '@/components/forms/ReserveForm';
+import { ReservesList } from '@/components/accounts/ReservesList';
+import type { Account } from '@/lib/types';
 
 export default function AccountsPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isReconcileModalOpen, setIsReconcileModalOpen] = useState(false);
+    const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
     const [editingAccount, setEditingAccount] = useState<any>(null);
     const [reconcilingAccount, setReconcilingAccount] = useState<any>(null);
+    const [historyAccount, setHistoryAccount] = useState<any>(null);
+    const [isReserveModalOpen, setIsReserveModalOpen] = useState(false);
+    const [isReservesListModalOpen, setIsReservesListModalOpen] = useState(false);
+    const [reserveAccount, setReserveAccount] = useState<Account | null>(null);
     const accounts = useLiveQuery(() => db.accounts.orderBy('name').toArray());
 
-    const getIcon = (type: string) => {
-        switch (type) {
-            case 'cash': return Banknote;
-            case 'credit': return CreditCard;
-            default: return Wallet;
-        }
-    };
 
     return (
         <div className="p-4 safe-bottom space-y-6">
@@ -41,91 +41,32 @@ export default function AccountsPage() {
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {accounts?.map((account) => {
-                    const Icon = getIcon(account.type);
-                    return (
-                        <div
-                            key={account.id}
-                            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden"
-                        >
-                            <div className={cn(
-                                "absolute top-0 right-0 p-3 opacity-10",
-                                account.type === 'credit' ? "text-purple-600" : "text-blue-600"
-                            )}>
-                                <Icon size={80} />
-                            </div>
-
-                            <div className="relative z-10">
-                                <div className="flex items-center gap-3 mb-3">
-                                    <div className={cn(
-                                        "p-2.5 rounded-xl",
-                                        account.type === 'credit' ? "bg-purple-100 text-purple-600 dark:bg-purple-900/30" :
-                                            account.type === 'cash' ? "bg-green-100 text-green-600 dark:bg-green-900/30" :
-                                                "bg-blue-100 text-blue-600 dark:bg-blue-900/30"
-                                    )}>
-                                        <Icon size={20} />
-                                    </div>
-                                    <div>
-                                        <h3 className="font-semibold text-slate-900 dark:text-slate-100">{account.name}</h3>
-                                        <span className="text-xs text-slate-500 capitalize">{account.type === 'bank' ? 'Bancaria' : account.type === 'credit' ? 'Crédito' : 'Efectivo'}</span>
-                                    </div>
-                                </div>
-
-                                <div className="mt-4 flex items-end justify-between">
-                                    <div>
-                                        <span className="text-xs text-slate-500 block mb-1">Saldo Actual</span>
-                                        <div className={cn(
-                                            "text-2xl font-bold tracking-tight",
-                                            account.calculatedBalance < 0 ? "text-red-600" : "text-slate-900 dark:text-white"
-                                        )}>
-                                            $ {account.calculatedBalance.toLocaleString()}
-                                        </div>
-                                    </div>
-                                    <div className="flex gap-1">
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="h-8 w-8 p-0"
-                                            onClick={() => {
-                                                setReconcilingAccount(account);
-                                                setIsReconcileModalOpen(true);
-                                            }}
-                                            title="Reconciliar"
-                                        >
-                                            <History size={16} className="text-blue-600" />
-                                        </Button>
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="h-8 w-8 p-0"
-                                            onClick={() => {
-                                                setEditingAccount(account);
-                                                setIsModalOpen(true);
-                                            }}
-                                            title="Editar"
-                                        >
-                                            <Pencil size={16} />
-                                        </Button>
-                                    </div>
-                                </div>
-
-                                {account.lastReconciliationDate && (
-                                    <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                                        <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-medium">
-                                            <CheckCircle2 size={12} className="text-green-500" />
-                                            <span>
-                                                Reconciliado: {format(account.lastReconciliationDate, "d MMM", { locale: es })}
-                                            </span>
-                                        </div>
-                                        <div className="text-[10px] font-bold text-slate-400">
-                                            {formatCurrency(account.actualBalance || 0)}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    );
-                })}
+                {accounts?.map((account) => (
+                    <AccountCard
+                        key={account.id}
+                        account={account}
+                        onEdit={(acc) => {
+                            setEditingAccount(acc);
+                            setIsModalOpen(true);
+                        }}
+                        onReconcile={(acc) => {
+                            setReconcilingAccount(acc);
+                            setIsReconcileModalOpen(true);
+                        }}
+                        onViewHistory={(acc) => {
+                            setHistoryAccount(acc);
+                            setIsHistoryModalOpen(true);
+                        }}
+                        onAddReserve={(acc) => {
+                            setReserveAccount(acc);
+                            setIsReserveModalOpen(true);
+                        }}
+                        onViewReserves={(acc) => {
+                            setReserveAccount(acc);
+                            setIsReservesListModalOpen(true);
+                        }}
+                    />
+                ))}
 
                 {accounts?.length === 0 && (
                     <div className="col-span-full py-12 text-center text-slate-400 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800">
@@ -177,6 +118,44 @@ export default function AccountsPage() {
                             setReconcilingAccount(null);
                         }}
                     />
+                )}
+            </Modal>
+
+            <Modal
+                isOpen={isHistoryModalOpen}
+                onClose={() => {
+                    setIsHistoryModalOpen(false);
+                    setHistoryAccount(null);
+                }}
+                title={`Historial: ${historyAccount?.name || ''}`}
+            >
+                {historyAccount && (
+                    <ReconciliationHistory accountId={historyAccount.id} />
+                )}
+            </Modal>
+            {/* Reserve Modal */}
+            <Modal
+                isOpen={isReserveModalOpen}
+                onClose={() => setIsReserveModalOpen(false)}
+                title={`Reservar Dinero - ${reserveAccount?.name}`}
+            >
+                {reserveAccount && (
+                    <ReserveForm
+                        account={reserveAccount}
+                        onSuccess={() => setIsReserveModalOpen(false)}
+                        onCancel={() => setIsReserveModalOpen(false)}
+                    />
+                )}
+            </Modal>
+
+            {/* Reserves List Modal */}
+            <Modal
+                isOpen={isReservesListModalOpen}
+                onClose={() => setIsReservesListModalOpen(false)}
+                title={`Detalle de Reservas: ${reserveAccount?.name}`}
+            >
+                {reserveAccount && (
+                    <ReservesList accountId={reserveAccount.id} />
                 )}
             </Modal>
         </div>

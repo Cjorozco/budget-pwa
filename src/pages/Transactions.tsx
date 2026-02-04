@@ -132,6 +132,13 @@ export default function TransactionsPage() {
                                                 <AlertTriangle size={8} /> Revisar
                                             </span>
                                         )}
+                                        {/* Adjustment Badge: Identifies transactions created during reconciliation 
+                                            to square the calculated balance with reality. */}
+                                        {tx.isAdjustment && (
+                                            <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700 flex items-center gap-0.5">
+                                                Ajuste
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                             </div>

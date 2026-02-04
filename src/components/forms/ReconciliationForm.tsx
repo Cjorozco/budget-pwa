@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -13,6 +12,7 @@ import { AlertTriangle, CheckCircle } from 'lucide-react';
 const ReconciliationSchema = z.object({
     declaredBalance: z.number(),
     createAdjustment: z.boolean(),
+    notes: z.string().optional(),
 });
 
 type ReconciliationFormData = z.infer<typeof ReconciliationSchema>;
@@ -24,7 +24,6 @@ interface ReconciliationFormProps {
 }
 
 export function ReconciliationForm({ account, onSuccess, onCancel }: ReconciliationFormProps) {
-    const [adjustmentCategoryId, setAdjustmentCategoryId] = useState<string | null>(null);
 
     const {
         register,
@@ -45,6 +44,8 @@ export function ReconciliationForm({ account, onSuccess, onCancel }: Reconciliat
 
     const onSubmit = async (data: ReconciliationFormData) => {
         try {
+            // CRITICAL: Ensure balance calculations and adjustment transactions are tied together
+            // to maintain atomic consistency between snapshots and account balances.
             await db.transaction('rw', db.reconciliations, db.accounts, db.transactions, db.categories, async () => {
                 // 1. Find or create "Ajuste de Reconciliación" category
                 let adjustmentCategory = await db.categories
@@ -65,6 +66,7 @@ export function ReconciliationForm({ account, onSuccess, onCancel }: Reconciliat
                 }
 
                 let adjustmentTransactionId: string | undefined = undefined;
+                const reconciliationId = uuidv4();
 
                 // 2. Create adjustment transaction if requested and there's a difference
                 if (data.createAdjustment && hasDifference && adjustmentCategory) {
@@ -72,6 +74,8 @@ export function ReconciliationForm({ account, onSuccess, onCancel }: Reconciliat
                     const txType = difference > 0 ? 'income' : 'expense';
                     const txAmount = Math.abs(difference);
 
+                    // REGRELA DE ORO: El sistema nunca corrige en silencio. 
+                    // Se deja evidencia explícita del ajuste como una transacción real.
                     await db.transactions.add({
                         id: txId,
                         amount: txAmount,
@@ -81,6 +85,8 @@ export function ReconciliationForm({ account, onSuccess, onCancel }: Reconciliat
                         categoryId: adjustmentCategory.id,
                         date: Date.now(),
                         tagIds: [],
+                        isAdjustment: true,
+                        reconciliationId: reconciliationId,
                         createdAt: Date.now(),
                         updatedAt: Date.now(),
                     });
@@ -95,12 +101,13 @@ export function ReconciliationForm({ account, onSuccess, onCancel }: Reconciliat
 
                 // 3. Save reconciliation record
                 await db.reconciliations.add({
-                    id: uuidv4(),
+                    id: reconciliationId,
                     accountId: account.id,
                     date: Date.now(),
                     calculatedBalance: account.calculatedBalance,
                     declaredBalance: data.declaredBalance,
                     difference: difference,
+                    notes: data.notes,
                     adjustmentTransactionId,
                 });
 
@@ -138,10 +145,10 @@ export function ReconciliationForm({ account, onSuccess, onCancel }: Reconciliat
                     <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Diferencia:</span>
                     <span
                         className={`font-bold text-lg ${Math.abs(difference) < 0.01
-                                ? 'text-green-600'
-                                : difference > 0
-                                    ? 'text-blue-600'
-                                    : 'text-red-600'
+                            ? 'text-green-600'
+                            : difference > 0
+                                ? 'text-blue-600'
+                                : 'text-red-600'
                             }`}
                     >
                         {difference > 0 ? '+' : ''}
@@ -154,7 +161,7 @@ export function ReconciliationForm({ account, onSuccess, onCancel }: Reconciliat
                 <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 rounded-lg">
                     <AlertTriangle size={20} className="shrink-0 mt-0.5" />
                     <p className="text-sm">
-                        Hay una diferencia de <b>{formatCurrency(Math.abs(difference))}</b>. Se creará una transacción de ajuste para corregir el saldo.
+                        Hay una diferencia de <b>{formatCurrency(Math.abs(difference))}</b>. Se creará un movimiento para cuadrar el saldo.
                     </p>
                 </div>
             ) : (
@@ -180,9 +187,16 @@ export function ReconciliationForm({ account, onSuccess, onCancel }: Reconciliat
                         {...register('createAdjustment')}
                         className="rounded"
                     />
-                    <span className="text-sm">Crear transacción de ajuste automáticamente</span>
+                    <span className="text-sm">Crear transacción de ajuste</span>
                 </label>
             )}
+
+            <Input
+                label="Notas (opcional)"
+                placeholder="Ej: Olvidé registrar un gasto pequeño..."
+                error={errors.notes?.message}
+                {...register('notes')}
+            />
 
             <div className="flex gap-3 pt-4 justify-end">
                 <Button type="button" variant="ghost" onClick={onCancel}>
