@@ -31,9 +31,11 @@ export function AccountForm({ onSuccess, onCancel, initialData }: AccountFormPro
     const onSubmit = async (data: AccountFormData) => {
         try {
             if (initialData?.id) {
-                // Edit mode (not fully implemented in types for this demo yet, assuming create mainly)
+                // Edit mode
                 await db.accounts.update(initialData.id, {
                     ...data,
+                    calculatedBalance: Number(data.calculatedBalance),
+                    actualBalance: Number(data.calculatedBalance), // Update actual balance too if edited manually
                     isActive: initialData.isActive ?? true
                 });
             } else {
@@ -42,6 +44,7 @@ export function AccountForm({ onSuccess, onCancel, initialData }: AccountFormPro
                     name: data.name,
                     type: data.type,
                     calculatedBalance: Number(data.calculatedBalance),
+                    actualBalance: Number(data.calculatedBalance), // Set initial actual balance
                     currency: 'COP',
                     isActive: true,
                 });

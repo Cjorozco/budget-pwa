@@ -121,43 +121,58 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                     const oldTx = initialData;
 
                     // Reverse old transaction effect
+                    // 1. Reverse old transaction effect
                     const account = await db.accounts.get(oldTx.accountId);
                     if (account) {
-                        let newBalance = account.calculatedBalance;
+                        let newCalcBalance = account.calculatedBalance;
+                        let newActualBalance = account.actualBalance;
 
                         // Reverse old effect
                         if (oldTx.type === 'income') {
-                            newBalance -= oldTx.amount;
+                            newCalcBalance -= oldTx.amount;
+                            if (newActualBalance !== undefined) newActualBalance -= oldTx.amount;
                         } else {
-                            newBalance += oldTx.amount;
+                            newCalcBalance += oldTx.amount;
+                            if (newActualBalance !== undefined) newActualBalance += oldTx.amount;
                         }
 
-                        // Apply new effect (might be different account)
+                        // Apply new effect (if same account)
                         if (data.accountId === oldTx.accountId) {
-                            // Same account
                             if (data.type === 'income') {
-                                newBalance += data.amount;
+                                newCalcBalance += data.amount;
+                                if (newActualBalance !== undefined) newActualBalance += data.amount;
                             } else {
-                                newBalance -= data.amount;
+                                newCalcBalance -= data.amount;
+                                if (newActualBalance !== undefined) newActualBalance -= data.amount;
                             }
 
                             await db.accounts.update(oldTx.accountId, {
-                                calculatedBalance: newBalance,
+                                calculatedBalance: newCalcBalance,
+                                actualBalance: newActualBalance,
                             });
                         } else {
-                            // Different account - update both
+                            // Different account - update both separately
                             await db.accounts.update(oldTx.accountId, {
-                                calculatedBalance: newBalance,
+                                calculatedBalance: newCalcBalance,
+                                actualBalance: newActualBalance,
                             });
 
                             const newAccount = await db.accounts.get(data.accountId);
                             if (newAccount) {
-                                const newAccountBalance = data.type === 'income'
-                                    ? newAccount.calculatedBalance + data.amount
-                                    : newAccount.calculatedBalance - data.amount;
+                                let targetCalc = newAccount.calculatedBalance;
+                                let targetActual = newAccount.actualBalance;
+
+                                if (data.type === 'income') {
+                                    targetCalc += data.amount;
+                                    if (targetActual !== undefined) targetActual += data.amount;
+                                } else {
+                                    targetCalc -= data.amount;
+                                    if (targetActual !== undefined) targetActual -= data.amount;
+                                }
 
                                 await db.accounts.update(data.accountId, {
-                                    calculatedBalance: newAccountBalance,
+                                    calculatedBalance: targetCalc,
+                                    actualBalance: targetActual,
                                 });
                             }
                         }
@@ -192,14 +207,22 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                     // 2. Update Account Balance
                     const account = await db.accounts.get(data.accountId);
                     if (account) {
-                        const newBalance =
-                            data.type === 'income'
-                                ? account.calculatedBalance + data.amount
-                                : account.calculatedBalance - data.amount;
+                        const amount = data.amount;
+                        const isIncome = data.type === 'income';
 
-                        await db.accounts.update(data.accountId, {
-                            calculatedBalance: newBalance,
-                        });
+                        const newCalcBalance = isIncome
+                            ? account.calculatedBalance + amount
+                            : account.calculatedBalance - amount;
+
+                        const updateData: any = { calculatedBalance: newCalcBalance };
+
+                        if (account.actualBalance !== undefined) {
+                            updateData.actualBalance = isIncome
+                                ? account.actualBalance + amount
+                                : account.actualBalance - amount;
+                        }
+
+                        await db.accounts.update(data.accountId, updateData);
                     }
 
                     // 3. Fulfill Reserve if selected

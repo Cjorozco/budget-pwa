@@ -55,14 +55,22 @@ export default function TransactionsPage() {
                 // 1. Reverse the balance effect
                 const account = await db.accounts.get(transaction.accountId);
                 if (account) {
-                    const reversedBalance =
-                        transaction.type === 'income'
-                            ? account.calculatedBalance - transaction.amount
-                            : account.calculatedBalance + transaction.amount;
+                    const isIncome = transaction.type === 'income';
+                    const amount = transaction.amount;
 
-                    await db.accounts.update(transaction.accountId, {
-                        calculatedBalance: reversedBalance,
-                    });
+                    const reversedCalcBalance = isIncome
+                        ? account.calculatedBalance - amount
+                        : account.calculatedBalance + amount;
+
+                    const updateData: any = { calculatedBalance: reversedCalcBalance };
+
+                    if (account.actualBalance !== undefined) {
+                        updateData.actualBalance = isIncome
+                            ? account.actualBalance - amount
+                            : account.actualBalance + amount;
+                    }
+
+                    await db.accounts.update(transaction.accountId, updateData);
                 }
 
                 // 2. Delete the transaction
