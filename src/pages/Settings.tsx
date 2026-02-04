@@ -5,21 +5,33 @@ import { Button } from '@/components/ui/Button';
 import { Trash2, AlertTriangle, RefreshCw, FolderTree, Download, FileJson, FileSpreadsheet, Upload } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { exportDatabase, downloadBackup, importDatabase, exportToCSV, downloadCSV } from '@/lib/db/backup';
+import { useUIStore } from '@/store/ui';
 
 export default function SettingsPage() {
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
     const [actionType, setActionType] = useState<'transactions' | 'full' | 'import' | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [importJson, setImportJson] = useState<string | null>(null);
+    const addToast = useUIStore(s => s.addToast);
 
     const handleExportJSON = async () => {
-        const json = await exportDatabase();
-        downloadBackup(json);
+        try {
+            const json = await exportDatabase();
+            downloadBackup(json);
+            addToast('Backup descargado con éxito', 'success');
+        } catch (error) {
+            addToast('Error al exportar backup', 'error');
+        }
     };
 
     const handleExportCSV = async () => {
-        const csv = await exportToCSV();
-        downloadCSV(csv);
+        try {
+            const csv = await exportToCSV();
+            downloadCSV(csv);
+            addToast('Movimientos exportados a CSV', 'success');
+        } catch (error) {
+            addToast('Error al exportar CSV', 'error');
+        }
     };
 
     const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -41,11 +53,12 @@ export default function SettingsPage() {
         setIsLoading(true);
         try {
             await importDatabase(importJson);
-            alert('¡Respaldo restaurado con éxito!');
-            window.location.reload();
-        } catch (error) {
+            addToast('¡Respaldo restaurado con éxito!', 'success');
+            setTimeout(() => window.location.reload(), 1500);
+        } catch (error: any) {
             console.error(error);
-            alert('Error al restaurar el respaldo. Verifica el formato del archivo.');
+            addToast(error.message || 'Error al restaurar respaldo', 'error');
+            setIsConfirmOpen(false);
         } finally {
             setIsLoading(false);
         }
@@ -58,11 +71,11 @@ export default function SettingsPage() {
                 await db.transactions.clear();
                 await db.accounts.toCollection().modify({ calculatedBalance: 0 });
             });
-            alert('¡Transacciones eliminadas y saldos reiniciados a 0!');
+            addToast('Movimientos eliminados correctamente', 'success');
             setIsConfirmOpen(false);
         } catch (error) {
             console.error(error);
-            alert('Error al reiniciar los datos.');
+            addToast('Error al reiniciar movimientos', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -72,10 +85,11 @@ export default function SettingsPage() {
         setIsLoading(true);
         try {
             await db.delete();
-            window.location.reload();
+            addToast('Base de datos borrada completamente', 'success');
+            setTimeout(() => window.location.reload(), 1500);
         } catch (error) {
             console.error(error);
-            alert('Error al borrar la base de datos.');
+            addToast('Error al borrar la base de datos', 'error');
             setIsLoading(false);
         }
     };
@@ -88,8 +102,8 @@ export default function SettingsPage() {
 
     const getModalTitle = () => {
         switch (actionType) {
-            case 'transactions': return "¿Limpiar Movimientos?";
-            case 'full': return "¿Restaurar de Fábrica?";
+            case 'transactions': return "¿Reset Cuenta?";
+            case 'full': return "¿Reset Total?";
             case 'import': return "¿Restaurar Respaldo?";
             default: return "Confirmar acción";
         }
@@ -178,7 +192,7 @@ export default function SettingsPage() {
                 <div className="p-4 border border-red-200 bg-red-50 dark:bg-red-900/10 dark:border-red-900/50 rounded-2xl space-y-4">
                     <div className="flex items-center justify-between gap-4">
                         <div className="flex-1">
-                            <h3 className="font-medium text-red-900 dark:text-red-200 text-sm">Reiniciar Movimientos</h3>
+                            <h3 className="font-medium text-red-900 dark:text-red-200 text-sm">Reset cuenta</h3>
                             <p className="text-[10px] text-red-700 dark:text-red-300">Borra todas las transacciones y pone los saldos en 0.</p>
                         </div>
                         <Button
@@ -198,7 +212,7 @@ export default function SettingsPage() {
 
                     <div className="flex items-center justify-between gap-4">
                         <div className="flex-1">
-                            <h3 className="font-medium text-red-900 dark:text-red-200 text-sm">Restauración de Fábrica</h3>
+                            <h3 className="font-medium text-red-900 dark:text-red-200 text-sm">Reset total</h3>
                             <p className="text-[10px] text-red-700 dark:text-red-300">Borra TODO: cuentas, categorías y config.</p>
                         </div>
                         <Button

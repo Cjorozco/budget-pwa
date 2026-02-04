@@ -253,6 +253,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                 label="Monto"
                 type="number"
                 placeholder="0"
+                autoFocus
                 error={errors.amount?.message}
                 {...register('amount', { valueAsNumber: true })}
             />

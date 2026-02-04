@@ -1,22 +1,26 @@
 import { db } from './index';
+import { z } from 'zod';
 
-export interface BackupData {
-    version: number;
-    timestamp: number;
-    tables: {
-        transactions: any[];
-        accounts: any[];
-        reconciliations: any[];
-        categories: any[];
-        tags: any[];
-        reserves: any[];
-        appConfig: any[];
-    };
-}
+// Zod schema for backup validation
+const BackupSchema = z.object({
+    version: z.number(),
+    timestamp: z.number(),
+    tables: z.object({
+        transactions: z.array(z.any()),
+        accounts: z.array(z.any()),
+        reconciliations: z.array(z.any()),
+        categories: z.array(z.any()),
+        tags: z.array(z.any()),
+        reserves: z.array(z.any()),
+        appConfig: z.array(z.any()),
+    })
+});
+
+export type BackupData = z.infer<typeof BackupSchema>;
 
 export async function exportDatabase(): Promise<string> {
     const data: BackupData = {
-        version: 1, // Backup format version
+        version: 1,
         timestamp: Date.now(),
         tables: {
             transactions: await db.transactions.toArray(),
@@ -33,24 +37,22 @@ export async function exportDatabase(): Promise<string> {
 }
 
 export async function importDatabase(jsonString: string): Promise<void> {
-    let data: BackupData;
+    let rawData: any;
     try {
-        data = JSON.parse(jsonString);
+        rawData = JSON.parse(jsonString);
     } catch (e) {
         throw new Error('El archivo no es un JSON válido');
     }
 
-    // Basic Validation
-    if (!data.tables || typeof data.tables !== 'object') {
-        throw new Error('Formato de respaldo inválido: falta la sección de tablas');
+    // Robust Validation with Zod
+    const result = BackupSchema.safeParse(rawData);
+    if (!result.success) {
+        console.error('Validation errors:', result.error.format());
+        const missing = result.error.issues.map(i => i.path.join('.')).join(', ');
+        throw new Error(`El archivo de respaldo tiene un formato inválido o incompleto: ${missing}`);
     }
 
-    const requiredTables = ['transactions', 'accounts', 'categories', 'reserves'];
-    for (const table of requiredTables) {
-        if (!Array.isArray((data.tables as any)[table])) {
-            throw new Error(`Respaldo incompleto: falta la tabla "${table}"`);
-        }
-    }
+    const data = result.data;
 
     await db.transaction('rw', [
         db.transactions,
@@ -62,7 +64,6 @@ export async function importDatabase(jsonString: string): Promise<void> {
         db.appConfig
     ], async () => {
         try {
-            // Clear existing data
             await Promise.all([
                 db.transactions.clear(),
                 db.accounts.clear(),
@@ -73,14 +74,13 @@ export async function importDatabase(jsonString: string): Promise<void> {
                 db.appConfig.clear(),
             ]);
 
-            // Import new data
-            if (data.tables.transactions?.length > 0) await db.transactions.bulkAdd(data.tables.transactions);
-            if (data.tables.accounts?.length > 0) await db.accounts.bulkAdd(data.tables.accounts);
-            if (data.tables.reconciliations?.length > 0) await db.reconciliations.bulkAdd(data.tables.reconciliations);
-            if (data.tables.categories?.length > 0) await db.categories.bulkAdd(data.tables.categories);
-            if (data.tables.tags?.length > 0) await db.tags.bulkAdd(data.tables.tags);
-            if (data.tables.reserves?.length > 0) await db.reserves.bulkAdd(data.tables.reserves);
-            if (data.tables.appConfig?.length > 0) await db.appConfig.bulkAdd(data.tables.appConfig);
+            if (data.tables.transactions.length > 0) await db.transactions.bulkAdd(data.tables.transactions);
+            if (data.tables.accounts.length > 0) await db.accounts.bulkAdd(data.tables.accounts);
+            if (data.tables.reconciliations.length > 0) await db.reconciliations.bulkAdd(data.tables.reconciliations);
+            if (data.tables.categories.length > 0) await db.categories.bulkAdd(data.tables.categories);
+            if (data.tables.tags.length > 0) await db.tags.bulkAdd(data.tables.tags);
+            if (data.tables.reserves.length > 0) await db.reserves.bulkAdd(data.tables.reserves);
+            if (data.tables.appConfig.length > 0) await db.appConfig.bulkAdd(data.tables.appConfig);
         } catch (error) {
             console.error('Error during bulk import:', error);
             throw new Error('Error al insertar los datos en la base de datos local');
@@ -92,10 +92,16 @@ export function downloadBackup(jsonString: string) {
     const blob = new Blob([jsonString], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    const timestamp = new Date().toISOString().split('T')[0];
+
+    // Exact format requested: budget-backup-YYYY-MM-DD.json
+    const date = new Date();
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const filename = `budget-backup-${year}-${month}-${day}.json`;
 
     a.href = url;
-    a.download = `presupuesto_backup_${timestamp}.json`;
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

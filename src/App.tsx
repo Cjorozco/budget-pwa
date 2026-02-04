@@ -8,6 +8,9 @@ import CategoriesPage from '@/pages/Categories';
 import SettingsPage from '@/pages/Settings';
 import AmbiguousReview from '@/pages/AmbiguousReview';
 import { seedInitialData } from '@/lib/db/seed';
+import { InstallPWA } from '@/components/InstallPWA';
+import { Toaster } from '@/components/Toaster';
+
 
 function App() {
   useEffect(() => {
@@ -27,6 +30,8 @@ function App() {
           <Route path="settings" element={<SettingsPage />} />
         </Route>
       </Routes>
+      <InstallPWA />
+      <Toaster />
     </BrowserRouter>
   );
 }

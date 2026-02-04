@@ -132,7 +132,7 @@ export default function Dashboard() {
                         "mt-2 text-[10px] font-medium",
                         totalAvailable < 0 ? "text-red-200" : "text-indigo-100/80"
                     )}>
-                        Tu riqueza real es {formatCurrency(totalRealBalance)}, pero has apartado {formatCurrency(totalReserved)}.
+                        Tienes {formatCurrency(totalRealBalance)} en bancos, pero has apartado {formatCurrency(totalReserved)}.
                     </div>
                 )}
             </div>
@@ -142,7 +142,7 @@ export default function Dashboard() {
                 <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
                     <div className="flex items-center gap-2 mb-2">
                         <ArrowUpCircle className="text-green-500" size={20} />
-                        <span className="text-sm text-slate-500 font-medium">En Cuentas</span>
+                        <span className="text-sm text-slate-500 font-medium">En Bancos</span>
                     </div>
                     <p className="text-lg font-bold text-slate-900 dark:text-white">
                         {formatCurrency(totalRealBalance)}
