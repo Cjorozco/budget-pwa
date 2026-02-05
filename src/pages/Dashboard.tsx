@@ -3,15 +3,18 @@ import { db } from '@/lib/db';
 import { cn, formatCurrency } from '@/lib/utils';
 import { startOfMonth, endOfMonth, format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { ArrowDownCircle, ArrowUpCircle, Wallet, AlertTriangle } from 'lucide-react';
+import { ArrowDownCircle, ArrowUpCircle, Wallet, AlertTriangle, ArrowRightLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { TransactionForm } from '@/components/forms/TransactionForm';
+import { TransferForm } from '@/components/forms/TransferForm';
 
 export default function Dashboard() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [templateData, setTemplateData] = useState<any>(null);
+
+    const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
 
     // 1. Critical Data: Balance & Reserves (Atomic Transaction-like fetch)
     // We fetch this together to ensure 'Disponible' is never calculated from partial data
@@ -43,7 +46,7 @@ export default function Dashboard() {
         return { ambiguousCount, quickTemplates };
     });
 
-    // 3. Heavy Data: Stats (Current Month)
+    // 3. Heavy Data: Stats (Current Month) - EXCLUDING TRANSFERS
     const stats = useLiveQuery(async () => {
         const now = new Date();
         const start = startOfMonth(now).getTime();
@@ -56,18 +59,22 @@ export default function Dashboard() {
             .between(start, end)
             .toArray();
 
-        const income = txs
+        // Filter out transfers explicitly
+        const validTxs = txs.filter(t => t.type !== 'transfer');
+
+        const income = validTxs
             .filter(t => t.type === 'income')
             .reduce((acc, t) => acc + t.amount, 0);
 
-        const expense = txs
+        const expense = validTxs
             .filter(t => t.type === 'expense')
             .reduce((acc, t) => acc + t.amount, 0);
 
         return { income, expense };
     });
 
-    // 4. Heavy Data: Recent Transactions
+    // 4. Heavy Data: Recent Transactions - EXCLUDING TRANSFERS (Optional: or include them visually distinct)
+    // For now, we include them but could filter or style them differently later.
     const recentTransactions = useLiveQuery(async () => {
         const txs = await db.transactions.orderBy('date').reverse().limit(5).toArray();
         const cats = await db.categories.toArray();
@@ -75,8 +82,8 @@ export default function Dashboard() {
 
         return txs.map(tx => ({
             ...tx,
-            categoryName: catMap.get(tx.categoryId)?.name || 'Sin Categoría',
-            categoryColor: catMap.get(tx.categoryId)?.color || 'gray'
+            categoryName: tx.type === 'transfer' ? 'Transferencia' : (catMap.get(tx.categoryId)?.name || 'Sin Categoría'),
+            categoryColor: tx.type === 'transfer' ? '#64748b' : (catMap.get(tx.categoryId)?.color || 'gray')
         }));
     });
 
@@ -109,8 +116,17 @@ export default function Dashboard() {
                         {format(new Date(), "MMMM yyyy", { locale: es })}
                     </p>
                 </div>
-                <div className="h-10 w-10 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center">
-                    <Wallet className="text-slate-600 dark:text-slate-300" size={20} />
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => setIsTransferModalOpen(true)}
+                        className="h-10 w-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400 hover:bg-blue-200 transition-colors"
+                        aria-label="Nueva Transferencia"
+                    >
+                        <ArrowRightLeft size={20} />
+                    </button>
+                    <div className="h-10 w-10 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center">
+                        <Wallet className="text-slate-600 dark:text-slate-300" size={20} />
+                    </div>
                 </div>
             </header>
 
@@ -220,7 +236,7 @@ export default function Dashboard() {
                                     className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm`}
                                     style={{ backgroundColor: tx.categoryColor }}
                                 >
-                                    {tx.categoryName[0]?.toUpperCase()}
+                                    {tx.type === 'transfer' ? <ArrowRightLeft size={16} /> : tx.categoryName[0]?.toUpperCase()}
                                 </div>
                                 <div>
                                     <p className="font-semibold text-slate-900 dark:text-slate-100 text-sm line-clamp-1">
@@ -231,8 +247,10 @@ export default function Dashboard() {
                                     </p>
                                 </div>
                             </div>
-                            <div className={`font-semibold text-sm ${tx.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                                {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
+                            <div className={`font-semibold text-sm ${tx.type === 'income' ? 'text-green-600' :
+                                tx.type === 'expense' ? 'text-red-600' : 'text-slate-600'
+                                }`}>
+                                {tx.type === 'income' ? '+' : tx.type === 'expense' ? '-' : ''}{formatCurrency(tx.amount)}
                             </div>
                         </div>
                     ))}
@@ -258,6 +276,17 @@ export default function Dashboard() {
                         setIsModalOpen(false);
                         setTemplateData(null);
                     }}
+                />
+            </Modal>
+
+            <Modal
+                isOpen={isTransferModalOpen}
+                onClose={() => setIsTransferModalOpen(false)}
+                title="Transferir Dinero"
+            >
+                <TransferForm
+                    onSuccess={() => setIsTransferModalOpen(false)}
+                    onCancel={() => setIsTransferModalOpen(false)}
                 />
             </Modal>
         </div>

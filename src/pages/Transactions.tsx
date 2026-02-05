@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Plus, Pencil, Trash2, AlertTriangle } from 'lucide-react';
+import { Plus, Pencil, Trash2, AlertTriangle, ArrowRightLeft } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { db } from '@/lib/db';
@@ -55,7 +55,7 @@ export default function TransactionsPage() {
                 // 1. Reverse the balance effect
                 const account = await db.accounts.get(transaction.accountId);
                 if (account) {
-                    const isIncome = transaction.type === 'income';
+                    const isIncome = transaction.type === 'income' || (transaction.type === 'transfer' && transaction.categoryId === 'transfer-in');
                     const amount = transaction.amount;
 
                     const reversedCalcBalance = isIncome
@@ -71,6 +71,31 @@ export default function TransactionsPage() {
                     }
 
                     await db.accounts.update(transaction.accountId, updateData);
+                }
+
+                // 2. Handle Linked Transfer Deletion (Integrity)
+                if (transaction.type === 'transfer' && transaction.transferId) {
+                    const linkedTx = await db.transactions
+                        .where('transferId').equals(transaction.transferId)
+                        .and(t => t.id !== transaction.id)
+                        .first();
+
+                    if (linkedTx) {
+                        // Reverse balance for the linked account too
+                        const linkedAccount = await db.accounts.get(linkedTx.accountId);
+                        if (linkedAccount) {
+                            const isLinkedIncome = linkedTx.categoryId === 'transfer-in';
+                            const linkedAmount = linkedTx.amount;
+
+                            const linkedReversedBalance = isLinkedIncome
+                                ? linkedAccount.calculatedBalance - linkedAmount
+                                : linkedAccount.calculatedBalance + linkedAmount;
+
+                            await db.accounts.update(linkedTx.accountId, { calculatedBalance: linkedReversedBalance });
+                        }
+                        // Delete the linked transaction
+                        await db.transactions.delete(linkedTx.id);
+                    }
                 }
 
                 // 2. Delete the transaction
@@ -114,9 +139,9 @@ export default function TransactionsPage() {
                             <div className="flex items-center gap-3 flex-1">
                                 <div
                                     className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg shrink-0`}
-                                    style={{ backgroundColor: tx.categoryColor }}
+                                    style={{ backgroundColor: tx.type === 'transfer' ? '#64748b' : tx.categoryColor }}
                                 >
-                                    {tx.categoryName[0]?.toUpperCase()}
+                                    {tx.type === 'transfer' ? <ArrowRightLeft size={16} /> : tx.categoryName[0]?.toUpperCase()}
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <p className="font-semibold text-slate-900 dark:text-slate-100 line-clamp-1">
@@ -140,11 +165,14 @@ export default function TransactionsPage() {
                                                 <AlertTriangle size={8} /> Revisar
                                             </span>
                                         )}
-                                        {/* Adjustment Badge: Identifies transactions created during reconciliation 
-                                            to square the calculated balance with reality. */}
                                         {tx.isAdjustment && (
                                             <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700 flex items-center gap-0.5">
                                                 Ajuste
+                                            </span>
+                                        )}
+                                        {tx.type === 'transfer' && (
+                                            <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700 flex items-center gap-0.5">
+                                                Transferencia
                                             </span>
                                         )}
                                     </div>
@@ -153,13 +181,15 @@ export default function TransactionsPage() {
                             <div className="flex items-center gap-2">
                                 <div className="text-right">
                                     <p
-                                        className={`font-bold ${tx.type === 'income' ? 'text-green-600' : 'text-red-600'
+                                        className={`font-bold ${tx.type === 'income' || (tx.type === 'transfer' && tx.categoryId === 'transfer-in')
+                                            ? 'text-green-600'
+                                            : 'text-red-600'
                                             }`}
                                     >
-                                        {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
+                                        {tx.type === 'income' || (tx.type === 'transfer' && tx.categoryId === 'transfer-in') ? '+' : '-'}{formatCurrency(tx.amount)}
                                     </p>
                                     <p className="text-xs text-slate-400">
-                                        {tx.categoryName}
+                                        {tx.type === 'transfer' ? 'Transferencia' : tx.categoryName}
                                     </p>
                                 </div>
                                 <div className="flex gap-1 ml-2">

@@ -1,6 +1,6 @@
 export interface Transaction {
     id: string;
-    type: 'income' | 'expense';
+    type: 'income' | 'expense' | 'transfer';
     amount: number;
     description: string;
     date: number; // timestamp
@@ -14,6 +14,7 @@ export interface Transaction {
     needsReview?: boolean;
     isAdjustment?: boolean;
     reconciliationId?: string;
+    transferId?: string; // Links two transactions (source and destination)
     createdAt: number;
     updatedAt: number;
 }

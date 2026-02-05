@@ -55,6 +55,10 @@ export class PersonalBudgetDB extends Dexie {
         this.version(6).stores({
             quickTemplates: 'id, name, type',
         });
+
+        this.version(7).stores({
+            transactions: 'id, type, accountId, categoryId, date, createdAt, isAmbiguous, needsReview, transferId',
+        });
     }
 }
 
