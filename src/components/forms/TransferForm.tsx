@@ -30,13 +30,20 @@ export function TransferForm({ onSuccess, onCancel }: TransferFormProps) {
             const timestamp = new Date(date).getTime();
 
             await db.transaction('rw', db.transactions, db.accounts, async () => {
+                // Get account names for the unified description
+                const sourceAccount = await db.accounts.get(sourceAccountId);
+                const destAccount = await db.accounts.get(destinationAccountId);
+
+                // Unified description: e.g., "Transferencia: Bancolombia ➔ Efectivo"
+                const unifiedDescription = `Transferencia: ${sourceAccount?.name} ➔ ${destAccount?.name}`;
+
                 // 1. Outgoing Transaction (Source)
                 await db.transactions.add({
                     id: uuidv4(),
                     transferId,
                     type: 'transfer', // Distinct type
                     amount: numericAmount, // Positive value stored, UI handles display
-                    description: `Transferencia a: ${(await db.accounts.get(destinationAccountId))?.name}`,
+                    description: unifiedDescription,
                     date: timestamp,
                     categoryId: 'transfer-out',
                     tagIds: [],
@@ -51,7 +58,7 @@ export function TransferForm({ onSuccess, onCancel }: TransferFormProps) {
                     transferId,
                     type: 'transfer',
                     amount: numericAmount,
-                    description: `Transferencia de: ${(await db.accounts.get(sourceAccountId))?.name}`,
+                    description: unifiedDescription,
                     date: timestamp,
                     categoryId: 'transfer-in',
                     tagIds: [],
@@ -65,15 +72,25 @@ export function TransferForm({ onSuccess, onCancel }: TransferFormProps) {
                 const dest = await db.accounts.get(destinationAccountId);
 
                 if (source) {
-                    await db.accounts.update(sourceAccountId, {
+                    const updates: any = {
                         calculatedBalance: source.calculatedBalance - numericAmount
-                    });
+                    };
+                    // Also update actualBalance to prevent creating a "Difference" gap
+                    if (typeof source.actualBalance === 'number') {
+                        updates.actualBalance = source.actualBalance - numericAmount;
+                    }
+                    await db.accounts.update(sourceAccountId, updates);
                 }
 
                 if (dest) {
-                    await db.accounts.update(destinationAccountId, {
+                    const updates: any = {
                         calculatedBalance: dest.calculatedBalance + numericAmount
-                    });
+                    };
+                    // Also update actualBalance to prevent creating a "Difference" gap
+                    if (typeof dest.actualBalance === 'number') {
+                        updates.actualBalance = dest.actualBalance + numericAmount;
+                    }
+                    await db.accounts.update(destinationAccountId, updates);
                 }
             });
 
