@@ -13,33 +13,37 @@ export default function Dashboard() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [templateData, setTemplateData] = useState<any>(null);
 
-    const accounts = useLiveQuery(() => db.accounts.filter(a => a.isActive).toArray()) || [];
-    const reserves = useLiveQuery(() =>
-        db.reserves
-            .filter(r => r.isActive)
-            .toArray()
-    ) || [];
+    // 1. Critical Data: Balance & Reserves (Atomic Transaction-like fetch)
+    // We fetch this together to ensure 'Disponible' is never calculated from partial data
+    const balanceData = useLiveQuery(async () => {
+        const [accounts, reserves] = await Promise.all([
+            db.accounts.filter(a => a.isActive).toArray(),
+            db.reserves.filter(r => r.isActive).toArray()
+        ]);
 
-    const totalRealBalance = accounts.reduce((acc, curr) => acc + (curr.actualBalance ?? curr.calculatedBalance), 0);
-    const totalReserved = reserves.reduce((acc, curr) => acc + curr.amount, 0);
-    const totalAvailable = totalRealBalance - totalReserved;
+        const totalRealBalance = accounts.reduce((acc, curr) => acc + (curr.actualBalance ?? curr.calculatedBalance), 0);
+        const totalReserved = reserves.reduce((acc, curr) => acc + curr.amount, 0);
 
-    const handleQuickTemplate = (data: any) => {
-        setTemplateData({
-            ...data,
-            date: Date.now(),
-            accountId: accounts[0]?.id || ''
-        });
-        setIsModalOpen(true);
-    };
+        return {
+            totalRealBalance,
+            totalReserved,
+            totalAvailable: totalRealBalance - totalReserved,
+            accounts
+        };
+    });
 
-    const ambiguousTxCount = useLiveQuery(() =>
-        db.transactions
-            .filter(tx => tx.isAmbiguous === true || (tx.aiConfidence !== undefined && tx.aiConfidence < 0.7))
-            .count()
-    ) || 0;
+    // 2. Secondary Data: Counts & Templates
+    const secondaryData = useLiveQuery(async () => {
+        const [ambiguousCount, quickTemplates] = await Promise.all([
+            db.transactions
+                .filter(tx => tx.isAmbiguous === true || (tx.aiConfidence !== undefined && tx.aiConfidence < 0.7))
+                .count(),
+            db.quickTemplates.toArray()
+        ]);
+        return { ambiguousCount, quickTemplates };
+    });
 
-    // 2. Fetch Transactions for Current Month Stats
+    // 3. Heavy Data: Stats (Current Month)
     const stats = useLiveQuery(async () => {
         const now = new Date();
         const start = startOfMonth(now).getTime();
@@ -63,9 +67,7 @@ export default function Dashboard() {
         return { income, expense };
     });
 
-    const quickTemplates = useLiveQuery(() => db.quickTemplates.toArray()) || [];
-
-    // 3. Fetch Recent Transactions
+    // 4. Heavy Data: Recent Transactions
     const recentTransactions = useLiveQuery(async () => {
         const txs = await db.transactions.orderBy('date').reverse().limit(5).toArray();
         const cats = await db.categories.toArray();
@@ -77,6 +79,26 @@ export default function Dashboard() {
             categoryColor: catMap.get(tx.categoryId)?.color || 'gray'
         }));
     });
+
+    const handleQuickTemplate = (data: any) => {
+        // Safe access to accounts
+        const defaultAccountId = balanceData?.accounts[0]?.id || '';
+        setTemplateData({
+            ...data,
+            date: Date.now(),
+            accountId: defaultAccountId
+        });
+        setIsModalOpen(true);
+    };
+
+    // Derived values with safe defaults ONLY for rendering
+    const { totalRealBalance, totalReserved, totalAvailable } = balanceData || { totalRealBalance: 0, totalReserved: 0, totalAvailable: 0 };
+    const { ambiguousCount, quickTemplates } = secondaryData || { ambiguousCount: 0, quickTemplates: [] };
+
+    // Loading State specifically for Balance (Optional: Show Skeleton instead of 0)
+    // If balanceData is undefined, it means we are still loading from IndexedDB.
+    // We can choose to render a loading spinner or just keep the 0s with a loading opacity.
+    const isLoading = !balanceData;
 
     return (
         <div className="p-4 space-y-6">
@@ -93,7 +115,7 @@ export default function Dashboard() {
             </header>
 
             {/* AI Review Notice */}
-            {ambiguousTxCount > 0 && (
+            {ambiguousCount > 0 && (
                 <Link
                     to="/review"
                     className="flex items-center justify-between p-4 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-200 dark:border-amber-800 rounded-2xl animate-pulse"
@@ -104,7 +126,7 @@ export default function Dashboard() {
                         </div>
                         <div>
                             <p className="text-sm font-bold text-amber-900 dark:text-amber-100">
-                                {ambiguousTxCount} transacciones por revisar
+                                {ambiguousCount} transacciones por revisar
                             </p>
                             <p className="text-xs text-amber-700 dark:text-amber-400">
                                 La IA no está segura de algunas categorías
@@ -118,6 +140,7 @@ export default function Dashboard() {
             {/* Total Balance Card */}
             <div className={cn(
                 "p-6 rounded-3xl shadow-lg transition-colors border-2",
+                isLoading ? "opacity-50 grayscale transition-all duration-500" : "",
                 totalAvailable < 0
                     ? "bg-gradient-to-br from-red-600 to-red-700 text-white shadow-red-200 border-red-500 animate-pulse"
                     : "bg-gradient-to-br from-indigo-600 to-indigo-700 text-white shadow-indigo-200 border-indigo-500"
@@ -127,7 +150,7 @@ export default function Dashboard() {
                     totalAvailable < 0 ? "text-red-100" : "text-indigo-100"
                 )}>Total Disponible</p>
                 <div className="text-4xl font-bold tracking-tight">
-                    {formatCurrency(totalAvailable)}
+                    {isLoading ? "..." : formatCurrency(totalAvailable)}
                 </div>
                 {totalReserved > 0 && (
                     <div className={cn(
