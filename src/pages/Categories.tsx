@@ -15,11 +15,18 @@ export default function CategoriesPage() {
 
     const categories = useLiveQuery(() => db.categories.filter(c => c.isActive).toArray()) || [];
 
-    const incomeParents = categories.filter(c => c.type === 'income' && !c.parentId);
-    const expenseParents = categories.filter(c => c.type === 'expense' && !c.parentId);
+    const incomeParents = categories
+        .filter(c => c.type === 'income' && !c.parentId)
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+    const expenseParents = categories
+        .filter(c => c.type === 'expense' && !c.parentId)
+        .sort((a, b) => a.name.localeCompare(b.name));
 
     const getChildren = (parentId: string) => {
-        return categories.filter(c => c.parentId === parentId);
+        return categories
+            .filter(c => c.parentId === parentId)
+            .sort((a, b) => a.name.localeCompare(b.name));
     };
 
     const handleDelete = async (category: Category) => {

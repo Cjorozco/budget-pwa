@@ -110,8 +110,13 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
 
     // Filter categories by type and organize hierarchically
     const categoriesByType = allCategories.filter((c) => c.type === type);
-    const parentCategories = categoriesByType.filter(c => !c.parentId);
-    const childCategories = categoriesByType.filter(c => c.parentId);
+    const parentCategories = categoriesByType
+        .filter(c => !c.parentId)
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+    const childCategories = categoriesByType
+        .filter(c => c.parentId)
+        .sort((a, b) => a.name.localeCompare(b.name));
 
     const onSubmit = async (data: TransactionFormData) => {
         try {
