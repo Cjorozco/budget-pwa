@@ -315,7 +315,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                         <div className="flex-1">
                             <div className="flex justify-between items-center mb-1">
                                 <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                                    {aiSuggestion.confidence >= 0.7 ? 'Sugerencia Mágica' : 'Revisión Necesaria'}
+                                    {aiSuggestion.confidence >= 0.7 ? 'Sugerencia mágica' : 'Revisión necesaria'}
                                 </p>
                                 <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${aiSuggestion.confidence >= 0.7 ? 'bg-blue-200 text-blue-700' : 'bg-amber-200 text-amber-700'}`}>
                                     {Math.round(aiSuggestion.confidence * 100)}%
@@ -466,7 +466,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
             />
 
             <Button type="submit" className="w-full" isLoading={isSubmitting}>
-                {initialData ? 'Actualizar' : 'Guardar'} Transacción
+                {initialData ? 'Actualizar' : 'Guardar'} transacción
             </Button>
         </form>
     );

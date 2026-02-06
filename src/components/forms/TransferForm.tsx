@@ -157,7 +157,7 @@ export function TransferForm({ onSuccess, onCancel }: TransferFormProps) {
             </div>
 
             <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Nota (Opcional)</label>
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Nota (opcional)</label>
                 <textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}

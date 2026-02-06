@@ -164,7 +164,7 @@ export default function Dashboard() {
                 <p className={cn(
                     "text-sm font-medium mb-1",
                     totalAvailable < 0 ? "text-red-100" : "text-indigo-100"
-                )}>Total Disponible</p>
+                )}>Total disponible</p>
                 <div className="text-4xl font-bold tracking-tight">
                     {isLoading ? "..." : formatCurrency(totalAvailable)}
                 </div>
@@ -204,7 +204,7 @@ export default function Dashboard() {
             {quickTemplates.length > 0 && (
                 <section>
                     <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">Plantillas Rápidas</h2>
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">Plantillas rápidas</h2>
                         <Link to="/settings" className="text-xs text-blue-600 font-medium">Editar</Link>
                     </div>
                     <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
@@ -268,7 +268,7 @@ export default function Dashboard() {
                     setIsModalOpen(false);
                     setTemplateData(null);
                 }}
-                title="Nueva Transacción"
+                title="Nueva transacción"
             >
                 <TransactionForm
                     initialData={templateData}
@@ -282,7 +282,7 @@ export default function Dashboard() {
             <Modal
                 isOpen={isTransferModalOpen}
                 onClose={() => setIsTransferModalOpen(false)}
-                title="Transferir Dinero"
+                title="Transferir dinero"
             >
                 <TransferForm
                     onSuccess={() => setIsTransferModalOpen(false)}
