@@ -102,9 +102,9 @@ export default function SettingsPage() {
 
     const getModalTitle = () => {
         switch (actionType) {
-            case 'transactions': return "¿Reset Cuenta?";
-            case 'full': return "¿Reset Total?";
-            case 'import': return "¿Restaurar Respaldo?";
+            case 'transactions': return "¿Reset cuenta?";
+            case 'full': return "¿Reset total?";
+            case 'import': return "¿Restaurar respaldo?";
             default: return "Confirmar acción";
         }
     };
@@ -144,7 +144,7 @@ export default function SettingsPage() {
                                         <RefreshCw className="text-purple-600 dark:text-purple-400" size={20} />
                                     </div>
                                     <div>
-                                        <h3 className="font-medium text-slate-900 dark:text-white text-sm">Plantillas Rápidas</h3>
+                                        <h3 className="font-medium text-slate-900 dark:text-white text-sm">Plantillas rápidas</h3>
                                         <p className="text-[10px] text-slate-500">Configura accesos rápidos para tus gastos frecuentes</p>
                                     </div>
                                 </div>
@@ -156,7 +156,7 @@ export default function SettingsPage() {
             </section>
 
             <section className="space-y-4">
-                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Portabilidad de Datos</h2>
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Portabilidad de datos</h2>
                 <div className="grid grid-cols-1 gap-3">
                     <button
                         onClick={handleExportJSON}
@@ -167,7 +167,7 @@ export default function SettingsPage() {
                                 <FileJson className="text-indigo-600 dark:text-indigo-400" size={20} />
                             </div>
                             <div>
-                                <h3 className="font-medium text-slate-900 dark:text-white text-sm">Exportar Respaldo (JSON)</h3>
+                                <h3 className="font-medium text-slate-900 dark:text-white text-sm">Exportar respaldo (JSON)</h3>
                                 <p className="text-[10px] text-slate-500">Copia completa de tu base de datos</p>
                             </div>
                         </div>
@@ -196,7 +196,7 @@ export default function SettingsPage() {
                                 <Upload className="text-amber-600 dark:text-amber-400" size={20} />
                             </div>
                             <div className="text-left">
-                                <h3 className="font-medium text-slate-900 dark:text-white text-sm">Importar Respaldo</h3>
+                                <h3 className="font-medium text-slate-900 dark:text-white text-sm">Importar respaldo</h3>
                                 <p className="text-[10px] text-slate-500">Restaura datos desde un archivo .json</p>
                             </div>
                         </div>
@@ -207,7 +207,7 @@ export default function SettingsPage() {
             </section>
 
             <section className="space-y-4">
-                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Zona de Peligro</h2>
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Zona de peligro</h2>
                 <div className="p-4 border border-red-200 bg-red-50 dark:bg-red-900/10 dark:border-red-900/50 rounded-2xl space-y-4">
                     <div className="flex items-center justify-between gap-4">
                         <div className="flex-1">

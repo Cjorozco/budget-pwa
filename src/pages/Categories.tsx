@@ -178,7 +178,7 @@ export default function CategoriesPage() {
                     setEditingCategory(null);
                     setDefaultParentId(undefined);
                 }}
-                title={editingCategory ? 'Editar Categoría' : 'Nueva Categoría'}
+                title={editingCategory ? 'Editar categoría' : 'Nueva categoría'}
             >
                 <CategoryForm
                     initialData={editingCategory}

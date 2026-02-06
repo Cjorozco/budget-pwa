@@ -138,7 +138,7 @@ export function CategoryForm({ onSuccess, onCancel, initialData, defaultType, de
 
             <div className="space-y-2">
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Categoría Padre (opcional)
+                    Categoría padre (opcional)
                 </label>
                 <select
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
@@ -162,8 +162,8 @@ export function CategoryForm({ onSuccess, onCancel, initialData, defaultType, de
                         <label
                             key={color.value}
                             className={`relative h-10 rounded-lg cursor-pointer border-2 transition-all ${selectedColor === color.value
-                                    ? 'border-slate-900 dark:border-white scale-110'
-                                    : 'border-transparent hover:scale-105'
+                                ? 'border-slate-900 dark:border-white scale-110'
+                                : 'border-transparent hover:scale-105'
                                 }`}
                             style={{ backgroundColor: color.value }}
                             title={color.name}
@@ -187,7 +187,7 @@ export function CategoryForm({ onSuccess, onCancel, initialData, defaultType, de
                     Cancelar
                 </Button>
                 <Button type="submit" isLoading={isSubmitting}>
-                    {initialData ? 'Actualizar' : 'Crear'} Categoría
+                    {initialData ? 'Actualizar' : 'Crear'} categoría
                 </Button>
             </div>
         </form>
