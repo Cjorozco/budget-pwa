@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -25,18 +26,21 @@ interface CategoryFormProps {
     defaultParentId?: string;
 }
 
-const COLORS = [
+const INCOME_COLORS = [
     { name: 'Verde', value: '#10b981' },
+    { name: 'Teal', value: '#14b8a6' },
+    { name: 'Cyan', value: '#06b6d4' },
     { name: 'Azul', value: '#3b82f6' },
+    { name: 'Lima', value: '#84cc16' },
     { name: 'Índigo', value: '#6366f1' },
-    { name: 'Púrpura', value: '#8b5cf6' },
-    { name: 'Rosa', value: '#ec4899' },
+];
+
+const EXPENSE_COLORS = [
     { name: 'Rojo', value: '#ef4444' },
     { name: 'Naranja', value: '#f97316' },
     { name: 'Amarillo', value: '#f59e0b' },
-    { name: 'Lima', value: '#84cc16' },
-    { name: 'Teal', value: '#14b8a6' },
-    { name: 'Cyan', value: '#06b6d4' },
+    { name: 'Rosa', value: '#ec4899' },
+    { name: 'Púrpura', value: '#8b5cf6' },
     { name: 'Gris', value: '#64748b' },
 ];
 
@@ -49,6 +53,7 @@ export function CategoryForm({ onSuccess, onCancel, initialData, defaultType, de
         register,
         handleSubmit,
         watch,
+        setValue,
         formState: { errors, isSubmitting },
     } = useForm<CategoryFormData>({
         resolver: zodResolver(CategoryFormSchema),
@@ -60,7 +65,7 @@ export function CategoryForm({ onSuccess, onCancel, initialData, defaultType, de
         } : {
             name: '',
             type: defaultType || 'expense',
-            color: COLORS[0].value,
+            color: (defaultType === 'income' ? INCOME_COLORS : EXPENSE_COLORS)[0].value,
             parentId: defaultParentId || undefined,
         },
     });
@@ -68,6 +73,18 @@ export function CategoryForm({ onSuccess, onCancel, initialData, defaultType, de
     const selectedType = watch('type');
     const selectedColor = watch('color');
     const filteredParents = parentCategories.filter(p => p.type === selectedType);
+
+    // Determine which colors to show based on type
+    const currentColors = selectedType === 'income' ? INCOME_COLORS : EXPENSE_COLORS;
+
+    // Reset color if type changes and current color is not in the new list
+    useEffect(() => {
+        const isColorValid = currentColors.some(c => c.value === selectedColor);
+        if (!isColorValid) {
+            setValue('color', currentColors[0].value);
+        }
+    }, [selectedType, currentColors, selectedColor, setValue]);
+
 
     const onSubmit = async (data: CategoryFormData) => {
         try {
@@ -158,7 +175,7 @@ export function CategoryForm({ onSuccess, onCancel, initialData, defaultType, de
                     Color
                 </label>
                 <div className="grid grid-cols-6 gap-2">
-                    {COLORS.map((color) => (
+                    {currentColors.map((color) => (
                         <label
                             key={color.value}
                             className={`relative h-10 rounded-lg cursor-pointer border-2 transition-all ${selectedColor === color.value
