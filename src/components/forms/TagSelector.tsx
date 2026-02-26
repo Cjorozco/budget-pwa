@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
 import type { Tag } from '@/lib/types';
-import { X, Plus, Tag as TagIcon, Check } from 'lucide-react';
+import { X, Plus, Tag as TagIcon, Check, Trash2 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 interface TagSelectorProps {
@@ -39,6 +39,30 @@ export function TagSelector({ selectedTagIds, onChange }: TagSelectorProps) {
                 });
             }
         }
+    };
+
+    const handleDeleteTag = async (tagId: string) => {
+        const tag = allTags.find(t => t.id === tagId);
+        if (!tag) return;
+        if (!window.confirm(`¿Eliminar la etiqueta "${tag.name}"? Se quitará de todas las transacciones.`)) return;
+
+        // Quitar de selección actual si está seleccionada
+        if (selectedTagIds.includes(tagId)) {
+            onChange(selectedTagIds.filter(id => id !== tagId));
+        }
+
+        // Limpiar tagIds en transacciones que la referencien
+        const txsWithTag = await db.transactions
+            .filter(tx => (tx.tagIds || []).includes(tagId))
+            .toArray();
+        for (const tx of txsWithTag) {
+            await db.transactions.update(tx.id, {
+                tagIds: tx.tagIds.filter(id => id !== tagId)
+            });
+        }
+
+        // Eliminar la etiqueta de la base de datos
+        await db.tags.delete(tagId);
     };
 
     const handleCreateTag = async () => {
@@ -105,20 +129,33 @@ export function TagSelector({ selectedTagIds, onChange }: TagSelectorProps) {
             {/* Available Tags & Create */}
             <div className="flex flex-wrap gap-2 items-center">
                 {availableTags.slice(0, 10).map(tag => (
-                    <button
-                        key={tag.id}
-                        type="button"
-                        onClick={() => handleToggleTag(tag.id)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border-2 transition-all hover:scale-105"
-                        style={{
-                            borderColor: `${tag.color}40`, // 25% opacity border
-                            color: tag.color,
-                            backgroundColor: `${tag.color}10` // 6% opacity bg
-                        }}
-                    >
-                        <Plus className="w-3 h-3" />
-                        {tag.name}
-                    </button>
+                    <div key={tag.id} className="inline-flex items-center gap-0.5">
+                        <button
+                            type="button"
+                            onClick={() => handleToggleTag(tag.id)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-l-full text-xs font-medium border-2 border-r-0 transition-all hover:scale-105"
+                            style={{
+                                borderColor: `${tag.color}40`,
+                                color: tag.color,
+                                backgroundColor: `${tag.color}10`
+                            }}
+                        >
+                            <Plus className="w-3 h-3" />
+                            {tag.name}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => handleDeleteTag(tag.id)}
+                            title="Eliminar etiqueta"
+                            className="inline-flex items-center px-1.5 py-1.5 rounded-r-full text-xs border-2 border-l-0 transition-all hover:bg-red-50 dark:hover:bg-red-900/20"
+                            style={{
+                                borderColor: `${tag.color}40`,
+                                color: `${tag.color}80`
+                            }}
+                        >
+                            <Trash2 className="w-3 h-3 text-red-400 hover:text-red-600" />
+                        </button>
+                    </div>
                 ))}
 
                 {!isCreating ? (

@@ -93,3 +93,12 @@ export interface QuickTemplate {
     createdAt: number;
     updatedAt: number;
 }
+
+export interface BudgetItem {
+    id: string;
+    name: string;
+    amount: number;
+    type: 'income' | 'expense';
+    categoryId?: string;
+    createdAt: number;
+}

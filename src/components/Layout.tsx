@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Wallet, ArrowRightLeft, Settings } from 'lucide-react';
+import { LayoutDashboard, Wallet, ArrowRightLeft, Settings, Calculator } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function Layout() {
@@ -7,6 +7,7 @@ export default function Layout() {
 
     const navItems = [
         { href: '/', icon: LayoutDashboard, label: 'Resumen' },
+        { href: '/budget', icon: Calculator, label: 'Presup.' },
         { href: '/transactions', icon: ArrowRightLeft, label: 'Movs' },
         { href: '/accounts', icon: Wallet, label: 'Cuentas' },
         { href: '/settings', icon: Settings, label: 'Ajustes' },
