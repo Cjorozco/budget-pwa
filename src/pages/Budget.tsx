@@ -187,18 +187,18 @@ export default function Budget() {
 
       {/* List of Expenses */}
       <section className="bg-white dark:bg-slate-900 rounded-3xl p-4 shadow-sm border border-slate-100 dark:border-slate-800">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-bold flex items-center gap-2 text-slate-900 dark:text-white">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
+          <h2 className="text-lg font-bold flex items-center gap-2 text-slate-900 dark:text-white shrink-0">
             <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/40 flex items-center justify-center text-red-600">
               <TrendingDown size={16} />
             </div>
             Gastos Obligatorios
           </h2>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 self-start sm:self-auto w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
             <select
               value={expenseSortOrder}
               onChange={(e) => setExpenseSortOrder(e.target.value as 'az' | 'za' | 'amount-asc' | 'amount-desc')}
-              className="text-sm bg-slate-50 dark:bg-slate-800 border-none rounded-lg px-2 py-1 text-slate-600 dark:text-slate-300 focus:ring-0 cursor-pointer outline-none"
+              className="text-sm bg-slate-50 dark:bg-slate-800 border-none rounded-lg px-2 py-1.5 text-slate-600 dark:text-slate-300 focus:ring-0 cursor-pointer outline-none shrink-0"
             >
               <option value="amount-desc">Mayor a menor</option>
               <option value="amount-asc">Menor a mayor</option>
@@ -207,7 +207,7 @@ export default function Budget() {
             </select>
             <button
               onClick={() => handleOpenAddModal('expense')}
-              className="text-sm font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 rounded-full hover:bg-blue-100 transition-colors"
+              className="text-sm font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 rounded-full hover:bg-blue-100 transition-colors shrink-0 whitespace-nowrap"
             >
               + Añadir
             </button>
