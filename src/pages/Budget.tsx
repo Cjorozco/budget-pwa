@@ -12,12 +12,28 @@ export default function Budget() {
   const [newItemType, setNewItemType] = useState<'income' | 'expense'>('income');
   const [newItemName, setNewItemName] = useState('');
   const [newItemAmount, setNewItemAmount] = useState('');
+  const [expenseSortOrder, setExpenseSortOrder] = useState<'az' | 'za' | 'amount-asc' | 'amount-desc'>('amount-desc');
   const addToast = useUIStore(state => state.addToast);
 
   const budgetItems = useLiveQuery(() => db.budgetItems.toArray()) || [];
 
   const fixedIncomes = budgetItems.filter(item => item.type === 'income');
   const fixedExpenses = budgetItems.filter(item => item.type === 'expense');
+
+  const sortedFixedExpenses = [...fixedExpenses].sort((a, b) => {
+    switch (expenseSortOrder) {
+      case 'az':
+        return a.name.localeCompare(b.name);
+      case 'za':
+        return b.name.localeCompare(a.name);
+      case 'amount-asc':
+        return a.amount - b.amount;
+      case 'amount-desc':
+        return b.amount - a.amount;
+      default:
+        return 0;
+    }
+  });
 
   const totalFixedIncome = fixedIncomes.reduce((acc, curr) => acc + curr.amount, 0);
   const totalFixedExpense = fixedExpenses.reduce((acc, curr) => acc + curr.amount, 0);
@@ -178,21 +194,33 @@ export default function Budget() {
             </div>
             Gastos Obligatorios
           </h2>
-          <button
-            onClick={() => handleOpenAddModal('expense')}
-            className="text-sm font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 rounded-full hover:bg-blue-100 transition-colors"
-          >
-            + Añadir
-          </button>
+          <div className="flex items-center gap-2">
+            <select
+              value={expenseSortOrder}
+              onChange={(e) => setExpenseSortOrder(e.target.value as 'az' | 'za' | 'amount-asc' | 'amount-desc')}
+              className="text-sm bg-slate-50 dark:bg-slate-800 border-none rounded-lg px-2 py-1 text-slate-600 dark:text-slate-300 focus:ring-0 cursor-pointer outline-none"
+            >
+              <option value="amount-desc">Mayor a menor</option>
+              <option value="amount-asc">Menor a mayor</option>
+              <option value="az">A-Z</option>
+              <option value="za">Z-A</option>
+            </select>
+            <button
+              onClick={() => handleOpenAddModal('expense')}
+              className="text-sm font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 rounded-full hover:bg-blue-100 transition-colors"
+            >
+              + Añadir
+            </button>
+          </div>
         </div>
 
         <div className="space-y-2">
-          {fixedExpenses.length === 0 ? (
+          {sortedFixedExpenses.length === 0 ? (
             <p className="text-sm text-slate-400 text-center py-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
               No has registrado gastos fijos (ej. Arriendo, Servicios)
             </p>
           ) : (
-            fixedExpenses.map(item => (
+            sortedFixedExpenses.map(item => (
               <div key={item.id} className="flex justify-between items-center p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 group">
                 <span className="font-medium text-slate-700 dark:text-slate-300 text-sm">
                   {item.name}
