@@ -1,16 +1,20 @@
+import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
-import { startOfMonth, endOfMonth, format } from 'date-fns';
+import { startOfMonth, endOfMonth, format, subMonths, addMonths } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ExpensePieChart } from '@/components/charts/ExpensePieChart';
-import { PieChartIcon } from 'lucide-react';
-import { formatCurrency } from '@/lib/utils';
+import { ExpenseBarChart } from '@/components/charts/ExpenseBarChart';
+import { PieChartIcon, BarChart2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { formatCurrency, adjustColor } from '@/lib/utils';
 
 export default function Reports() {
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [chartType, setChartType] = useState<'pie' | 'bar'>('pie');
+
   const reportData = useLiveQuery(async () => {
-    const now = new Date();
-    const start = startOfMonth(now).getTime();
-    const end = endOfMonth(now).getTime();
+    const start = startOfMonth(currentDate).getTime();
+    const end = endOfMonth(currentDate).getTime();
 
     const txs = await db.transactions
       .where('date')
@@ -35,34 +39,80 @@ export default function Reports() {
     });
 
     // 4. Format for Recharts
+    const usedColors: Record<string, number> = {};
     const chartData = Object.entries(aggregated)
+      .sort(([, a], [, b]) => b - a)
       .map(([categoryId, amount]) => {
         const category = catMap.get(categoryId);
+        let baseColor = category?.color || '#94a3b8';
+        
+        if (usedColors[baseColor] !== undefined) {
+           usedColors[baseColor] += 1;
+           const shift = usedColors[baseColor] % 2 === 1 
+              ? 40 * Math.ceil(usedColors[baseColor] / 2) 
+              : -40 * (usedColors[baseColor] / 2);
+           baseColor = adjustColor(baseColor, shift);
+        } else {
+           usedColors[baseColor] = 0;
+        }
+
         return {
           name: category?.name || 'Sin Categoría',
           value: amount,
-          color: category?.color || '#94a3b8'
+          color: baseColor
         };
-      })
-      // Sort to show largest expenses first
-      .sort((a, b) => b.value - a.value);
+      });
 
     return { chartData, totalExpense };
-  });
+  }, [currentDate]);
 
   const isLoading = !reportData;
 
+  const navigateMonth = (direction: 'prev' | 'next') => {
+    setCurrentDate(prev => direction === 'prev' ? subMonths(prev, 1) : addMonths(prev, 1));
+  };
+
   return (
     <div className="p-4 space-y-6">
-      <header className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Informes</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            {format(new Date(), "MMMM yyyy", { locale: es })}
-          </p>
+      <header className="flex flex-col gap-4">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Informes</h1>
+          </div>
+          <div className="flex bg-slate-100 dark:bg-slate-800 rounded-full p-1">
+            <button
+              onClick={() => setChartType('pie')}
+              className={`p-2 rounded-full transition-all ${chartType === 'pie' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
+              title="Gráfico circular"
+            >
+              <PieChartIcon size={18} />
+            </button>
+            <button
+              onClick={() => setChartType('bar')}
+              className={`p-2 rounded-full transition-all ${chartType === 'bar' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
+              title="Gráfico de barras"
+            >
+              <BarChart2 size={18} />
+            </button>
+          </div>
         </div>
-        <div className="h-10 w-10 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center">
-          <PieChartIcon className="text-slate-600 dark:text-slate-300" size={20} />
+
+        <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-2 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
+          <button 
+            onClick={() => navigateMonth('prev')}
+            className="p-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <span className="font-semibold text-slate-700 dark:text-slate-200 capitalize">
+            {format(currentDate, "MMMM yyyy", { locale: es })}
+          </span>
+          <button 
+            onClick={() => navigateMonth('next')}
+            className="p-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
+          >
+            <ChevronRight size={20} />
+          </button>
         </div>
       </header>
 
@@ -83,8 +133,10 @@ export default function Reports() {
             <div className="h-64 flex flex-col items-center justify-center animate-pulse gap-2">
               <div className="w-40 h-40 rounded-full border-8 border-slate-100 dark:border-slate-800"></div>
             </div>
-          ) : (
+          ) : chartType === 'pie' ? (
             <ExpensePieChart data={reportData.chartData} />
+          ) : (
+            <ExpenseBarChart data={reportData.chartData} />
           )}
         </div>
       </section>

@@ -27,12 +27,30 @@ interface CategoryFormProps {
 }
 
 const INCOME_COLORS = [
-    { name: 'Verde', value: '#10b981' },
+    { name: 'Esmeralda', value: '#10b981' },
     { name: 'Teal', value: '#14b8a6' },
     { name: 'Cyan', value: '#06b6d4' },
     { name: 'Azul', value: '#3b82f6' },
     { name: 'Lima', value: '#84cc16' },
     { name: 'Índigo', value: '#6366f1' },
+    { name: 'Verde Bosque', value: '#15803d' },
+    { name: 'Menta', value: '#34d399' },
+    { name: 'Celeste', value: '#38bdf8' },
+    { name: 'Azul Oscuro', value: '#1d4ed8' },
+    { name: 'Violeta', value: '#7c3aed' },
+    { name: 'Verde Oliva', value: '#65a30d' },
+    { name: 'Turquesa', value: '#2dd4bf' },
+    { name: 'Azul Cielo', value: '#7dd3fc' },
+    { name: 'Azul Rey', value: '#2563eb' },
+    { name: 'Morado Claro', value: '#a78bfa' },
+    { name: 'Verde Pino', value: '#065f46' },
+    { name: 'Aqua', value: '#0891b2' },
+    { name: 'Azul Grisáceo', value: '#64748b' },
+    { name: 'Azul Noche', value: '#0f172a' },
+    { name: 'Morado Oscuro', value: '#4c1d95' },
+    { name: 'Azul Acero', value: '#0369a1' },
+    { name: 'Verde Mar', value: '#0f766e' },
+    { name: 'Cian Oscuro', value: '#0e7490' },
 ];
 
 const EXPENSE_COLORS = [
@@ -42,6 +60,24 @@ const EXPENSE_COLORS = [
     { name: 'Rosa', value: '#ec4899' },
     { name: 'Púrpura', value: '#8b5cf6' },
     { name: 'Gris', value: '#64748b' },
+    { name: 'Carmín', value: '#be123c' },
+    { name: 'Coral', value: '#fb7185' },
+    { name: 'Naranja Oscuro', value: '#ea580c' },
+    { name: 'Melocotón', value: '#fdba74' },
+    { name: 'Magenta', value: '#c026d3' },
+    { name: 'Lavanda', value: '#c4b5fd' },
+    { name: 'Rojo Oscuro', value: '#7f1d1d' },
+    { name: 'Naranja Tostado', value: '#c2410c' },
+    { name: 'Oro', value: '#ca8a04' },
+    { name: 'Rosa Fuerte', value: '#db2777' },
+    { name: 'Berenjena', value: '#701a75' },
+    { name: 'Carbón', value: '#334155' },
+    { name: 'Terracota', value: '#991b1b' },
+    { name: 'Mandarina', value: '#fb923c' },
+    { name: 'Mostaza', value: '#eab308' },
+    { name: 'Fucsia', value: '#d946ef' },
+    { name: 'Índigo Oscuro', value: '#312e81' },
+    { name: 'Gris Claro', value: '#94a3b8' },
 ];
 
 export function CategoryForm({ onSuccess, onCancel, initialData, defaultType, defaultParentId }: CategoryFormProps) {

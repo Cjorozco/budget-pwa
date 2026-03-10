@@ -13,3 +13,10 @@ export function formatCurrency(amount: number) {
         maximumFractionDigits: 0,
     }).format(amount);
 }
+
+export function adjustColor(color: string, amount: number) {
+    const clamp = (val: number) => Math.min(255, Math.max(0, val));
+    return '#' + color.replace(/^#/, '').replace(/../g, c => 
+        ('0' + clamp(parseInt(c, 16) + amount).toString(16)).slice(-2)
+    );
+}
