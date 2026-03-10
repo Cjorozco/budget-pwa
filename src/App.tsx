@@ -9,6 +9,7 @@ import BudgetPage from '@/pages/Budget';
 import SettingsPage from '@/pages/Settings';
 import AmbiguousReview from '@/pages/AmbiguousReview';
 import TemplatesPage from '@/pages/Templates';
+import ReportsPage from '@/pages/Reports';
 import { seedInitialData } from '@/lib/db/seed';
 import { InstallPWA } from '@/components/InstallPWA';
 import { Toaster } from '@/components/Toaster';
@@ -32,6 +33,7 @@ function App() {
           <Route path="review" element={<AmbiguousReview />} />
           <Route path="templates" element={<TemplatesPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="reports" element={<ReportsPage />} />
         </Route>
       </Routes>
       <InstallPWA />

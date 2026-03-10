@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Wallet, ArrowRightLeft, Settings, Calculator } from 'lucide-react';
+import { LayoutDashboard, Wallet, ArrowRightLeft, Settings, Calculator, PieChart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function Layout() {
@@ -10,6 +10,7 @@ export default function Layout() {
         { href: '/budget', icon: Calculator, label: 'Presup.' },
         { href: '/transactions', icon: ArrowRightLeft, label: 'Movs' },
         { href: '/accounts', icon: Wallet, label: 'Cuentas' },
+        { href: '/reports', icon: PieChart, label: 'Informes' },
         { href: '/settings', icon: Settings, label: 'Ajustes' },
     ];
 
