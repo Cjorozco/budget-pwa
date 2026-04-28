@@ -3,14 +3,16 @@ import { formatCurrency } from '@/lib/utils';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { XCircle, PiggyBank } from 'lucide-react';
+import { XCircle, PiggyBank, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import type { Reserve } from '@/lib/types';
 
 interface ReservesListProps {
     accountId: string;
+    onEditReserve?: (reserve: Reserve) => void;
 }
 
-export function ReservesList({ accountId }: ReservesListProps) {
+export function ReservesList({ accountId, onEditReserve }: ReservesListProps) {
     const reserves = useLiveQuery(
         () => db.reserves
             .where('accountId').equals(accountId)
@@ -61,14 +63,26 @@ export function ReservesList({ accountId }: ReservesListProps) {
                             Creado: {format(reserve.createdAt, "d MMM, yyyy", { locale: es })}
                         </p>
                     </div>
-                    <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-8 w-8 p-0 text-slate-300 hover:text-red-500 rounded-full"
-                        onClick={() => handleDeactivate(reserve.id)}
-                    >
-                        <XCircle size={18} />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0 text-slate-300 hover:text-blue-500 rounded-full"
+                            onClick={() => onEditReserve?.(reserve)}
+                            title="Editar reserva"
+                        >
+                            <Pencil size={16} />
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0 text-slate-300 hover:text-red-500 rounded-full"
+                            onClick={() => handleDeactivate(reserve.id)}
+                            title="Eliminar reserva"
+                        >
+                            <XCircle size={18} />
+                        </Button>
+                    </div>
                 </div>
             ))}
         </div>

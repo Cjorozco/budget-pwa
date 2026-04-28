@@ -19,9 +19,14 @@ interface ReserveFormProps {
     account: Account;
     onSuccess: () => void;
     onCancel: () => void;
+    initialData?: {
+        id: string;
+        amount: number;
+        description: string;
+    };
 }
 
-export function ReserveForm({ account, onSuccess, onCancel }: ReserveFormProps) {
+export function ReserveForm({ account, onSuccess, onCancel, initialData }: ReserveFormProps) {
     const {
         register,
         handleSubmit,
@@ -29,27 +34,35 @@ export function ReserveForm({ account, onSuccess, onCancel }: ReserveFormProps) 
     } = useForm<ReserveFormData>({
         resolver: zodResolver(ReserveSchema),
         defaultValues: {
-            amount: 0,
-            description: '',
+            amount: initialData?.amount ?? 0,
+            description: initialData?.description ?? '',
         },
     });
 
     const onSubmit = async (data: ReserveFormData) => {
         try {
-            await db.reserves.add({
-                id: uuidv4(),
-                accountId: account.id,
-                amount: data.amount,
-                description: data.description,
-                isActive: true,
-                createdAt: Date.now(),
-                updatedAt: Date.now(),
-            });
+            if (initialData?.id) {
+                await db.reserves.update(initialData.id, {
+                    amount: data.amount,
+                    description: data.description,
+                    updatedAt: Date.now(),
+                });
+            } else {
+                await db.reserves.add({
+                    id: uuidv4(),
+                    accountId: account.id,
+                    amount: data.amount,
+                    description: data.description,
+                    isActive: true,
+                    createdAt: Date.now(),
+                    updatedAt: Date.now(),
+                });
+            }
 
             onSuccess();
         } catch (error) {
-            console.error('Error creating reserve:', error);
-            alert('Error al crear la reserva');
+            console.error('Error saving reserve:', error);
+            alert(initialData?.id ? 'Error al editar la reserva' : 'Error al crear la reserva');
         }
     };
 
@@ -86,7 +99,7 @@ export function ReserveForm({ account, onSuccess, onCancel }: ReserveFormProps) 
                     Cancelar
                 </Button>
                 <Button type="submit" isLoading={isSubmitting}>
-                    Crear Reserva
+                    {initialData?.id ? 'Guardar Cambios' : 'Crear Reserva'}
                 </Button>
             </div>
         </form>

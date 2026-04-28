@@ -112,6 +112,8 @@ CODE GENERATION RULES (Universal)
    - Suggest inline documentation for public APIs
    - Note when `.env.example` needs new variables
    - Alert if breaking changes require migration guide
+   - For every feature, fix, or bug: include a "Documentation impact" check in your final response.
+   - If user-facing behavior changes, update `README.md` in the same task unless I explicitly say not to.
    
    **Trigger documentation updates when:**
    - Architecture changes (new folders, patterns)
@@ -120,6 +122,7 @@ CODE GENERATION RULES (Universal)
    - API contracts modified
    - Breaking changes introduced
    - New features added
+   - Bug fixes or UX changes that modify visible behavior
 
 ═══════════════════════════════════════════════
 STACK ADAPTATION EXAMPLES

@@ -12,8 +12,15 @@ Gestor de presupuesto personal con filosofía **Senior Financial Thinking**: tra
 - ✅ **Gestión Multi-cuenta**: Bancos, Efectivo y Crédito.
 - ✅ **Reconciliación Auditable**: Historial de snapshots con diferencias y notas.
 - ✅ **Ajustes Explícitos**: Cierre de brechas mediante transacciones automáticas marcadas.
+- ✅ **Reservas por Cuenta**: Crea, edita y elimina montos reservados sin alterar el saldo real.
 - ✅ **Categorización Inteligente**: Sugerencias basadas en historial y reglas heurísticas.
 - ✅ **UI Mobile-First**: Diseñada para una entrada de datos rápida y sin fricción.
+
+## Gestión de Reservas
+- Puedes registrar reservas por cuenta para separar dinero destinado a gastos puntuales.
+- Las reservas afectan únicamente el **Saldo Disponible**.
+- El **Saldo Real en banco/efectivo** no se modifica al crear o editar una reserva.
+- Desde el detalle de reservas puedes **editar** (monto y descripción) o **eliminar** una reserva activa.
 
 ## Lo que esta App NO hace (Por diseño)
 - **No sincroniza con APIs bancarias**: Mantiene el control absoluto en el usuario.

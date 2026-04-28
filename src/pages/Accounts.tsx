@@ -10,7 +10,7 @@ import { ReconciliationForm } from '@/components/forms/ReconciliationForm';
 import { ReconciliationHistory } from '@/components/accounts/ReconciliationHistory';
 import { ReserveForm } from '@/components/forms/ReserveForm';
 import { ReservesList } from '@/components/accounts/ReservesList';
-import type { Account } from '@/lib/types';
+import type { Account, Reserve } from '@/lib/types';
 
 export default function AccountsPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -22,6 +22,7 @@ export default function AccountsPage() {
     const [isReserveModalOpen, setIsReserveModalOpen] = useState(false);
     const [isReservesListModalOpen, setIsReservesListModalOpen] = useState(false);
     const [reserveAccount, setReserveAccount] = useState<Account | null>(null);
+    const [editingReserve, setEditingReserve] = useState<Reserve | null>(null);
     const accounts = useLiveQuery(() => db.accounts.orderBy('name').toArray());
 
 
@@ -59,6 +60,7 @@ export default function AccountsPage() {
                         }}
                         onAddReserve={(acc) => {
                             setReserveAccount(acc);
+                            setEditingReserve(null);
                             setIsReserveModalOpen(true);
                         }}
                         onViewReserves={(acc) => {
@@ -136,14 +138,28 @@ export default function AccountsPage() {
             {/* Reserve Modal */}
             <Modal
                 isOpen={isReserveModalOpen}
-                onClose={() => setIsReserveModalOpen(false)}
-                title={`Reservar Dinero - ${reserveAccount?.name}`}
+                onClose={() => {
+                    setIsReserveModalOpen(false);
+                    setEditingReserve(null);
+                }}
+                title={editingReserve ? `Editar Reserva - ${reserveAccount?.name}` : `Reservar Dinero - ${reserveAccount?.name}`}
             >
                 {reserveAccount && (
                     <ReserveForm
                         account={reserveAccount}
-                        onSuccess={() => setIsReserveModalOpen(false)}
-                        onCancel={() => setIsReserveModalOpen(false)}
+                        initialData={editingReserve ? {
+                            id: editingReserve.id,
+                            amount: editingReserve.amount,
+                            description: editingReserve.description,
+                        } : undefined}
+                        onSuccess={() => {
+                            setIsReserveModalOpen(false);
+                            setEditingReserve(null);
+                        }}
+                        onCancel={() => {
+                            setIsReserveModalOpen(false);
+                            setEditingReserve(null);
+                        }}
                     />
                 )}
             </Modal>
@@ -155,7 +171,14 @@ export default function AccountsPage() {
                 title={`Detalle de Reservas: ${reserveAccount?.name}`}
             >
                 {reserveAccount && (
-                    <ReservesList accountId={reserveAccount.id} />
+                    <ReservesList
+                        accountId={reserveAccount.id}
+                        onEditReserve={(reserve) => {
+                            setEditingReserve(reserve);
+                            setIsReservesListModalOpen(false);
+                            setIsReserveModalOpen(true);
+                        }}
+                    />
                 )}
             </Modal>
         </div>
