@@ -1,8 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { z } from 'zod';
 
 // We import the schemas directly — Zod schemas are self-contained
-// No DB or React dependencies needed
 import { AccountSchema, TransactionSchema } from '@/lib/schemas';
 
 describe('TransactionSchema', () => {
