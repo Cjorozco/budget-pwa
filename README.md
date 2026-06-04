@@ -28,10 +28,14 @@ Gestor de presupuesto personal con filosofía **Senior Financial Thinking**: tra
 - **No "maquilla" saldos**: Si falta dinero, el sistema pide una nota y crea un movimiento de ajuste.
 
 ## Stack Tecnológico
-- React 18 + TypeScript + Vite
-- TailwindCSS (Premium UI)
-- Dexie.js (IndexedDB wrapper)
-- Zod (Validación de esquema)
+- React 19 + TypeScript (strict) + Vite 7
+- TailwindCSS 4 (Premium Mobile-First UI)
+- Dexie.js 4 (IndexedDB wrapper, offline-first)
+- Zustand (UI state management)
+- React Hook Form + Zod (forms & validation)
+- Recharts 3 (data visualization)
+- Lucide React (iconography)
+- vite-plugin-pwa (Progressive Web App)
 
 ## Cómo empezar
 1. `npm install`

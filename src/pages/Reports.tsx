@@ -3,14 +3,12 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
 import { startOfMonth, endOfMonth, format, subMonths, addMonths } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { ExpensePieChart } from '@/components/charts/ExpensePieChart';
 import { ExpenseBarChart } from '@/components/charts/ExpenseBarChart';
-import { PieChartIcon, BarChart2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatCurrency, adjustColor } from '@/lib/utils';
 
 export default function Reports() {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [chartType, setChartType] = useState<'pie' | 'bar'>('pie');
 
   const reportData = useLiveQuery(async () => {
     const start = startOfMonth(currentDate).getTime();
@@ -79,22 +77,6 @@ export default function Reports() {
           <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Informes</h1>
           </div>
-          <div className="flex bg-slate-100 dark:bg-slate-800 rounded-full p-1">
-            <button
-              onClick={() => setChartType('pie')}
-              className={`p-2 rounded-full transition-all ${chartType === 'pie' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
-              title="Gráfico circular"
-            >
-              <PieChartIcon size={18} />
-            </button>
-            <button
-              onClick={() => setChartType('bar')}
-              className={`p-2 rounded-full transition-all ${chartType === 'bar' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
-              title="Gráfico de barras"
-            >
-              <BarChart2 size={18} />
-            </button>
-          </div>
         </div>
 
         <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-2 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
@@ -131,10 +113,9 @@ export default function Reports() {
         <div className="pt-4 border-t border-slate-100 dark:border-slate-800/50">
           {isLoading ? (
             <div className="h-64 flex flex-col items-center justify-center animate-pulse gap-2">
-              <div className="w-40 h-40 rounded-full border-8 border-slate-100 dark:border-slate-800"></div>
+              <div className="w-12 h-40 bg-slate-100 dark:bg-slate-800 rounded"></div>
+              <div className="w-full h-4 bg-slate-100 dark:bg-slate-800 rounded"></div>
             </div>
-          ) : chartType === 'pie' ? (
-            <ExpensePieChart data={reportData.chartData} />
           ) : (
             <ExpenseBarChart data={reportData.chartData} />
           )}
