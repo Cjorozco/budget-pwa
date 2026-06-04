@@ -22,8 +22,9 @@ const STOP_WORDS = new Set([
 /**
  * Calculates Levenshtein distance between two strings.
  * Used for fuzzy matching typos (e.g. "Netflx" -> "Netflix").
+ * @internal Exported for testing
  */
-function levenshtein(a: string, b: string): number {
+export function levenshtein(a: string, b: string): number {
     if (a.length === 0) return b.length;
     if (b.length === 0) return a.length;
 
@@ -201,7 +202,12 @@ export async function suggestCategoryAndTags(
     };
 }
 
-function tokenize(text: string): string[] {
+/**
+ * Tokenizes text for similarity matching.
+ * Removes accents, special chars, short words, and stop words.
+ * @internal Exported for testing
+ */
+export function tokenize(text: string): string[] {
     return text
         .toLowerCase()
         .normalize("NFD")
