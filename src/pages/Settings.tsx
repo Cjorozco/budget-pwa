@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { db } from '@/lib/db';
 import { Button } from '@/components/ui/Button';
-import { Trash2, AlertTriangle, RefreshCw, FolderTree, Download, FileJson, FileSpreadsheet, Upload } from 'lucide-react';
+import { Trash2, AlertTriangle, RefreshCw, FolderTree, Download, FileJson, FileSpreadsheet, Upload, Crown, CheckCircle2, Lock } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { exportDatabase, downloadBackup, importDatabase, exportToCSV, downloadCSV } from '@/lib/db/backup';
 import { useUIStore } from '@/store/ui';
@@ -12,7 +12,8 @@ export default function SettingsPage() {
     const [actionType, setActionType] = useState<'transactions' | 'full' | 'import' | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [importJson, setImportJson] = useState<string | null>(null);
-    const addToast = useUIStore(s => s.addToast);
+    const [isPaywallOpen, setIsPaywallOpen] = useState(false);
+    const { addToast, isPro, unlockPro } = useUIStore();
 
     const handleExportJSON = async () => {
         try {
@@ -25,6 +26,10 @@ export default function SettingsPage() {
     };
 
     const handleExportCSV = async () => {
+        if (!isPro) {
+            setIsPaywallOpen(true);
+            return;
+        }
         try {
             const csv = await exportToCSV();
             downloadCSV(csv);
@@ -156,6 +161,40 @@ export default function SettingsPage() {
             </section>
 
             <section className="space-y-4">
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Suscripción</h2>
+                <div className="p-4 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl text-white shadow-lg relative overflow-hidden">
+                    <div className="relative z-10">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Crown size={20} className={isPro ? "text-amber-200" : "text-amber-100"} />
+                            <h3 className="font-bold text-lg">{isPro ? "Personal Budget PRO" : "Actualiza a PRO"}</h3>
+                        </div>
+                        <p className="text-sm text-amber-50 mb-4 opacity-90">
+                            {isPro 
+                                ? "¡Gracias por tu apoyo! Tienes acceso a todas las funciones premium." 
+                                : "Desbloquea exportación a Excel y apoya el desarrollo continuo de la app."}
+                        </p>
+                        {!isPro && (
+                            <Button 
+                                onClick={() => setIsPaywallOpen(true)} 
+                                className="bg-white text-orange-600 hover:bg-amber-50 font-bold border-none shadow-sm"
+                            >
+                                Ver beneficios
+                            </Button>
+                        )}
+                        {isPro && (
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/20 rounded-full text-xs font-semibold backdrop-blur-sm">
+                                <CheckCircle2 size={14} />
+                                Activado
+                            </div>
+                        )}
+                    </div>
+                    {/* Decorative background elements */}
+                    <div className="absolute -right-6 -top-6 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
+                    <div className="absolute -left-6 -bottom-6 w-24 h-24 bg-black/10 rounded-full blur-xl" />
+                </div>
+            </section>
+
+            <section className="space-y-4">
                 <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Portabilidad de datos</h2>
                 <div className="grid grid-cols-1 gap-3">
                     <button
@@ -183,11 +222,18 @@ export default function SettingsPage() {
                                 <FileSpreadsheet className="text-green-600 dark:text-green-400" size={20} />
                             </div>
                             <div>
-                                <h3 className="font-medium text-slate-900 dark:text-white text-sm">Exportar a Excel (CSV)</h3>
+                                <h3 className="font-medium text-slate-900 dark:text-white text-sm flex items-center gap-1.5">
+                                    Exportar a Excel (CSV)
+                                    {!isPro && <Lock size={14} className="text-amber-500" />}
+                                </h3>
                                 <p className="text-[10px] text-slate-500">Solo transacciones para análisis externo</p>
                             </div>
                         </div>
-                        <Download size={18} className="text-slate-400" />
+                        {!isPro ? (
+                            <div className="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 text-[10px] font-bold px-2 py-1 rounded">PRO</div>
+                        ) : (
+                            <Download size={18} className="text-slate-400" />
+                        )}
                     </button>
 
                     <label className="flex items-center justify-between p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl hover:bg-slate-50 transition-colors cursor-pointer">
@@ -272,6 +318,65 @@ export default function SettingsPage() {
                             isLoading={isLoading}
                         >
                             Confirmar
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            <Modal
+                isOpen={isPaywallOpen}
+                onClose={() => setIsPaywallOpen(false)}
+                title="Desbloquea la versión PRO"
+            >
+                <div className="space-y-6">
+                    <div className="flex justify-center py-4">
+                        <div className="w-20 h-20 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-500/30 transform rotate-3">
+                            <Crown size={40} className="text-white" />
+                        </div>
+                    </div>
+                    
+                    <div className="text-center space-y-2">
+                        <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Pago Único</h3>
+                        <div className="text-3xl font-extrabold text-orange-600">$14.900 <span className="text-sm font-medium text-slate-500">COP</span></div>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">Sin suscripciones mensuales. Tuyo para siempre.</p>
+                    </div>
+
+                    <ul className="space-y-3 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                        <li className="flex items-start gap-3">
+                            <CheckCircle2 className="text-green-500 shrink-0 mt-0.5" size={18} />
+                            <span className="text-sm text-slate-700 dark:text-slate-300"><strong>Exportación a Excel (CSV):</strong> Analiza tus datos en hojas de cálculo externas.</span>
+                        </li>
+                        <li className="flex items-start gap-3">
+                            <CheckCircle2 className="text-green-500 shrink-0 mt-0.5" size={18} />
+                            <span className="text-sm text-slate-700 dark:text-slate-300"><strong>Apoya el desarrollo:</strong> Ayuda a mantener la aplicación sin anuncios y privada.</span>
+                        </li>
+                        <li className="flex items-start gap-3">
+                            <CheckCircle2 className="text-green-500 shrink-0 mt-0.5" size={18} />
+                            <span className="text-sm text-slate-700 dark:text-slate-300"><strong>Futuras funciones PRO:</strong> Acceso a todas las funciones premium que se agreguen.</span>
+                        </li>
+                    </ul>
+
+                    <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 p-3 rounded-lg text-xs flex items-center gap-2">
+                        <AlertTriangle className="shrink-0" size={16} />
+                        <p><strong>Modo Aprendizaje:</strong> Como no tenemos servidor, este botón simulará un pago exitoso y desbloqueará la función localmente.</p>
+                    </div>
+
+                    <div className="flex flex-col gap-3 pt-2">
+                        <Button 
+                            className="w-full bg-orange-600 hover:bg-orange-700 text-white shadow-lg shadow-orange-600/20"
+                            onClick={() => {
+                                // En la vida real aquí rediriges a Stripe/LemonSqueezy
+                                // window.open('https://buy.stripe.com/test_...', '_blank');
+                                
+                                unlockPro();
+                                setIsPaywallOpen(false);
+                                addToast('¡Gracias por tu compra! Eres PRO 👑', 'success');
+                            }}
+                        >
+                            Simular Pago Exitoso
+                        </Button>
+                        <Button variant="ghost" onClick={() => setIsPaywallOpen(false)}>
+                            Quizás más tarde
                         </Button>
                     </div>
                 </div>

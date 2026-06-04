@@ -14,9 +14,26 @@ interface UIState {
     toasts: Toast[];
     addToast: (message: string, type?: ToastType) => void;
     removeToast: (id: string) => void;
+    isPro: boolean;
+    unlockPro: () => void;
 }
 
+const getInitialIsPro = () => {
+    try {
+        return localStorage.getItem('budget_is_pro') === 'true';
+    } catch {
+        return false;
+    }
+};
+
 export const useUIStore = create<UIState>((set) => ({
+    isPro: getInitialIsPro(),
+    unlockPro: () => {
+        try {
+            localStorage.setItem('budget_is_pro', 'true');
+        } catch (e) {}
+        set({ isPro: true });
+    },
     isSidebarOpen: false,
     toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
     toasts: [],
