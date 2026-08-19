@@ -32,6 +32,37 @@ export default defineConfig({
             purpose: 'any maskable'
           }
         ]
+      },
+      workbox: {
+        runtimeCaching: [
+          // Navegación: intenta red y cae a cache si estamos offline o la red falla.
+          {
+            urlPattern: ({ request }) => request.destination === 'document',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'documents-cache',
+              networkTimeoutSeconds: 3,
+              expiration: { maxEntries: 50 }
+            }
+          },
+          // Assets: scripts/styles/imagenes como CacheFirst para estabilidad offline.
+          {
+            urlPattern: ({ request }) => request.destination === 'script' || request.destination === 'style',
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'assets-cache',
+              expiration: { maxEntries: 100 }
+            }
+          },
+          {
+            urlPattern: ({ request }) => request.destination === 'image',
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'images-cache',
+              expiration: { maxEntries: 80 }
+            }
+          }
+        ]
       }
     })
   ],

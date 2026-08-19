@@ -301,7 +301,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
             {/* AI Suggestion Panel */}
             {showAiSuggestion && aiSuggestion && (
                 <div className={`
-                    p-4 rounded-xl border-2 transition-all animate-in fade-in slide-in-from-top-2 duration-300
+                    p-4 rounded-xl border-2 transition-all duration-300
                     ${aiSuggestion.confidence >= 0.7
                         ? 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800'
                         : 'bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800'

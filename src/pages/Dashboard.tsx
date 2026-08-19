@@ -5,7 +5,7 @@ import { startOfMonth, endOfMonth, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ArrowDownCircle, ArrowUpCircle, Wallet, AlertTriangle, ArrowRightLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { TransactionForm } from '@/components/forms/TransactionForm';
 import { TransferForm } from '@/components/forms/TransferForm';
@@ -98,13 +98,30 @@ export default function Dashboard() {
         setIsModalOpen(true);
     };
 
-    // Derived values with safe defaults ONLY for rendering
-    const { totalRealBalance, totalReserved, totalAvailable } = balanceData || { totalRealBalance: 0, totalReserved: 0, totalAvailable: 0 };
-    const { ambiguousCount, quickTemplates } = secondaryData || { ambiguousCount: 0, quickTemplates: [] };
+    // Derived values with safe defaults ONLY for rendering.
+    // These are memoized to avoid recreating default objects/arrays on unrelated renders.
+    const balanceMetrics = useMemo(() => {
+        if (!balanceData) return { totalRealBalance: 0, totalReserved: 0, totalAvailable: 0 };
+        return {
+            totalRealBalance: balanceData.totalRealBalance,
+            totalReserved: balanceData.totalReserved,
+            totalAvailable: balanceData.totalAvailable
+        };
+    }, [balanceData]);
 
-    // Loading State specifically for Balance (Optional: Show Skeleton instead of 0)
+    const secondaryMetrics = useMemo(() => {
+        if (!secondaryData) return { ambiguousCount: 0, quickTemplates: [] as any[] };
+        return {
+            ambiguousCount: secondaryData.ambiguousCount,
+            quickTemplates: secondaryData.quickTemplates
+        };
+    }, [secondaryData]);
+
+    const { totalRealBalance, totalReserved, totalAvailable } = balanceMetrics;
+    const { ambiguousCount, quickTemplates } = secondaryMetrics;
+
+    // Loading State specifically for Balance.
     // If balanceData is undefined, it means we are still loading from IndexedDB.
-    // We can choose to render a loading spinner or just keep the 0s with a loading opacity.
     const isLoading = !balanceData;
 
     return (

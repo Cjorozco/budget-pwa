@@ -20,3 +20,17 @@
     @apply bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50 antialiased;
   }
 }
+
+/* Safe-area support (iOS notch/home indicator) */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Fallback explícito por si la utility de Tailwind no se genera */
+.min-h-dvh {
+  min-height: 100dvh;
+}

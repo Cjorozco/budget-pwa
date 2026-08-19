@@ -13,7 +13,7 @@ export function Toaster() {
                 <div
                     key={toast.id}
                     className={clsx(
-                        "flex items-center gap-3 p-4 rounded-2xl shadow-lg border animate-in fade-in slide-in-from-top-4 duration-300",
+                        "flex items-center gap-3 p-4 rounded-2xl shadow-lg border",
                         toast.type === 'success' && "bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-950/30 dark:border-emerald-900/50 dark:text-emerald-400",
                         toast.type === 'error' && "bg-red-50 border-red-200 text-red-800 dark:bg-red-950/30 dark:border-red-900/50 dark:text-red-400",
                         toast.type === 'info' && "bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-950/30 dark:border-blue-900/50 dark:text-blue-400"

@@ -115,7 +115,7 @@ export default function SettingsPage() {
     };
 
     return (
-        <div className="p-4 safe-bottom space-y-6 pb-20">
+        <div className="p-4 safe-bottom space-y-6">
             <header>
                 <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Ajustes</h1>
                 <p className="text-sm text-slate-500">Configuración general</p>

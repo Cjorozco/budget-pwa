@@ -37,6 +37,10 @@ Gestor de presupuesto personal con filosofía **Senior Financial Thinking**: tra
 - Lucide React (iconography)
 - vite-plugin-pwa (Progressive Web App)
 
+## Historia de origen
+
+Tenía un Excel para mi presupuesto que siempre se descuadraba porque no metía los gastos a tiempo. Lo convertí en una PWA offline-first que funciona sin internet y se instala en el celular como una app.
+
 ## Cómo empezar
 1. `npm install`
 2. `npm run dev`

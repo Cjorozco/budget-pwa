@@ -40,7 +40,7 @@ export function InstallPWA() {
     if (!isVisible) return null;
 
     return (
-        <div className="fixed bottom-24 left-4 right-4 z-50 animate-in fade-in slide-in-from-bottom-5 duration-500">
+        <div className="fixed bottom-24 left-4 right-4 z-50">
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                     <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-xl">

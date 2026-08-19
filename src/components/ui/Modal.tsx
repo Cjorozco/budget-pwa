@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
@@ -11,6 +11,9 @@ interface ModalProps {
 }
 
 export function Modal({ isOpen, onClose, title, children }: ModalProps) {
+    const titleId = useId();
+    const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+
     useEffect(() => {
         const handleEsc = (e: KeyboardEvent) => {
             if (e.key === 'Escape') onClose();
@@ -18,6 +21,8 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
         if (isOpen) {
             document.body.style.overflow = 'hidden';
             window.addEventListener('keydown', handleEsc);
+            // Ensure the dialog is reachable immediately for keyboard users.
+            closeButtonRef.current?.focus();
         } else {
             document.body.style.overflow = 'unset';
         }
@@ -37,15 +42,30 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
                 aria-hidden="true"
             />
 
-            <div className={cn(
+            <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby={titleId}
+                tabIndex={-1}
+                className={cn(
                 "relative w-full max-w-lg transform rounded-2xl bg-white dark:bg-slate-900 shadow-xl transition-all flex flex-col max-h-[90vh]",
-                "animate-in fade-in zoom-in-95 duration-200"
-            )}>
+                "duration-200"
+                )}
+            >
                 <div className="flex items-center justify-between p-6 pb-2">
-                    <h2 className="text-xl font-semibold leading-none tracking-tight text-slate-900 dark:text-slate-100">
+                    <h2
+                        id={titleId}
+                        className="text-xl font-semibold leading-none tracking-tight text-slate-900 dark:text-slate-100"
+                    >
                         {title}
                     </h2>
-                    <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 rounded-full">
+                    <Button
+                        ref={closeButtonRef}
+                        variant="ghost"
+                        size="icon"
+                        onClick={onClose}
+                        className="h-8 w-8 rounded-full"
+                    >
                         <X size={18} />
                     </Button>
                 </div>

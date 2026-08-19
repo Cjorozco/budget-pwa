@@ -1,0 +1,67 @@
+---
+description: Reglas de arquitectura, diseño y mobile-first para personal-buget-pwa
+alwaysApply: true
+---
+
+# Stack y convenciones del proyecto
+
+- React 19 + TypeScript (con foco en type-safety)
+- Vite 7
+- TailwindCSS 4 para una UI mobile-first basada en utilidades
+- Dexie.js (IndexedDB) + `dexie-react-hooks` para persistencia y reactividad offline-first
+- Zustand para estado de UI (toasts, flags)
+- React Router para navegación
+- React Hook Form + Zod para validación consistente en formularios
+- Recharts para visualizaciones (con cuidado en tamaños/scroll en móvil)
+
+Convenciones clave que deben guiar nuevas piezas:
+
+- Los cálculos “de verdad” deben derivarse de la historia de transacciones (no de “ajustes” implícitos).
+- Los cambios que alteran el saldo deben ser trazables (idealmente, como transacciones explícitas).
+- Evitar lógica acoplada a la UI: separar “datos/DB” y “render” cuando sea práctico.
+
+# Principios de diseño
+
+Estos son los principios que el proyecto ya declara (y que deben mantenerse siempre):
+
+- **La Reconciliación no corrige el pasado**: no borramos ni editamos transacciones antiguas; solo dejamos evidencia y snapshots del estado financiero.
+- **Trazabilidad Total**: cualquier ajuste al saldo debe ser una transacción explícita (`isAdjustment: true`).
+- **Offline-First**: los datos nunca salen del dispositivo; persistimos robustamente en IndexedDB.
+- **Saldos Atómicos**: el saldo calculado es la verdad absoluta derivada de la historia de transacciones.
+
+# Mobile-first como regla no negociable
+
+La app está diseñada para usarse principalmente en celular:
+
+- La navegación principal es una **barra inferior fija** (touch UI) y la jerarquía de pantallas prioriza lectura/entrada rápida.
+- El layout base debe funcionar bien en pantallas pequeñas sin depender de `md:`/`lg:` para “hacer que se vea bien”.
+- Breakpoints (`sm:`, `md:`, `lg:`) se usan solo como **mejora progresiva** (densidad, distribución), nunca como requisito.
+- Evitar patrones “desktop-first” en móvil:
+  - tablas horizontales sin fallback
+  - controles dependientes solo de hover
+  - anchos fijos que rompan el viewport
+- Si una vista necesita overflow (cards/side scrollers), debe resolverse con scroll horizontal controlado (`overflow-x-auto`) y sin impedir interacción.
+
+# Contexto de marca personal
+
+Esta app es una **vitrina pública** de tus capacidades como desarrollador **Senior Frontend**.
+
+Reglas de marca:
+
+- Cada decisión técnica debe poder justificarse: por qué existe, qué problema resuelve y cómo impacta en UX, mantenibilidad o confiabilidad.
+- El código debe ser limpio, bien estructurado y fácil de auditar.
+- Las piezas deben “leer como portafolio”: nomenclatura clara, flujos consistentes, validaciones explícitas y manejo de errores razonable.
+- La filosofía offline-first/auditable debe reflejarse tanto en la arquitectura como en el estilo visual (claridad, feedback, y minimización de fricción).
+
+# Buenas prácticas modernas a seguir en todo momento
+
+- **Accesibilidad**: foco visible, labels adecuados, roles/atributos de diálogos cuando aplique, y un comportamiento correcto con teclado.
+- **Performance**: memoizar valores derivados cuando aporte (sin sobre-optimizar), evitar trabajo repetido innecesario en render.
+- **PWA moderna**:
+  - asegurar que la experiencia base (assets) funciona offline vía service worker
+  - mantener `manifest` consistente con la UX (tema, íconos, display)
+  - cuidar la evolución de cache/actualizaciones (sin romper la experiencia)
+- **Offline UX**: cuando una acción requiera datos persistidos, debe funcionar aun sin red; mostrar feedback claro ante fallos.
+- **Seguridad/privacidad por diseño**: no introducir analytics/telemetría sin justificación; validar importaciones/exportaciones (ya se usa Zod, mantener el estándar).
+- **Calidad**: mantener tests con Vitest para lógica pura/DB/validación cuando aplique; evitar “tests de UI” de bajo valor.
+
