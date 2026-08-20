@@ -13,15 +13,19 @@ interface ModalProps {
 export function Modal({ isOpen, onClose, title, children }: ModalProps) {
     const titleId = useId();
     const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+    // Keep a stable ref so Esc works without re-running this effect on every parent render
+    // (inline onClose callbacks would otherwise steal focus back to the close button).
+    const onCloseRef = useRef(onClose);
+    onCloseRef.current = onClose;
 
     useEffect(() => {
         const handleEsc = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') onClose();
+            if (e.key === 'Escape') onCloseRef.current();
         };
         if (isOpen) {
             document.body.style.overflow = 'hidden';
             window.addEventListener('keydown', handleEsc);
-            // Ensure the dialog is reachable immediately for keyboard users.
+            // Focus close only when the dialog opens — not on every parent re-render.
             closeButtonRef.current?.focus();
         } else {
             document.body.style.overflow = 'unset';
@@ -30,7 +34,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
             window.removeEventListener('keydown', handleEsc);
             document.body.style.overflow = 'unset';
         };
-    }, [isOpen, onClose]);
+    }, [isOpen]);
 
     if (!isOpen) return null;
 
