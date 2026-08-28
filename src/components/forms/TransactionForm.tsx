@@ -324,9 +324,17 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
             </div>
 
             <Input
+                label="Monto"
+                type="number"
+                placeholder="0"
+                autoFocus={!initialData}
+                error={errors.amount?.message}
+                {...register('amount', { valueAsNumber: true })}
+            />
+
+            <Input
                 label="Descripción"
                 placeholder="Ej: Uber jardín Sofía, Apoyo mamá, Supermercado..."
-                autoFocus={!initialData}
                 error={errors.description?.message}
                 {...register('description', {
                     onBlur: (e) => {
@@ -435,14 +443,6 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                     <p className="text-sm text-red-600">{errors.categoryId.message}</p>
                 )}
             </div>
-
-            <Input
-                label="Monto"
-                type="number"
-                placeholder="0"
-                error={errors.amount?.message}
-                {...register('amount', { valueAsNumber: true })}
-            />
 
             <div className="space-y-2">
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
