@@ -113,9 +113,6 @@ export default function AmbiguousReviewPage() {
                                 <Sparkles size={10} />
                                 {getCategoryName(tx.categoryId)}
                             </div>
-                            {tx.tagIds?.map((tagId: string) => (
-                                <TagBadge key={tagId} tagId={tagId} />
-                            ))}
                         </div>
 
                         <div className="grid grid-cols-3 gap-2">
@@ -168,18 +165,5 @@ export default function AmbiguousReviewPage() {
                 />
             </Modal>
         </div>
-    );
-}
-
-function TagBadge({ tagId }: { tagId: string }) {
-    const tag = useLiveQuery(() => db.tags.get(tagId), [tagId]);
-    if (!tag) return null;
-    return (
-        <span
-            className="px-2 py-0.5 rounded-full text-[9px] font-bold text-white shadow-sm"
-            style={{ backgroundColor: tag.color }}
-        >
-            {tag.name}
-        </span>
     );
 }

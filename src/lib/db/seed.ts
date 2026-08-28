@@ -8,7 +8,9 @@ export const seedInitialData = async () => {
 
         if (categoryCount === 0) {
             // INCOME CATEGORIES
-            const sueldoId = uuidv4();
+            const salarioId = uuidv4();
+            const freelanceId = uuidv4();
+            const apoyosId = uuidv4();
             const otrosIngresoId = uuidv4();
 
             // EXPENSE CATEGORIES
@@ -29,15 +31,26 @@ export const seedInitialData = async () => {
 
             await db.categories.bulkAdd([
                 // ===== INCOME PARENTS =====
-                { id: sueldoId, name: 'Sueldo', type: 'income', color: '#10b981', usageCount: 0, isActive: true },
+                { id: salarioId, name: 'Salario', type: 'income', color: '#10b981', usageCount: 0, isActive: true },
+                { id: freelanceId, name: 'Freelance', type: 'income', color: '#8b5cf6', usageCount: 0, isActive: true },
+                { id: apoyosId, name: 'Apoyos', type: 'income', color: '#f59e0b', usageCount: 0, isActive: true },
                 { id: otrosIngresoId, name: 'Otros', type: 'income', color: '#6366f1', usageCount: 0, isActive: true },
 
-                // ===== INCOME CHILDREN - Sueldo =====
-                { id: uuidv4(), name: 'Nómina', type: 'income', color: '#10b981', parentId: sueldoId, usageCount: 0, isActive: true },
-                { id: uuidv4(), name: 'Propinas', type: 'income', color: '#10b981', parentId: sueldoId, usageCount: 0, isActive: true },
-                { id: uuidv4(), name: 'Bonificaciones', type: 'income', color: '#10b981', parentId: sueldoId, usageCount: 0, isActive: true },
-                { id: uuidv4(), name: 'Comisiones', type: 'income', color: '#10b981', parentId: sueldoId, usageCount: 0, isActive: true },
-                { id: uuidv4(), name: 'Otros', type: 'income', color: '#10b981', parentId: sueldoId, usageCount: 0, isActive: true },
+                // ===== INCOME CHILDREN - Salario =====
+                { id: uuidv4(), name: 'Nómina', type: 'income', color: '#10b981', parentId: salarioId, usageCount: 0, isActive: true },
+                { id: uuidv4(), name: 'Propinas', type: 'income', color: '#10b981', parentId: salarioId, usageCount: 0, isActive: true },
+                { id: uuidv4(), name: 'Bonificaciones', type: 'income', color: '#10b981', parentId: salarioId, usageCount: 0, isActive: true },
+                { id: uuidv4(), name: 'Comisiones', type: 'income', color: '#10b981', parentId: salarioId, usageCount: 0, isActive: true },
+                { id: uuidv4(), name: 'Otros', type: 'income', color: '#10b981', parentId: salarioId, usageCount: 0, isActive: true },
+
+                // ===== INCOME CHILDREN - Freelance =====
+                { id: uuidv4(), name: 'Proyectos', type: 'income', color: '#8b5cf6', parentId: freelanceId, usageCount: 0, isActive: true },
+                { id: uuidv4(), name: 'Consultoría', type: 'income', color: '#8b5cf6', parentId: freelanceId, usageCount: 0, isActive: true },
+                { id: uuidv4(), name: 'Otros', type: 'income', color: '#8b5cf6', parentId: freelanceId, usageCount: 0, isActive: true },
+
+                // ===== INCOME CHILDREN - Apoyos =====
+                { id: uuidv4(), name: 'Ayuda familiar', type: 'income', color: '#f59e0b', parentId: apoyosId, usageCount: 0, isActive: true },
+                { id: uuidv4(), name: 'Otros', type: 'income', color: '#f59e0b', parentId: apoyosId, usageCount: 0, isActive: true },
 
                 // ===== INCOME CHILDREN - Otros =====
                 { id: uuidv4(), name: 'Ingresos por intereses', type: 'income', color: '#6366f1', parentId: otrosIngresoId, usageCount: 0, isActive: true },
@@ -69,6 +82,7 @@ export const seedInitialData = async () => {
                 { id: uuidv4(), name: 'Guardería', type: 'expense', color: '#ec4899', parentId: ninosId, usageCount: 0, isActive: true },
                 { id: uuidv4(), name: 'Ropa', type: 'expense', color: '#ec4899', parentId: ninosId, usageCount: 0, isActive: true },
                 { id: uuidv4(), name: 'Colegio', type: 'expense', color: '#ec4899', parentId: ninosId, usageCount: 0, isActive: true },
+                { id: uuidv4(), name: 'Transporte', type: 'expense', color: '#ec4899', parentId: ninosId, usageCount: 0, isActive: true },
                 { id: uuidv4(), name: 'Juguetes', type: 'expense', color: '#ec4899', parentId: ninosId, usageCount: 0, isActive: true },
                 { id: uuidv4(), name: 'Otros', type: 'expense', color: '#ec4899', parentId: ninosId, usageCount: 0, isActive: true },
 
@@ -151,6 +165,7 @@ export const seedInitialData = async () => {
                 { id: uuidv4(), name: 'Otros', type: 'expense', color: '#6366f1', parentId: tecnologiaId, usageCount: 0, isActive: true },
 
                 // ===== EXPENSE CHILDREN - Transporte =====
+                { id: uuidv4(), name: 'Privado', type: 'expense', color: '#0ea5e9', parentId: transporteId, usageCount: 0, isActive: true },
                 { id: uuidv4(), name: 'Combustible', type: 'expense', color: '#0ea5e9', parentId: transporteId, usageCount: 0, isActive: true },
                 { id: uuidv4(), name: 'Matriculación o permiso', type: 'expense', color: '#0ea5e9', parentId: transporteId, usageCount: 0, isActive: true },
                 { id: uuidv4(), name: 'Pagos del vehículo', type: 'expense', color: '#0ea5e9', parentId: transporteId, usageCount: 0, isActive: true },
@@ -212,15 +227,15 @@ export const seedInitialData = async () => {
             });
         }
 
-        // Always seed tags if empty (Phase 2)
-        await seedTags();
-
         // Always seed quick templates if empty
         await seedQuickTemplates();
     });
 
     // Cleanup duplicates (Self-correcting)
     await cleanupDuplicates();
+
+    const { migrateCategories } = await import('./migrateCategories');
+    await migrateCategories();
 };
 
 const cleanupDuplicates = async () => {

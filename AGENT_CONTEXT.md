@@ -83,6 +83,17 @@ CODE GENERATION RULES
    Trigger updates when: architecture changes, new deps, env vars changed,
    API modified, breaking changes, new features, UX changes.
 
+8. **🔢 APP VERSION (CRITICAL):**
+   - **Always bump the app version** when shipping meaningful changes (not for typo-only or comment-only edits).
+   - Source of truth: `package.json` → `"version"` (semver: `MAJOR.MINOR.PATCH`).
+   - Bump rules:
+     - **PATCH** (`0.1.0` → `0.1.1`): bug fixes, small UI tweaks, copy, tests, refactors without behavior change.
+     - **MINOR** (`0.1.0` → `0.2.0`): new features, new screens/flows, categorizer rules, PWA/offline improvements, category migrations.
+     - **MAJOR** (`0.1.0` → `1.0.0`): breaking changes (Dexie schema that drops data, backup format changes, removed routes, incompatible import/export).
+   - After bumping, mention in the response: `📦 VERSION: 0.1.0 → 0.1.1 (PATCH — bugfix Modal focus)`.
+   - Do **not** bump Dexie DB `version(n)` and app semver for the same change unless both are required — Dexie version is for IndexedDB schema only; app version is for releases/PWA cache awareness.
+   - If the app later exposes version in UI (Settings/manifest), keep it in sync with `package.json`.
+
 ═══════════════════════════════════════════════
 PWA & OFFLINE-FIRST RULES
 ═══════════════════════════════════════════════
@@ -168,4 +179,9 @@ RESPONSE FORMAT
 **For documentation:**
 ```
 📚 DOCS UPDATE: [file] — [section] — [what to update]
+```
+
+**For version bumps:**
+```
+📦 VERSION: [old] → [new] ([PATCH|MINOR|MAJOR] — [reason])
 ```
