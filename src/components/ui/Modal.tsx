@@ -39,7 +39,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:p-6 sm:pb-6">
             <div
                 className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
                 onClick={onClose}
@@ -52,7 +52,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
                 aria-labelledby={titleId}
                 tabIndex={-1}
                 className={cn(
-                "relative w-full max-w-lg transform rounded-2xl bg-white dark:bg-slate-900 shadow-xl transition-all flex flex-col max-h-[90vh]",
+                "relative w-full max-w-lg transform rounded-2xl bg-white dark:bg-slate-900 shadow-xl transition-all flex flex-col max-h-[min(90dvh,calc(100dvh-2rem))]",
                 "duration-200"
                 )}
             >
@@ -74,7 +74,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
                     </Button>
                 </div>
 
-                <div className="p-6 pt-2 overflow-y-auto overflow-x-hidden">
+                <div className="p-6 pt-2 pb-[max(1.5rem,env(safe-area-inset-bottom))] overflow-y-auto overflow-x-hidden">
                     {children}
                 </div>
             </div>

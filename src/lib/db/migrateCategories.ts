@@ -33,7 +33,7 @@ export async function migrateCategories(): Promise<void> {
     await findOrCreateCategory('income', 'Salario', 'Nómina');
     await findOrCreateCategory('income', 'Freelance');
     await findOrCreateCategory('income', 'Apoyos', 'Ayuda familiar');
-    await findOrCreateCategory('expense', 'Niños', 'Transporte');
+    await findOrCreateCategory('expense', 'Sofia', 'Transporte');
     await findOrCreateCategory('expense', 'Transporte', 'Privado');
     await findOrCreateCategory('expense', 'Transporte', 'Transporte público');
 }
