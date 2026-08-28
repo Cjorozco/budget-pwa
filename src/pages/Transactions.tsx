@@ -20,12 +20,9 @@ export default function TransactionsPage() {
         const txs = await db.transactions.orderBy('date').reverse().toArray();
         const cats = await db.categories.toArray();
         const accts = await db.accounts.toArray();
-        const allTags = await db.tags.toArray();
 
-        // Map for fast lookup
         const catMap = new Map(cats.map(c => [c.id, c]));
         const acctMap = new Map(accts.map(a => [a.id, a]));
-        const tagMap = new Map(allTags.map(t => [t.id, t]));
 
         return txs.map(tx => {
             const category = catMap.get(tx.categoryId);
@@ -39,7 +36,6 @@ export default function TransactionsPage() {
                 categoryName: categoryDisplay,
                 categoryColor: category?.color || 'gray',
                 accountName: acctMap.get(tx.accountId)?.name || 'Cuenta Eliminada',
-                tags: (tx.tagIds || []).map(id => tagMap.get(id)).filter(Boolean) as any[]
             };
         });
     });
@@ -151,15 +147,6 @@ export default function TransactionsPage() {
                                         {format(tx.date, "d MMM, yyyy", { locale: es })} • {tx.accountName}
                                     </p>
                                     <div className="flex flex-wrap gap-1 mt-1.5">
-                                        {tx.tags?.map((tag: any) => (
-                                            <span
-                                                key={tag.id}
-                                                className="px-1.5 py-0.5 rounded-full text-[9px] font-bold text-white"
-                                                style={{ backgroundColor: tag.color }}
-                                            >
-                                                {tag.name}
-                                            </span>
-                                        ))}
                                         {(tx.isAmbiguous || tx.needsReview) && (
                                             <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 border border-amber-200 dark:border-amber-800 flex items-center gap-0.5">
                                                 <AlertTriangle size={8} /> Revisar

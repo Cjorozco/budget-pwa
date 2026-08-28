@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -6,12 +6,12 @@ import { db } from '@/lib/db';
 import { TransactionSchema } from '@/lib/schemas';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { TagSelector } from './TagSelector';
-import { suggestCategoryAndTags } from '@/lib/ai/categorizer';
+import { suggestCategory, type CategorySuggestion } from '@/lib/ai/categorizer';
+import { findOrCreateCategory } from '@/lib/ai/categoryResolver';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 import { format } from 'date-fns';
-import { PiggyBank, Sparkles, AlertCircle } from 'lucide-react';
+import { PiggyBank, Sparkles, AlertCircle, FolderPlus } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import type { Transaction } from '@/lib/types';
 
@@ -26,8 +26,9 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
     const accounts = useLiveQuery(() => db.accounts.filter(a => a.isActive).toArray()) || [];
     const allCategories = useLiveQuery(() => db.categories.filter(c => c.isActive).toArray()) || [];
 
-    const [aiSuggestion, setAiSuggestion] = useState<any>(null);
+    const [aiSuggestion, setAiSuggestion] = useState<CategorySuggestion | null>(null);
     const [showAiSuggestion, setShowAiSuggestion] = useState(false);
+    const categoryTouchedRef = useRef(false);
 
     const toTitleCase = (str: string) => {
         return str
@@ -53,7 +54,6 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
             accountId: initialData.accountId,
             categoryId: initialData.categoryId,
             date: initialData.date,
-            tagIds: initialData.tagIds || [],
         } : {
             amount: undefined,
             description: '',
@@ -65,7 +65,6 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
 
     const type = watch('type');
     const description = watch('description');
-    const tagIds = watch('tagIds') || [];
     const accountId = watch('accountId');
 
     // Fetch active reserves for the selected account
@@ -86,10 +85,20 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
         }
 
         const timer = setTimeout(async () => {
-            const suggestion = await suggestCategoryAndTags(description, type);
+            const suggestion = await suggestCategory(description, type);
             if (suggestion) {
                 setAiSuggestion(suggestion);
                 setShowAiSuggestion(true);
+
+                if (
+                    !categoryTouchedRef.current &&
+                    suggestion.categoryId &&
+                    !suggestion.needsCategoryCreation &&
+                    suggestion.confidence >= 0.7
+                ) {
+                    setValue('categoryId', suggestion.categoryId);
+                    setShowAiSuggestion(false);
+                }
             } else {
                 setAiSuggestion(null);
                 setShowAiSuggestion(false);
@@ -97,15 +106,29 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
         }, 500);
 
         return () => clearTimeout(timer);
-    }, [description, type, initialData]);
+    }, [description, type, initialData, setValue]);
 
-    const handleAcceptSuggestion = () => {
+    const handleAcceptSuggestion = async () => {
         if (!aiSuggestion) return;
-        setValue('categoryId', aiSuggestion.categoryId);
-        if (aiSuggestion.tagIds.length > 0) {
-            setValue('tagIds', aiSuggestion.tagIds);
+
+        try {
+            if (aiSuggestion.needsCategoryCreation && aiSuggestion.pendingCategory) {
+                const { type: catType, parentName, subcategoryName } = aiSuggestion.pendingCategory;
+                const newId = await findOrCreateCategory(catType, parentName, subcategoryName);
+                setValue('categoryId', newId);
+                setAiSuggestion({
+                    ...aiSuggestion,
+                    categoryId: newId,
+                    needsCategoryCreation: false,
+                });
+            } else if (aiSuggestion.categoryId) {
+                setValue('categoryId', aiSuggestion.categoryId);
+            }
+            setShowAiSuggestion(false);
+        } catch (error) {
+            console.error('Error creating category:', error);
+            alert('No se pudo crear la categoría sugerida');
         }
-        setShowAiSuggestion(false);
     };
 
     // Filter categories by type and organize hierarchically
@@ -186,6 +209,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                     // Update transaction
                     await db.transactions.update(initialData.id, {
                         ...data,
+                        tagIds: [],
                         updatedAt: Date.now(),
                     });
                 });
@@ -196,9 +220,12 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                     const txId = uuidv4();
                     const finalData = {
                         ...data,
+                        tagIds: [],
                         id: txId,
-                        suggestedCategoryId: aiSuggestion?.categoryId,
-                        wasCategorySuggestionAccepted: aiSuggestion && data.categoryId === aiSuggestion.categoryId,
+                        suggestedCategoryId: aiSuggestion?.categoryId ?? undefined,
+                        wasCategorySuggestionAccepted: aiSuggestion
+                            ? data.categoryId === aiSuggestion.categoryId
+                            : false,
                         aiConfidence: aiSuggestion?.confidence,
                         isAmbiguous: aiSuggestion ? aiSuggestion.confidence < 0.7 : false,
                         needsReview: aiSuggestion ? aiSuggestion.confidence < 0.5 : false,
@@ -260,6 +287,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                     onClick={() => {
                         setValue('type', 'income');
                         setValue('categoryId', '');
+                        categoryTouchedRef.current = false;
                     }}
                 >
                     Ingreso
@@ -271,6 +299,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                     onClick={() => {
                         setValue('type', 'expense');
                         setValue('categoryId', '');
+                        categoryTouchedRef.current = false;
                     }}
                 >
                     Gasto
@@ -278,17 +307,9 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
             </div>
 
             <Input
-                label="Monto"
-                type="number"
-                placeholder="0"
-                autoFocus
-                error={errors.amount?.message}
-                {...register('amount', { valueAsNumber: true })}
-            />
-
-            <Input
                 label="Descripción"
-                placeholder="¿Qué fue?"
+                placeholder="Ej: Uber jardín Sofía, Apoyo mamá, Supermercado..."
+                autoFocus={!initialData}
                 error={errors.description?.message}
                 {...register('description', {
                     onBlur: (e) => {
@@ -321,18 +342,28 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                                     {Math.round(aiSuggestion.confidence * 100)}%
                                 </span>
                             </div>
-                            <p className="text-sm text-slate-700 dark:text-slate-300 mb-3">
+                            <p className="text-sm text-slate-700 dark:text-slate-300 mb-1">
+                                <span className="font-semibold">{aiSuggestion.categoryPath}</span>
+                            </p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
                                 {aiSuggestion.reason}
                             </p>
 
-                            <div className="flex gap-2 mb-3">
+                            <div className="flex gap-2 mb-1">
                                 <Button
                                     type="button"
                                     size="sm"
                                     className="h-8 px-4 text-xs bg-indigo-600 hover:bg-indigo-700"
                                     onClick={handleAcceptSuggestion}
                                 >
-                                    Aplicar todo
+                                    {aiSuggestion.needsCategoryCreation ? (
+                                        <>
+                                            <FolderPlus size={14} className="mr-1" />
+                                            Crear y aplicar
+                                        </>
+                                    ) : (
+                                        'Aplicar categoría'
+                                    )}
                                 </Button>
                                 <Button
                                     type="button"
@@ -344,29 +375,56 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                                     Ignorar
                                 </Button>
                             </div>
-
-                            {/* Optional: Individual Tag Suggestions if they aren't all applied or for more context */}
-                            {aiSuggestion.tagIds.length > 0 && (
-                                <div className="flex flex-wrap gap-1.5 pt-2 border-t border-blue-100 dark:border-blue-800">
-                                    <span className="text-[10px] font-medium text-slate-500 w-full mb-1">Tags sugeridos:</span>
-                                    {aiSuggestion.tagIds.map((tid: string) => (
-                                        <SuggestedTagBadge
-                                            key={tid}
-                                            tagId={tid}
-                                            onAdd={() => {
-                                                if (!tagIds.includes(tid)) {
-                                                    setValue('tagIds', [...tagIds, tid]);
-                                                }
-                                            }}
-                                            isSelected={tagIds.includes(tid)}
-                                        />
-                                    ))}
-                                </div>
-                            )}
                         </div>
                     </div>
                 </div>
             )}
+
+            <div className="space-y-2">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                    Categoría
+                </label>
+                <select
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    {...register('categoryId', {
+                        onChange: () => {
+                            categoryTouchedRef.current = true;
+                        },
+                    })}
+                >
+                    <option value="">Selecciona una categoría</option>
+                    {parentCategories.map((parent) => {
+                        const children = childCategories.filter(c => c.parentId === parent.id);
+                        if (children.length > 0) {
+                            return (
+                                <optgroup key={parent.id} label={parent.name}>
+                                    {children.map((child) => (
+                                        <option key={child.id} value={child.id}>
+                                            {child.name}
+                                        </option>
+                                    ))}
+                                </optgroup>
+                            );
+                        }
+                        return (
+                            <option key={parent.id} value={parent.id}>
+                                {parent.name}
+                            </option>
+                        );
+                    })}
+                </select>
+                {errors.categoryId && (
+                    <p className="text-sm text-red-600">{errors.categoryId.message}</p>
+                )}
+            </div>
+
+            <Input
+                label="Monto"
+                type="number"
+                placeholder="0"
+                error={errors.amount?.message}
+                {...register('amount', { valueAsNumber: true })}
+            />
 
             <div className="space-y-2">
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -383,43 +441,6 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                 </select>
                 {errors.accountId && (
                     <p className="text-sm text-red-600">{errors.accountId.message}</p>
-                )}
-            </div>
-
-            <div className="space-y-2">
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Categoría
-                </label>
-                <select
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    {...register('categoryId')}
-                >
-                    <option value="">Selecciona una categoría</option>
-                    {parentCategories.map((parent) => {
-                        const children = childCategories.filter(c => c.parentId === parent.id);
-                        if (children.length > 0) {
-                            // Parent has children - show as optgroup
-                            return (
-                                <optgroup key={parent.id} label={parent.name}>
-                                    {children.map((child) => (
-                                        <option key={child.id} value={child.id}>
-                                            {child.name}
-                                        </option>
-                                    ))}
-                                </optgroup>
-                            );
-                        } else {
-                            // Parent has no children - show as regular option
-                            return (
-                                <option key={parent.id} value={parent.id}>
-                                    {parent.name}
-                                </option>
-                            );
-                        }
-                    })}
-                </select>
-                {errors.categoryId && (
-                    <p className="text-sm text-red-600">{errors.categoryId.message}</p>
                 )}
             </div>
 
@@ -460,36 +481,9 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                 </div>
             )}
 
-            <TagSelector
-                selectedTagIds={tagIds}
-                onChange={(ids) => setValue('tagIds', ids)}
-            />
-
             <Button type="submit" className="w-full" isLoading={isSubmitting}>
                 {initialData ? 'Actualizar' : 'Guardar'} transacción
             </Button>
         </form>
-    );
-}
-
-function SuggestedTagBadge({ tagId, onAdd, isSelected }: { tagId: string, onAdd: () => void, isSelected: boolean }) {
-    const tag = useLiveQuery(() => db.tags.get(tagId), [tagId]);
-    if (!tag) return null;
-
-    return (
-        <button
-            type="button"
-            onClick={onAdd}
-            disabled={isSelected}
-            className={`
-                px-2 py-1 rounded-full text-[10px] font-bold border transition-all
-                ${isSelected
-                    ? 'bg-slate-200 border-slate-300 text-slate-500 cursor-default'
-                    : 'bg-white border-blue-200 text-blue-600 hover:bg-blue-50 dark:bg-slate-800 dark:border-blue-900'
-                }
-            `}
-        >
-            {isSelected ? '✓ ' : '+ '}{tag.name}
-        </button>
     );
 }
