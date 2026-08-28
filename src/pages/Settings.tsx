@@ -295,6 +295,12 @@ export default function SettingsPage() {
                 </div>
             </section>
 
+            <footer className="pt-2 text-center">
+                <p className="text-xs text-slate-400 dark:text-slate-500">
+                    Versión {__APP_VERSION__}
+                </p>
+            </footer>
+
             <Modal
                 isOpen={isConfirmOpen}
                 onClose={() => setIsConfirmOpen(false)}

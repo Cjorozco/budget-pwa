@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '../db';
 import type { Category } from '../types';
-import { normalizeForMatch } from './categoryRules';
+import { categoryNamesAreSimilar, normalizeForMatch } from './categoryRules';
 
 const DEFAULT_COLORS = {
     income: ['#10b981', '#6366f1', '#8b5cf6', '#06b6d4', '#f59e0b'],
@@ -18,13 +18,18 @@ export async function findCategoryByPath(
     subcategoryName?: string
 ): Promise<Category | null> {
     const categories = await db.categories.filter((c) => c.isActive && c.type === type).toArray();
-    const parent = categories.find((c) => !c.parentId && namesMatch(c.name, parentName));
+    const parent =
+        categories.find((c) => !c.parentId && namesMatch(c.name, parentName)) ??
+        categories.find((c) => !c.parentId && categoryNamesAreSimilar(c.name, parentName));
     if (!parent) return null;
 
     if (!subcategoryName) return parent;
 
+    const children = categories.filter((c) => c.parentId === parent.id);
     return (
-        categories.find((c) => c.parentId === parent.id && namesMatch(c.name, subcategoryName)) ?? null
+        children.find((c) => namesMatch(c.name, subcategoryName)) ??
+        children.find((c) => categoryNamesAreSimilar(c.name, subcategoryName, parent.name)) ??
+        null
     );
 }
 
@@ -52,7 +57,9 @@ export async function findOrCreateCategory(
 
     return db.transaction('rw', db.categories, async () => {
         const categories = await db.categories.filter((c) => c.isActive && c.type === type).toArray();
-        let parent = categories.find((c) => !c.parentId && namesMatch(c.name, parentName));
+        let parent =
+            categories.find((c) => !c.parentId && namesMatch(c.name, parentName)) ??
+            categories.find((c) => !c.parentId && categoryNamesAreSimilar(c.name, parentName));
 
         if (!parent) {
             const palette = DEFAULT_COLORS[type];
@@ -71,9 +78,13 @@ export async function findOrCreateCategory(
         if (!subcategoryName) return parent.id;
 
         const refreshed = await db.categories.filter((c) => c.isActive && c.type === type).toArray();
-        const child = refreshed.find(
-            (c) => c.parentId === parent!.id && namesMatch(c.name, subcategoryName)
-        );
+        const child =
+            refreshed.find((c) => c.parentId === parent!.id && namesMatch(c.name, subcategoryName)) ??
+            refreshed.find(
+                (c) =>
+                    c.parentId === parent!.id &&
+                    categoryNamesAreSimilar(c.name, subcategoryName, parent!.name)
+            );
         if (child) return child.id;
 
         const childId = uuidv4();

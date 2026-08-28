@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 
 .vercel
+
+# Personal financial backups (never commit user data)
+budget-backup*.json

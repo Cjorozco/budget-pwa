@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { flushSync } from 'react-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -12,8 +13,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 import { format } from 'date-fns';
 import { PiggyBank, Sparkles, AlertCircle, FolderPlus } from 'lucide-react';
-import { formatCurrency } from '@/lib/utils';
-import type { Transaction } from '@/lib/types';
+import { formatCurrency, toSentenceCase } from '@/lib/utils';
+import type { Category, Transaction } from '@/lib/types';
 
 type TransactionFormData = z.infer<typeof TransactionSchema>;
 
@@ -28,15 +29,8 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
 
     const [aiSuggestion, setAiSuggestion] = useState<CategorySuggestion | null>(null);
     const [showAiSuggestion, setShowAiSuggestion] = useState(false);
+    const [createdCategories, setCreatedCategories] = useState<Category[]>([]);
     const categoryTouchedRef = useRef(false);
-
-    const toTitleCase = (str: string) => {
-        return str
-            .toLowerCase()
-            .split(' ')
-            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(' ');
-    };
 
     const {
         register,
@@ -112,17 +106,34 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
         if (!aiSuggestion) return;
 
         try {
+            let categoryId = aiSuggestion.categoryId;
+
             if (aiSuggestion.needsCategoryCreation && aiSuggestion.pendingCategory) {
                 const { type: catType, parentName, subcategoryName } = aiSuggestion.pendingCategory;
-                const newId = await findOrCreateCategory(catType, parentName, subcategoryName);
-                setValue('categoryId', newId);
-                setAiSuggestion({
-                    ...aiSuggestion,
-                    categoryId: newId,
-                    needsCategoryCreation: false,
+                categoryId = await findOrCreateCategory(catType, parentName, subcategoryName);
+
+                const created = await db.categories.get(categoryId);
+                const extras: Category[] = [];
+                if (created) {
+                    extras.push(created);
+                    if (created.parentId) {
+                        const parent = await db.categories.get(created.parentId);
+                        if (parent) extras.push(parent);
+                    }
+                }
+
+                // El <select> nativo descarta valores que aún no están en las opciones.
+                flushSync(() => {
+                    setCreatedCategories((prev) => {
+                        const byId = new Map(prev.map((c) => [c.id, c]));
+                        extras.forEach((c) => byId.set(c.id, c));
+                        return Array.from(byId.values());
+                    });
                 });
-            } else if (aiSuggestion.categoryId) {
-                setValue('categoryId', aiSuggestion.categoryId);
+            }
+
+            if (categoryId) {
+                setValue('categoryId', categoryId, { shouldValidate: true, shouldDirty: true });
             }
             setShowAiSuggestion(false);
         } catch (error) {
@@ -132,7 +143,13 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
     };
 
     // Filter categories by type and organize hierarchically
-    const categoriesByType = allCategories.filter((c) => c.type === type);
+    const mergedCategories = (() => {
+        const byId = new Map<string, Category>();
+        allCategories.forEach((c) => byId.set(c.id, c));
+        createdCategories.forEach((c) => byId.set(c.id, c));
+        return Array.from(byId.values());
+    })();
+    const categoriesByType = mergedCategories.filter((c) => c.type === type);
     const parentCategories = categoriesByType
         .filter(c => !c.parentId)
         .sort((a, b) => a.name.localeCompare(b.name));
@@ -278,7 +295,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
     };
 
     return (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pb-2">
             <div className="grid grid-cols-2 gap-4">
                 <Button
                     type="button"
@@ -313,8 +330,8 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                 error={errors.description?.message}
                 {...register('description', {
                     onBlur: (e) => {
-                        const formatted = toTitleCase(e.target.value);
-                        setValue('description', formatted);
+                        const formatted = toSentenceCase(e.target.value);
+                        setValue('description', formatted, { shouldValidate: true });
                     }
                 })}
             />
@@ -391,6 +408,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                             categoryTouchedRef.current = true;
                         },
                     })}
+                    value={watch('categoryId') ?? ''}
                 >
                     <option value="">Selecciona una categoría</option>
                     {parentCategories.map((parent) => {

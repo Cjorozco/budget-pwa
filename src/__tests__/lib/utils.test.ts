@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatCurrency, adjustColor, cn } from '@/lib/utils';
+import { formatCurrency, adjustColor, cn, toSentenceCase } from '@/lib/utils';
 
 describe('formatCurrency', () => {
   it('formats zero correctly', () => {
@@ -98,5 +98,19 @@ describe('cn', () => {
   it('handles undefined and null gracefully', () => {
     const result = cn('base', undefined, null);
     expect(result).toBe('base');
+  });
+});
+
+describe('toSentenceCase', () => {
+  it('capitalizes only the first letter', () => {
+    expect(toSentenceCase('uber hasta el jardin')).toBe('Uber hasta el jardin');
+  });
+
+  it('lowercases the rest after title case', () => {
+    expect(toSentenceCase('Bus Al Jardin')).toBe('Bus al jardin');
+  });
+
+  it('returns empty string unchanged', () => {
+    expect(toSentenceCase('')).toBe('');
   });
 });

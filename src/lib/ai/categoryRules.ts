@@ -27,6 +27,36 @@ export function normalizeForMatch(text: string): string {
         .replace(/[\u0300-\u036f]/g, '');
 }
 
+const GENERIC_CATEGORY_NAMES = new Set(['otros', 'otro', 'varios']);
+
+/**
+ * Compara nombres de categoría de forma laxa: acentos, "Público" vs "Transporte público", etc.
+ * Nombres genéricos ("Otros") solo coinciden de forma exacta.
+ */
+export function categoryNamesAreSimilar(a: string, b: string, parentName?: string): boolean {
+    const na = normalizeForMatch(a);
+    const nb = normalizeForMatch(b);
+    if (na === nb) return true;
+
+    const stripParentPrefix = (name: string) => {
+        if (!parentName) return name;
+        const prefix = `${normalizeForMatch(parentName)} `;
+        return name.startsWith(prefix) ? name.slice(prefix.length).trim() : name;
+    };
+
+    const sa = stripParentPrefix(na);
+    const sb = stripParentPrefix(nb);
+    if (sa === sb && sa.length > 0) return true;
+
+    if (GENERIC_CATEGORY_NAMES.has(sa) || GENERIC_CATEGORY_NAMES.has(sb)) return false;
+
+    if (sa.length >= 4 && sb.length >= 4 && (sa.includes(sb) || sb.includes(sa))) {
+        return true;
+    }
+
+    return false;
+}
+
 function groupMatches(desc: string, group: string[]): boolean {
     return group.some((kw) => desc.includes(normalizeForMatch(kw)));
 }
@@ -63,7 +93,7 @@ export function matchCategoryRule(
 }
 
 export const CATEGORY_KEYWORD_RULES: CategoryKeywordRule[] = [
-    // --- Niños: transporte escolar (jardín + Sofía, etc.) ---
+    // --- Sofia: transporte escolar (jardín / Sofía) ---
     {
         type: 'expense',
         keywordGroups: [
@@ -71,7 +101,7 @@ export const CATEGORY_KEYWORD_RULES: CategoryKeywordRule[] = [
             ['sofia', 'sofía'],
         ],
         matchMode: 'all',
-        parentName: 'Niños',
+        parentName: 'Sofia',
         subcategoryName: 'Transporte',
         confidence: 0.92,
         reason: 'Transporte escolar detectado (jardín/colegio + Sofía)',
@@ -79,7 +109,7 @@ export const CATEGORY_KEYWORD_RULES: CategoryKeywordRule[] = [
     {
         type: 'expense',
         keywordGroups: [['jardin'], ['jardín'], ['guarderia'], ['guardería']],
-        parentName: 'Niños',
+        parentName: 'Sofia',
         subcategoryName: 'Transporte',
         confidence: 0.88,
         reason: 'Posible transporte escolar (jardín/guardería)',

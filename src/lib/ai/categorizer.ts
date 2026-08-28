@@ -87,7 +87,7 @@ async function suggestFromKeywordRules(
     if (existing) {
         return {
             categoryId: existing.id,
-            categoryPath: path,
+            categoryPath: await resolveCategoryPathLabel(existing.id),
             confidence: rule.confidence,
             reason: rule.reason,
             needsCategoryCreation: false,

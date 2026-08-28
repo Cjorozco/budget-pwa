@@ -5,6 +5,13 @@ export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
 }
 
+/** Capitaliza solo la primera letra; el resto queda en minúsculas. */
+export function toSentenceCase(str: string) {
+    if (!str) return str;
+    const lower = str.toLowerCase();
+    return lower.charAt(0).toUpperCase() + lower.slice(1);
+}
+
 export function formatCurrency(amount: number) {
     return new Intl.NumberFormat('es-CO', {
         style: 'currency',
