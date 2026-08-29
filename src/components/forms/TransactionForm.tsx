@@ -330,6 +330,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                 autoFocus={!initialData}
                 error={errors.amount?.message}
                 {...register('amount', { valueAsNumber: true })}
+                data-testid="amount-input"
             />
 
             <Input
@@ -342,17 +343,21 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                         setValue('description', formatted, { shouldValidate: true });
                     }
                 })}
+                data-testid="description-input"
             />
 
             {/* AI Suggestion Panel */}
             {showAiSuggestion && aiSuggestion && (
-                <div className={`
+                <div
+                    data-testid="category-suggestion-panel"
+                    className={`
                     p-4 rounded-xl border-2 transition-all duration-300
                     ${aiSuggestion.confidence >= 0.7
                         ? 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800'
                         : 'bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800'
                     }
-                `}>
+                `}
+                >
                     <div className="flex items-start gap-3">
                         <div className={`p-2 rounded-lg ${aiSuggestion.confidence >= 0.7 ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/40' : 'bg-amber-100 text-amber-600 dark:bg-amber-900/40'}`}>
                             {aiSuggestion.confidence >= 0.7 ? <Sparkles size={18} /> : <AlertCircle size={18} />}
@@ -379,6 +384,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                                     type="button"
                                     size="sm"
                                     className="h-8 px-4 text-xs bg-indigo-600 hover:bg-indigo-700"
+                                    data-testid="apply-category-button"
                                     onClick={handleAcceptSuggestion}
                                 >
                                     {aiSuggestion.needsCategoryCreation ? (
@@ -410,6 +416,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                     Categoría
                 </label>
                 <select
+                    data-testid="category-select"
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     {...register('categoryId', {
                         onChange: () => {

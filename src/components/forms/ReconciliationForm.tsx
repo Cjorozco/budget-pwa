@@ -144,6 +144,7 @@ export function ReconciliationForm({ account, onSuccess, onCancel }: Reconciliat
                 <div className="flex justify-between items-center">
                     <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Diferencia:</span>
                     <span
+                        data-testid="reconciliation-diff"
                         className={`font-bold text-lg ${Math.abs(difference) < 0.01
                             ? 'text-green-600'
                             : difference > 0
@@ -178,6 +179,7 @@ export function ReconciliationForm({ account, onSuccess, onCancel }: Reconciliat
                 placeholder="0"
                 error={errors.declaredBalance?.message}
                 {...register('declaredBalance', { valueAsNumber: true })}
+                data-testid="declared-balance-input"
             />
 
             {hasDifference && (

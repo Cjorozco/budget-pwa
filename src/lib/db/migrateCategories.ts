@@ -29,11 +29,12 @@ export async function migrateCategories(): Promise<void> {
         }
     });
 
-    // Asegurar categorías clave para reglas del categorizador
+    // Asegurar categorías clave para reglas del categorizador.
+    // No precrear Sofia › Transporte: si existe, el form auto-aplica y oculta
+    // el panel "Crear y aplicar" (escena de marketing y primer uso real).
     await findOrCreateCategory('income', 'Salario', 'Nómina');
     await findOrCreateCategory('income', 'Freelance');
     await findOrCreateCategory('income', 'Apoyos', 'Ayuda familiar');
-    await findOrCreateCategory('expense', 'Sofia', 'Transporte');
     await findOrCreateCategory('expense', 'Transporte', 'Privado');
     await findOrCreateCategory('expense', 'Transporte', 'Transporte público');
 }

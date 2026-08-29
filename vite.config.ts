@@ -13,6 +13,10 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(appVersion),
   },
+  server: {
+    port: 5173,
+    strictPort: true,
+  },
   plugins: [
     react(),
     VitePWA({

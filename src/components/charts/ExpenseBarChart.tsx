@@ -24,7 +24,11 @@ export function ExpenseBarChart({ data }: ExpenseBarChartProps) {
   const chartHeight = Math.max(256, data.length * 45);
 
   return (
-    <div className="w-full overflow-y-auto pr-2" style={{ maxHeight: '400px' }}>
+        <div
+          data-testid="expense-chart"
+          className="w-full overflow-y-auto pr-2"
+          style={{ maxHeight: '400px', minWidth: 280 }}
+        >
       <div style={{ height: chartHeight, width: '100%' }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
