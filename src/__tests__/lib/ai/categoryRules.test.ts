@@ -2,15 +2,15 @@ import { describe, it, expect } from 'vitest';
 import { categoryNamesAreSimilar, matchCategoryRule } from '@/lib/ai/categoryRules';
 
 describe('matchCategoryRule', () => {
-  it('maps uber jardin sofia to Sofia > Transporte', () => {
-    const rule = matchCategoryRule('Uber jardín Sofía', 'expense');
-    expect(rule?.parentName).toBe('Sofia');
+  it('maps uber jardin to Niños > Transporte when both school and ride keywords appear', () => {
+    const rule = matchCategoryRule('Uber jardín', 'expense');
+    expect(rule?.parentName).toBe('Niños');
     expect(rule?.subcategoryName).toBe('Transporte');
   });
 
-  it('maps uber hasta el jardin to Sofia > Transporte', () => {
+  it('maps uber until the garden with school keyword to Niños > Transporte', () => {
     const rule = matchCategoryRule('Uber hasta el jardin', 'expense');
-    expect(rule?.parentName).toBe('Sofia');
+    expect(rule?.parentName).toBe('Niños');
     expect(rule?.subcategoryName).toBe('Transporte');
   });
 
@@ -25,8 +25,10 @@ describe('matchCategoryRule', () => {
     expect(rule?.subcategoryName).toBe('Transporte público');
   });
 
-  it('maps bus al jardin to Transporte público (bus outranks jardin-only)', () => {
+  it('maps bus al jardin to Transporte público (bus is not a school-transport keyword)', () => {
     const rule = matchCategoryRule('Bus al jardin', 'expense');
+    // "bus" + "jardin": school rule needs transporte|uber|didi|ruta AND jardin. "bus" is not in that group.
+    // Public transport rule matches bus. School all-mode does not match.
     expect(rule?.parentName).toBe('Transporte');
     expect(rule?.subcategoryName).toBe('Transporte público');
   });
@@ -43,9 +45,15 @@ describe('matchCategoryRule', () => {
     expect(rule?.subcategoryName).toBe('Nómina');
   });
 
-  it('excludes uber with jardin from Privado', () => {
-    const rule = matchCategoryRule('Uber jardín Sofía ida', 'expense');
-    expect(rule?.parentName).toBe('Sofia');
+  it('maps declaracion de renta to Gastos financieros > Impuestos', () => {
+    const rule = matchCategoryRule('Declaración de renta', 'expense');
+    expect(rule?.parentName).toBe('Gastos financieros');
+    expect(rule?.subcategoryName).toBe('Impuestos');
+  });
+
+  it('does not send a generic uber to Niños', () => {
+    const rule = matchCategoryRule('Uber al trabajo', 'expense');
+    expect(rule?.parentName).toBe('Transporte');
   });
 });
 

@@ -88,10 +88,11 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                     !categoryTouchedRef.current &&
                     suggestion.categoryId &&
                     !suggestion.needsCategoryCreation &&
-                    suggestion.confidence >= 0.7
+                    suggestion.confidence >= 0.7 &&
+                    !suggestion.alternatives?.length
                 ) {
                     setValue('categoryId', suggestion.categoryId);
-                    setShowAiSuggestion(false);
+                    // El panel se queda visible: si no, parece que "no sugirió nada".
                 }
             } else {
                 setAiSuggestion(null);
@@ -102,13 +103,13 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
         return () => clearTimeout(timer);
     }, [description, type, initialData, setValue]);
 
-    const handleAcceptSuggestion = async () => {
+    const handleAcceptSuggestion = async (chosenId?: string) => {
         if (!aiSuggestion) return;
 
         try {
-            let categoryId = aiSuggestion.categoryId;
+            let categoryId = chosenId ?? aiSuggestion.categoryId;
 
-            if (aiSuggestion.needsCategoryCreation && aiSuggestion.pendingCategory) {
+            if (!chosenId && aiSuggestion.needsCategoryCreation && aiSuggestion.pendingCategory) {
                 const { type: catType, parentName, subcategoryName } = aiSuggestion.pendingCategory;
                 categoryId = await findOrCreateCategory(catType, parentName, subcategoryName);
 
@@ -335,7 +336,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
 
             <Input
                 label="Descripción"
-                placeholder="Ej: Uber jardín Sofía, Apoyo mamá, Supermercado..."
+                placeholder="Ej: supermercado, arriendo, nómina..."
                 error={errors.description?.message}
                 {...register('description', {
                     onBlur: (e) => {
@@ -379,13 +380,13 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                                 {aiSuggestion.reason}
                             </p>
 
-                            <div className="flex gap-2 mb-1">
+                            <div className="flex gap-2 mb-1 flex-wrap">
                                 <Button
                                     type="button"
                                     size="sm"
                                     className="h-8 px-4 text-xs bg-indigo-600 hover:bg-indigo-700"
                                     data-testid="apply-category-button"
-                                    onClick={handleAcceptSuggestion}
+                                    onClick={() => handleAcceptSuggestion()}
                                 >
                                     {aiSuggestion.needsCategoryCreation ? (
                                         <>
@@ -406,6 +407,23 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                                     Ignorar
                                 </Button>
                             </div>
+                            {aiSuggestion.alternatives && aiSuggestion.alternatives.length > 0 && (
+                                <div className="mt-2 space-y-1">
+                                    <p className="text-[11px] font-medium text-slate-500">O esta otra:</p>
+                                    {aiSuggestion.alternatives.map((alt) => (
+                                        <Button
+                                            key={alt.categoryId}
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-8 w-full justify-start px-3 text-xs"
+                                            onClick={() => handleAcceptSuggestion(alt.categoryId)}
+                                        >
+                                            {alt.categoryPath}
+                                        </Button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
