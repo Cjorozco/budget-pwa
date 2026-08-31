@@ -192,11 +192,7 @@ export async function seedDemoMarketing(): Promise<DemoSeedResult> {
 
     await db.transaction(
         'rw',
-        db.transactions,
-        db.accounts,
-        db.reserves,
-        db.reconciliations,
-        db.categories,
+        [db.transactions, db.accounts, db.reserves, db.reconciliations, db.categories],
         async () => {
             await db.transactions.clear();
             await db.reserves.clear();
