@@ -1,5 +1,10 @@
 import { db } from '../db';
-import { DESCRIPTION_CATEGORY_HINTS, matchCategoryRule, normalizeForMatch } from './categoryRules';
+import {
+    DESCRIPTION_CATEGORY_HINTS,
+    matchCategoryRule,
+    normalizeForMatch,
+    type CategoryKeywordRule,
+} from './categoryRules';
 import {
     findCategoryByPath,
     formatCategoryPath,
@@ -113,21 +118,34 @@ function scoreUserCategory(
     return score;
 }
 
-async function suggestFromUserCatalog(
+interface CatalogMatch {
+    category: Category;
+    /** Categoría raíz con hijos: es un cajón amplio, no una hoja donde clasificar */
+    isBroadParent: boolean;
+    runnerUp?: Category;
+}
+
+async function matchUserCatalog(
     description: string,
     type: 'income' | 'expense'
-): Promise<CategorySuggestion | null> {
+): Promise<CatalogMatch | null> {
     const categories = await db.categories.filter((c) => c.isActive && c.type === type).toArray();
     if (categories.length === 0) return null;
 
     const byId = new Map(categories.map((c) => [c.id, c]));
+    const parentsWithChildren = new Set(
+        categories.map((c) => c.parentId).filter((id): id is string => Boolean(id))
+    );
     const descNorm = normalizeForMatch(description);
     const descTokens = tokenize(description);
 
     const ranked = categories
         .map((cat) => {
             const parent = cat.parentId ? byId.get(cat.parentId) : undefined;
-            return { cat, score: scoreUserCategory(cat, parent, descNorm, descTokens) };
+            let score = scoreUserCategory(cat, parent, descNorm, descTokens);
+            // Las hojas ganan: registrar en la raíz mezcla gastos distintos en un mismo bucket.
+            if (score > 0 && !cat.parentId && parentsWithChildren.has(cat.id)) score -= 2;
+            return { cat, score };
         })
         .filter((row) => row.score >= 4)
         .sort((a, b) => b.score - a.score);
@@ -136,37 +154,41 @@ async function suggestFromUserCatalog(
 
     const best = ranked[0];
     const runnerUp = ranked[1];
-    const closeSecond = Boolean(
-        runnerUp && runnerUp.score >= best.score - 2 && runnerUp.cat.id !== best.cat.id
-    );
-
-    const alternatives: Array<{ categoryId: string; categoryPath: string }> = [];
-    if (closeSecond && runnerUp) {
-        alternatives.push({
-            categoryId: runnerUp.cat.id,
-            categoryPath: await resolveCategoryPathLabel(runnerUp.cat.id),
-        });
-    }
+    const closeSecond = runnerUp && runnerUp.score >= best.score - 2 && runnerUp.cat.id !== best.cat.id;
 
     return {
-        categoryId: best.cat.id,
-        categoryPath: await resolveCategoryPathLabel(best.cat.id),
-        confidence: closeSecond ? 0.62 : 0.78,
-        reason: closeSecond
-            ? 'Varias de tus categorías encajan. Elige la que uses para este gasto.'
-            : 'Encaja con una categoría que ya tienes.',
-        needsCategoryCreation: false,
-        alternatives: alternatives.length > 0 ? alternatives : undefined,
+        category: best.cat,
+        isBroadParent: !best.cat.parentId,
+        runnerUp: closeSecond ? runnerUp.cat : undefined,
     };
 }
 
-async function suggestFromKeywordRules(
-    description: string,
-    type: 'income' | 'expense'
-): Promise<CategorySuggestion | null> {
-    const rule = matchCategoryRule(description, type);
-    if (!rule) return null;
+async function buildCatalogSuggestion(match: CatalogMatch): Promise<CategorySuggestion> {
+    const alternatives = match.runnerUp
+        ? [
+              {
+                  categoryId: match.runnerUp.id,
+                  categoryPath: await resolveCategoryPathLabel(match.runnerUp.id),
+              },
+          ]
+        : undefined;
 
+    return {
+        categoryId: match.category.id,
+        categoryPath: await resolveCategoryPathLabel(match.category.id),
+        confidence: alternatives ? 0.62 : 0.78,
+        reason: alternatives
+            ? 'Varias de tus categorías encajan. Elige la que uses para este gasto.'
+            : 'Encaja con una categoría que ya tienes.',
+        needsCategoryCreation: false,
+        alternatives,
+    };
+}
+
+async function buildRuleSuggestion(
+    rule: CategoryKeywordRule,
+    type: 'income' | 'expense'
+): Promise<CategorySuggestion> {
     const path = formatCategoryPath(rule.parentName, rule.subcategoryName);
     const existing = await findCategoryByPath(type, rule.parentName, rule.subcategoryName);
 
@@ -180,11 +202,19 @@ async function suggestFromKeywordRules(
         };
     }
 
+    const existingParent = rule.subcategoryName
+        ? await findCategoryByPath(type, rule.parentName)
+        : null;
+
+    const reason = existingParent
+        ? `${rule.reason}. Falta "${rule.subcategoryName}" dentro de "${existingParent.name}": puedo crearla.`
+        : `${rule.reason}. Esta categoría aún no existe.`;
+
     return {
         categoryId: null,
         categoryPath: path,
         confidence: rule.confidence,
-        reason: `${rule.reason}. Esta categoría aún no existe.`,
+        reason,
         needsCategoryCreation: true,
         pendingCategory: {
             type: rule.type,
@@ -205,13 +235,31 @@ export async function suggestCategory(
 
     const lowerDesc = description.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-    // 1. Árbol del usuario (nombres + pistas). Prioridad: no inventar categorías si ya tiene una.
-    const catalogSuggestion = await suggestFromUserCatalog(description, type);
-    if (catalogSuggestion) return catalogSuggestion;
+    // 1. Árbol del usuario + reglas. Se prefiere la opción MÁS específica:
+    // caer en una raíz ("Gastos financieros") cuando la regla conoce la hoja
+    // ("Gastos financieros › Impuestos") obliga al usuario a crearla a mano.
+    const catalogMatch = await matchUserCatalog(description, type);
+    const rule = matchCategoryRule(description, type);
+    const ruleTargetsSubcategory = Boolean(rule?.subcategoryName);
+    const ruleSuggestion = rule ? await buildRuleSuggestion(rule, type) : null;
 
-    // 2. Reglas por palabras clave (pueden proponer crear una categoría)
-    const ruleSuggestion = await suggestFromKeywordRules(description, type);
-    if (ruleSuggestion) return ruleSuggestion;
+    if (catalogMatch && !(catalogMatch.isBroadParent && ruleTargetsSubcategory)) {
+        return buildCatalogSuggestion(catalogMatch);
+    }
+
+    if (ruleSuggestion) {
+        if (!catalogMatch) return ruleSuggestion;
+        // La raíz que ya tiene sigue disponible por si prefiere no crear la hoja.
+        return {
+            ...ruleSuggestion,
+            alternatives: [
+                {
+                    categoryId: catalogMatch.category.id,
+                    categoryPath: await resolveCategoryPathLabel(catalogMatch.category.id),
+                },
+            ],
+        };
+    }
 
     // 2. Establecimientos conocidos + historial
     let establishmentMatch: string | null = null;

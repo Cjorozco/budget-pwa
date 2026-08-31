@@ -409,7 +409,11 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                             </div>
                             {aiSuggestion.alternatives && aiSuggestion.alternatives.length > 0 && (
                                 <div className="mt-2 space-y-1">
-                                    <p className="text-[11px] font-medium text-slate-500">O esta otra:</p>
+                                    <p className="text-[11px] font-medium text-slate-500">
+                                        {aiSuggestion.needsCategoryCreation
+                                            ? 'O usa una que ya tienes:'
+                                            : 'O esta otra:'}
+                                    </p>
                                     {aiSuggestion.alternatives.map((alt) => (
                                         <Button
                                             key={alt.categoryId}
