@@ -8,3 +8,11 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>,
 )
+
+if (import.meta.env.DEV) {
+  void import('./lib/db/seedDemoMarketing').then(({ seedDemoMarketing }) => {
+    (window as unknown as { __seedBudgetDemo?: typeof seedDemoMarketing }).__seedBudgetDemo =
+      seedDemoMarketing;
+    console.info('[demo] localhost: window.__seedBudgetDemo() siembra datos ficticios de marketing.');
+  });
+}

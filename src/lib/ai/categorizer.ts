@@ -1,10 +1,11 @@
 import { db } from '../db';
-import { matchCategoryRule } from './categoryRules';
+import { DESCRIPTION_CATEGORY_HINTS, matchCategoryRule, normalizeForMatch } from './categoryRules';
 import {
     findCategoryByPath,
     formatCategoryPath,
     resolveCategoryPathLabel,
 } from './categoryResolver';
+import type { Category } from '../types';
 
 export interface CategorySuggestion {
     categoryId: string | null;
@@ -18,6 +19,8 @@ export interface CategorySuggestion {
         parentName: string;
         subcategoryName?: string;
     };
+    /** Otras categorías del usuario con puntaje similar */
+    alternatives?: Array<{ categoryId: string; categoryPath: string }>;
 }
 
 const KNOWN_ESTABLISHMENTS = [
@@ -74,6 +77,89 @@ export function tokenize(text: string): string[] {
         .filter((t) => !STOP_WORDS.has(t));
 }
 
+function isGenericCategoryName(name: string): boolean {
+    return new Set(['otros', 'otro', 'varios']).has(normalizeForMatch(name));
+}
+
+function scoreUserCategory(
+    cat: Category,
+    parent: Category | undefined,
+    descNorm: string,
+    descTokens: string[]
+): number {
+    if (isGenericCategoryName(cat.name)) return 0;
+
+    const nameNorm = normalizeForMatch(cat.name);
+    const parentNorm = parent ? normalizeForMatch(parent.name) : '';
+    const nameTokens = tokenize(cat.name);
+    let score = 0;
+
+    if (nameNorm.length >= 4 && descNorm.includes(nameNorm)) score += 5;
+    if (parentNorm.length >= 4 && !isGenericCategoryName(parent?.name ?? '') && descNorm.includes(parentNorm)) {
+        score += 2;
+    }
+
+    score += nameTokens.filter((t) => descTokens.includes(t)).length * 2;
+
+    for (const group of DESCRIPTION_CATEGORY_HINTS) {
+        const kwHit = group.keywords.some((k) => descNorm.includes(normalizeForMatch(k)));
+        if (!kwHit) continue;
+        const ownHint = group.nameHints.some((h) => nameNorm.includes(h));
+        const parentHint = group.nameHints.some((h) => parentNorm.includes(h));
+        if (ownHint) score += 6;
+        else if (parentHint) score += 3;
+    }
+
+    return score;
+}
+
+async function suggestFromUserCatalog(
+    description: string,
+    type: 'income' | 'expense'
+): Promise<CategorySuggestion | null> {
+    const categories = await db.categories.filter((c) => c.isActive && c.type === type).toArray();
+    if (categories.length === 0) return null;
+
+    const byId = new Map(categories.map((c) => [c.id, c]));
+    const descNorm = normalizeForMatch(description);
+    const descTokens = tokenize(description);
+
+    const ranked = categories
+        .map((cat) => {
+            const parent = cat.parentId ? byId.get(cat.parentId) : undefined;
+            return { cat, score: scoreUserCategory(cat, parent, descNorm, descTokens) };
+        })
+        .filter((row) => row.score >= 4)
+        .sort((a, b) => b.score - a.score);
+
+    if (ranked.length === 0) return null;
+
+    const best = ranked[0];
+    const runnerUp = ranked[1];
+    const closeSecond = Boolean(
+        runnerUp && runnerUp.score >= best.score - 2 && runnerUp.cat.id !== best.cat.id
+    );
+
+    const alternatives: Array<{ categoryId: string; categoryPath: string }> = [];
+    if (closeSecond && runnerUp) {
+        alternatives.push({
+            categoryId: runnerUp.cat.id,
+            categoryPath: await resolveCategoryPathLabel(runnerUp.cat.id),
+        });
+    }
+
+    return {
+        categoryId: best.cat.id,
+        categoryPath: await resolveCategoryPathLabel(best.cat.id),
+        confidence: closeSecond ? 0.62 : 0.78,
+        reason: closeSecond
+            ? 'Varias de tus categorías encajan. Elige la que uses para este gasto.'
+            : 'Encaja con una categoría que ya tienes.',
+        needsCategoryCreation: false,
+        alternatives: alternatives.length > 0 ? alternatives : undefined,
+    };
+}
+
 async function suggestFromKeywordRules(
     description: string,
     type: 'income' | 'expense'
@@ -119,7 +205,11 @@ export async function suggestCategory(
 
     const lowerDesc = description.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-    // 1. Reglas por palabras clave (prioridad máxima)
+    // 1. Árbol del usuario (nombres + pistas). Prioridad: no inventar categorías si ya tiene una.
+    const catalogSuggestion = await suggestFromUserCatalog(description, type);
+    if (catalogSuggestion) return catalogSuggestion;
+
+    // 2. Reglas por palabras clave (pueden proponer crear una categoría)
     const ruleSuggestion = await suggestFromKeywordRules(description, type);
     if (ruleSuggestion) return ruleSuggestion;
 

@@ -33,7 +33,7 @@ You are assisting a Senior Frontend Engineer with 8+ years of experience.
 - UI: Tailwind CSS 4, Shadcn/UI, Material UI
 - PWA: vite-plugin-pwa, Service Workers, offline-first
 - Data: Dexie.js (IndexedDB), useLiveQuery, Supabase
-- Testing: Vitest, Jest + React Testing Library, Cypress (E2E)
+- Testing: Vitest + React Testing Library
 - Tools: Git (conventional commits), Vite 7, CI/CD
 
 **Experience context:**
@@ -155,7 +155,7 @@ Only use when starting from scratch or choosing between options:
 - Forms: React Hook Form + Zod
 - State: Zustand (medium), Context API (small)
 - Data: Dexie.js (offline) or Supabase (cloud)
-- Testing: Vitest + Testing Library (unit), Cypress (E2E)
+- Testing: Vitest + Testing Library (unit)
 - Deployment: Vercel (frontend), Render (backend)
 
 **ALWAYS respect existing project choices.**

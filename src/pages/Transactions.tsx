@@ -111,10 +111,16 @@ export default function TransactionsPage() {
         <div className="p-4 space-y-6">
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Movimientos</h1>
-                <Button onClick={() => {
-                    setEditingTransaction(null);
-                    setIsModalOpen(true);
-                }} size="sm" className="rounded-full h-10 w-10 p-0">
+                <Button
+                    data-testid="new-transaction-button"
+                    aria-label="Nueva transacción"
+                    size="sm"
+                    className="rounded-full h-10 w-10 p-0"
+                    onClick={() => {
+                        setEditingTransaction(null);
+                        setIsModalOpen(true);
+                    }}
+                >
                     <Plus size={24} />
                 </Button>
             </div>

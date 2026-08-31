@@ -53,7 +53,7 @@ export function AccountCard({ account, onEdit, onReconcile, onViewHistory, onAdd
     const isMatched = difference !== null && Math.abs(difference) < 0.01;
 
     return (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden flex flex-col h-full">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden flex flex-col h-full" data-testid="account-card" data-account-name={account.name}>
             <div className={cn(
                 "absolute top-0 right-0 p-3 opacity-10",
                 account.type === 'credit' ? "text-purple-600" : "text-blue-600"
@@ -95,6 +95,8 @@ export function AccountCard({ account, onEdit, onReconcile, onViewHistory, onAdd
                             className="h-8 w-8 p-0 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full"
                             onClick={() => onReconcile(account)}
                             title="Reconciliar"
+                            data-testid="reconcile-button"
+                            aria-label={`Reconciliar ${account.name}`}
                         >
                             <History size={14} className="text-blue-600" />
                         </Button>
@@ -120,9 +122,11 @@ export function AccountCard({ account, onEdit, onReconcile, onViewHistory, onAdd
                         </div>
                         {reservedAmount > 0 && (
                             <button
+                                type="button"
                                 onClick={() => onViewReserves?.(account)}
                                 className="text-left group/res hover:bg-amber-50 dark:hover:bg-amber-900/10 p-1.5 -m-1.5 rounded-xl transition-colors"
                                 title="Ver detalles de reservas"
+                                data-testid="view-reserves-button"
                             >
                                 <span className="text-[10px] font-bold text-amber-500 uppercase tracking-tight block mb-1 group-hover/res:text-amber-600">Reservado</span>
                                 <div className="text-sm font-bold text-amber-600 dark:text-amber-400 truncate flex items-center gap-1">

@@ -92,34 +92,69 @@ export function matchCategoryRule(
     return null;
 }
 
+/**
+ * Palabras en la descripción → pistas de nombre en el árbol del usuario.
+ * Así "declaración de renta" encaja en "Gastos financieros" aunque no coincidan las palabras.
+ */
+export const DESCRIPTION_CATEGORY_HINTS: { keywords: string[]; nameHints: string[] }[] = [
+    {
+        keywords: [
+            'declaracion de renta',
+            'declaracion renta',
+            'impuesto de renta',
+            'dian',
+            'retefuente',
+            'retencion en la fuente',
+            'ica',
+        ],
+        nameHints: ['financier', 'tribut', 'renta', 'dian'],
+    },
+    {
+        keywords: ['impuesto', 'impuestos', 'predial', 'iva'],
+        nameHints: ['impuest', 'financier', 'tribut', 'propiedad'],
+    },
+    {
+        keywords: ['arriendo', 'alquiler', 'hipoteca', 'administracion'],
+        nameHints: ['vivienda', 'alquiler', 'arriendo', 'hipoteca'],
+    },
+];
+
 export const CATEGORY_KEYWORD_RULES: CategoryKeywordRule[] = [
-    // --- Sofia: transporte escolar (jardín / Sofía) ---
+    // --- Tributario (Colombia): si el usuario no tiene categoría parecida, se ofrece crearla ---
+    {
+        type: 'expense',
+        keywordGroups: [
+            ['declaracion de renta'],
+            ['declaracion renta'],
+            ['impuesto de renta'],
+            ['dian'],
+            ['retefuente'],
+            ['retencion en la fuente'],
+        ],
+        parentName: 'Gastos financieros',
+        subcategoryName: 'Impuestos',
+        confidence: 0.82,
+        reason: 'Gasto tributario (declaración o impuestos)',
+    },
+
+    // --- Transporte escolar (catálogo genérico Niños, no nombres propios) ---
     {
         type: 'expense',
         keywordGroups: [
             ['jardin', 'jardín', 'guarderia', 'guardería', 'colegio'],
-            ['sofia', 'sofía'],
+            ['transporte', 'uber', 'didi', 'ruta'],
         ],
         matchMode: 'all',
-        parentName: 'Sofia',
+        parentName: 'Niños',
         subcategoryName: 'Transporte',
-        confidence: 0.92,
-        reason: 'Transporte escolar detectado (jardín/colegio + Sofía)',
-    },
-    {
-        type: 'expense',
-        keywordGroups: [['jardin'], ['jardín'], ['guarderia'], ['guardería']],
-        parentName: 'Sofia',
-        subcategoryName: 'Transporte',
-        confidence: 0.88,
-        reason: 'Posible transporte escolar (jardín/guardería)',
+        confidence: 0.86,
+        reason: 'Transporte escolar (jardín/colegio)',
     },
 
     // --- Transporte privado ---
     {
         type: 'expense',
         keywordGroups: [['uber'], ['didi'], ['cabify'], ['beat']],
-        excludeKeywordGroups: [['jardin'], ['jardín'], ['sofia'], ['sofía'], ['guarderia']],
         parentName: 'Transporte',
         subcategoryName: 'Privado',
         confidence: 0.85,

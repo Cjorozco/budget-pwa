@@ -86,6 +86,31 @@ export default function SettingsPage() {
         }
     };
 
+    const handleSeedDemoMarketing = async () => {
+        if (!import.meta.env.DEV) return;
+
+        const ok = window.confirm(
+            'Esto BORRA movimientos, reservas y reconciliaciones de este localhost y carga datos ficticios de demo.\n\nNo afecta producción. ¿Continuar?'
+        );
+        if (!ok) return;
+
+        setIsLoading(true);
+        try {
+            const { seedDemoMarketing } = await import('@/lib/db/seedDemoMarketing');
+            const result = await seedDemoMarketing();
+            addToast('Datos de demo cargados', 'success');
+            window.alert(
+                `Demo lista.\n\nEn Cuentas → Reconciliar Bancolombia, escribe:\n${result.bancolombiaDeclaredOnCamera.toLocaleString('es-CO')} COP\n\n(calculado ${result.bancolombiaCalculated.toLocaleString('es-CO')} + 35.000)\n\nLuego, en cámara, crea un gasto nuevo: "Uber al jardín".`
+            );
+            window.location.reload();
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'Error al sembrar demo';
+            addToast(message, 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const handleFullReset = async () => {
         setIsLoading(true);
         try {
@@ -120,6 +145,25 @@ export default function SettingsPage() {
                 <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Ajustes</h1>
                 <p className="text-sm text-slate-500">Configuración general</p>
             </header>
+
+            {import.meta.env.DEV && (
+                <section className="space-y-3 p-4 rounded-2xl border-2 border-dashed border-violet-300 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/30">
+                    <h2 className="text-lg font-semibold text-violet-900 dark:text-violet-200">Grabación (solo localhost)</h2>
+                    <p className="text-xs text-violet-800 dark:text-violet-300">
+                        Carga datos ficticios para el video. No existe en producción. Para regrabar: Reset total → recargar → este botón otra vez.
+                    </p>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        isLoading={isLoading}
+                        onClick={handleSeedDemoMarketing}
+                        data-testid="seed-demo-button"
+                        className="w-full border-violet-400 text-violet-800 dark:text-violet-200"
+                    >
+                        Cargar datos de demo
+                    </Button>
+                </section>
+            )}
 
             <section className="space-y-4">
                 <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Gestión</h2>
