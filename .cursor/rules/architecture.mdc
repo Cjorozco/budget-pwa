@@ -17,7 +17,7 @@ alwaysApply: true
 Convenciones clave que deben guiar nuevas piezas:
 
 - Los cálculos “de verdad” deben derivarse de la historia de transacciones (no de “ajustes” implícitos).
-- Los cambios que alteran el saldo deben ser trazables (idealmente, como transacciones explícitas).
+- Los cambios que alteran el saldo deben ser trazables como transacciones explícitas (`isAdjustment: true`).
 - Evitar lógica acoplada a la UI: separar “datos/DB” y “render” cuando sea práctico.
 
 # Principios de diseño
