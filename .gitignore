@@ -27,9 +27,3 @@ dist-ssr
 
 # Personal financial backups (never commit user data)
 budget-backup*.json
-
-# Cypress: los MP4 salen a C:\Users\JoseO\Videos\personal-buget-pwa (fuera del repo)
-cypress/videos/*
-!cypress/videos/.gitkeep
-cypress/screenshots
-cypress/downloads
