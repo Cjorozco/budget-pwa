@@ -7,8 +7,11 @@ import { db } from '@/lib/db';
 import { TransactionSchema } from '@/lib/schemas';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { suggestCategory, type CategorySuggestion } from '@/lib/ai/categorizer';
+import { type CategorySuggestion } from '@/lib/ai/categorizer';
 import { findOrCreateCategory } from '@/lib/ai/categoryResolver';
+import { suggestCategoryWithLlm } from '@/lib/ai/suggestWithLlm';
+import { hasGeminiApiKey } from '@/lib/ai/geminiKey';
+import { useUIStore } from '@/store/ui';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 import { format } from 'date-fns';
@@ -27,8 +30,10 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
     const accounts = useLiveQuery(() => db.accounts.filter(a => a.isActive).toArray()) || [];
     const allCategories = useLiveQuery(() => db.categories.filter(c => c.isActive).toArray()) || [];
 
+    const isPro = useUIStore((s) => s.isPro);
     const [aiSuggestion, setAiSuggestion] = useState<CategorySuggestion | null>(null);
     const [showAiSuggestion, setShowAiSuggestion] = useState(false);
+    const [geminiPending, setGeminiPending] = useState(false);
     const [createdCategories, setCreatedCategories] = useState<Category[]>([]);
     const categoryTouchedRef = useRef(false);
 
@@ -75,33 +80,50 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
         if (!description || description.length < 3) {
             setAiSuggestion(null);
             setShowAiSuggestion(false);
+            setGeminiPending(false);
             return;
         }
 
-        const timer = setTimeout(async () => {
-            const suggestion = await suggestCategory(description, type);
-            if (suggestion) {
-                setAiSuggestion(suggestion);
-                setShowAiSuggestion(true);
+        if (type !== 'income' && type !== 'expense') return;
 
-                if (
-                    !categoryTouchedRef.current &&
-                    suggestion.categoryId &&
-                    !suggestion.needsCategoryCreation &&
-                    suggestion.confidence >= 0.7 &&
-                    !suggestion.alternatives?.length
-                ) {
-                    setValue('categoryId', suggestion.categoryId);
-                    // El panel se queda visible: si no, parece que "no sugirió nada".
+        const controller = new AbortController();
+        const timer = setTimeout(async () => {
+            const mayCallGemini = isPro && hasGeminiApiKey();
+            setGeminiPending(mayCallGemini);
+            try {
+                const suggestion = await suggestCategoryWithLlm(description, type, {
+                    isPro,
+                    signal: controller.signal,
+                });
+                if (controller.signal.aborted) return;
+
+                if (suggestion) {
+                    setAiSuggestion(suggestion);
+                    setShowAiSuggestion(true);
+
+                    if (
+                        !categoryTouchedRef.current &&
+                        suggestion.categoryId &&
+                        !suggestion.needsCategoryCreation &&
+                        suggestion.confidence >= 0.7 &&
+                        !suggestion.alternatives?.length
+                    ) {
+                        setValue('categoryId', suggestion.categoryId);
+                    }
+                } else {
+                    setAiSuggestion(null);
+                    setShowAiSuggestion(false);
                 }
-            } else {
-                setAiSuggestion(null);
-                setShowAiSuggestion(false);
+            } finally {
+                if (!controller.signal.aborted) setGeminiPending(false);
             }
         }, 500);
 
-        return () => clearTimeout(timer);
-    }, [description, type, initialData, setValue]);
+        return () => {
+            clearTimeout(timer);
+            controller.abort();
+        };
+    }, [description, type, initialData, setValue, isPro]);
 
     const handleAcceptSuggestion = async (chosenId?: string) => {
         if (!aiSuggestion) return;
@@ -347,6 +369,12 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                 data-testid="description-input"
             />
 
+            {geminiPending && (
+                <p className="text-[11px] text-indigo-600 dark:text-indigo-400" data-testid="gemini-pending">
+                    Consultando Gemini…
+                </p>
+            )}
+
             {/* AI Suggestion Panel */}
             {showAiSuggestion && aiSuggestion && (
                 <div
@@ -367,7 +395,11 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                         <div className="flex-1">
                             <div className="flex justify-between items-center mb-1">
                                 <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                                    {aiSuggestion.confidence >= 0.7 ? 'Sugerencia mágica' : 'Revisión necesaria'}
+                                    {aiSuggestion.source === 'gemini'
+                                        ? 'Sugerencia Gemini'
+                                        : aiSuggestion.confidence >= 0.7
+                                            ? 'Sugerencia local'
+                                            : 'Revisión necesaria'}
                                 </p>
                                 <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${aiSuggestion.confidence >= 0.7 ? 'bg-blue-200 text-blue-700' : 'bg-amber-200 text-amber-700'}`}>
                                     {Math.round(aiSuggestion.confidence * 100)}%

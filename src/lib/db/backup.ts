@@ -19,6 +19,7 @@ const BackupSchema = z.object({
 export type BackupData = z.infer<typeof BackupSchema>;
 
 export async function exportDatabase(): Promise<string> {
+    // Do not include Gemini API keys: they live in localStorage, not Dexie.
     const data: BackupData = {
         version: 1,
         timestamp: Date.now(),
