@@ -24,8 +24,11 @@ export function GeminiKeyCard() {
     const [draft, setDraft] = useState('');
     const [hasKey, setHasKey] = useState(Boolean(stored));
     const [masked, setMasked] = useState(stored ? maskGeminiApiKey(stored) : '');
+    const [isReplacing, setIsReplacing] = useState(false);
     const [fieldError, setFieldError] = useState<string | undefined>();
     const [isTesting, setIsTesting] = useState(false);
+
+    const showEditor = !hasKey || isReplacing;
 
     const persistAndRefresh = (key: string | null) => {
         if (key) {
@@ -39,6 +42,7 @@ export function GeminiKeyCard() {
         }
         setDraft('');
         setFieldError(undefined);
+        setIsReplacing(false);
     };
 
     const handleSave = () => {
@@ -48,7 +52,10 @@ export function GeminiKeyCard() {
             return;
         }
         persistAndRefresh(draft.trim());
-        addToast('API key de Gemini guardada en este dispositivo', 'success');
+        addToast(
+            hasKey ? 'API key de Gemini reemplazada en este dispositivo' : 'API key de Gemini guardada en este dispositivo',
+            'success'
+        );
     };
 
     const handleTest = async () => {
@@ -83,6 +90,12 @@ export function GeminiKeyCard() {
         addToast('API key de Gemini eliminada de este dispositivo', 'success');
     };
 
+    const handleCancelReplace = () => {
+        setDraft('');
+        setFieldError(undefined);
+        setIsReplacing(false);
+    };
+
     return (
         <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-3">
             <div className="flex items-start gap-3">
@@ -112,27 +125,36 @@ export function GeminiKeyCard() {
                 <ExternalLink size={12} />
             </a>
 
-            {hasKey && (
-                <p className="text-xs text-slate-600 dark:text-slate-400">
-                    Guardada en este dispositivo: <span className="font-mono">{masked}</span>
-                </p>
+            {hasKey ? (
+                <div className="rounded-xl bg-slate-50 dark:bg-slate-800/60 px-3 py-2 space-y-0.5">
+                    <p className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                        Una sola key en este dispositivo
+                    </p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                        Activa: <span className="font-mono">{masked}</span>
+                    </p>
+                </div>
+            ) : (
+                <p className="text-[11px] text-slate-500">Solo se guarda una key. Si más adelante rotas la de AI Studio, úsala para reemplazar esta.</p>
             )}
 
-            <Input
-                label="API key de Gemini"
-                type="password"
-                revealPassword
-                autoComplete="off"
-                spellCheck={false}
-                placeholder="Pega la key de AI Studio"
-                value={draft}
-                error={fieldError}
-                onChange={(e) => {
-                    setDraft(e.target.value);
-                    setFieldError(undefined);
-                }}
-                data-testid="gemini-api-key-input"
-            />
+            {showEditor && (
+                <Input
+                    label={hasKey ? 'Nueva API key (reemplaza la actual)' : 'API key de Gemini'}
+                    type="password"
+                    revealPassword
+                    autoComplete="off"
+                    spellCheck={false}
+                    placeholder="Pega la key de AI Studio"
+                    value={draft}
+                    error={fieldError}
+                    onChange={(e) => {
+                        setDraft(e.target.value);
+                        setFieldError(undefined);
+                    }}
+                    data-testid="gemini-api-key-input"
+                />
+            )}
 
             <p className="text-[10px] text-slate-500">
                 La key no se sube a ningún servidor nuestro ni entra en el backup JSON. Si hay red, se envían a Google
@@ -140,9 +162,28 @@ export function GeminiKeyCard() {
             </p>
 
             <div className="flex flex-wrap gap-2">
-                <Button type="button" size="sm" onClick={handleSave} data-testid="gemini-api-key-save">
-                    Guardar
-                </Button>
+                {showEditor ? (
+                    <>
+                        <Button type="button" size="sm" onClick={handleSave} data-testid="gemini-api-key-save">
+                            {hasKey ? 'Reemplazar' : 'Guardar'}
+                        </Button>
+                        {isReplacing && (
+                            <Button type="button" size="sm" variant="ghost" onClick={handleCancelReplace}>
+                                Cancelar
+                            </Button>
+                        )}
+                    </>
+                ) : (
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setIsReplacing(true)}
+                        data-testid="gemini-api-key-replace"
+                    >
+                        Cambiar key
+                    </Button>
+                )}
                 <Button
                     type="button"
                     size="sm"
