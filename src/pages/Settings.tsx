@@ -6,6 +6,8 @@ import { Trash2, AlertTriangle, RefreshCw, FolderTree, Download, FileJson, FileS
 import { Modal } from '@/components/ui/Modal';
 import { exportDatabase, downloadBackup, importDatabase, exportToCSV, downloadCSV } from '@/lib/db/backup';
 import { useUIStore } from '@/store/ui';
+import { GeminiKeyCard } from '@/components/settings/GeminiKeyCard';
+import { GEMINI_MODEL, GEMINI_PROVIDER_LABEL } from '@/lib/ai/geminiConfig';
 
 export default function SettingsPage() {
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -215,7 +217,7 @@ export default function SettingsPage() {
                         <p className="text-sm text-amber-50 mb-4 opacity-90">
                             {isPro 
                                 ? "¡Gracias por tu apoyo! Tienes acceso a todas las funciones premium." 
-                                : "Desbloquea exportación a Excel y apoya el desarrollo continuo de la app."}
+                                : "Desbloquea CSV, categorización con Gemini (tu API key) y apoya el desarrollo."}
                         </p>
                         {!isPro && (
                             <Button 
@@ -236,6 +238,7 @@ export default function SettingsPage() {
                     <div className="absolute -right-6 -top-6 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
                     <div className="absolute -left-6 -bottom-6 w-24 h-24 bg-black/10 rounded-full blur-xl" />
                 </div>
+                {isPro && <GeminiKeyCard />}
             </section>
 
             <section className="space-y-4">
@@ -398,11 +401,18 @@ export default function SettingsPage() {
                         </li>
                         <li className="flex items-start gap-3">
                             <CheckCircle2 className="text-green-500 shrink-0 mt-0.5" size={18} />
-                            <span className="text-sm text-slate-700 dark:text-slate-300"><strong>Apoya el desarrollo:</strong> Ayuda a mantener la aplicación sin anuncios y privada.</span>
+                            <span className="text-sm text-slate-700 dark:text-slate-300">
+                                <strong>Categorización con {GEMINI_PROVIDER_LABEL}:</strong> pegas tu API key de{' '}
+                                <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="underline">
+                                    Google AI Studio
+                                </a>
+                                {' '}(gratis o de pago). La app usa el modelo <code className="text-xs">{GEMINI_MODEL}</code>.
+                                No sirven ChatGPT Plus ni Claude.ai (no son API keys). Otros proveedores, más adelante.
+                            </span>
                         </li>
                         <li className="flex items-start gap-3">
                             <CheckCircle2 className="text-green-500 shrink-0 mt-0.5" size={18} />
-                            <span className="text-sm text-slate-700 dark:text-slate-300"><strong>Futuras funciones PRO:</strong> Acceso a todas las funciones premium que se agreguen.</span>
+                            <span className="text-sm text-slate-700 dark:text-slate-300"><strong>Apoya el desarrollo:</strong> Ayuda a mantener la aplicación sin anuncios y privada.</span>
                         </li>
                     </ul>
 

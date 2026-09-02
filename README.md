@@ -1,19 +1,32 @@
 # Personal Budget PWA 🏦
 
-Gestor de presupuesto personal con filosofía **Senior Financial Thinking**: trazabilidad total, sin correcciones automáticas "mágicas" y 100% offline-first.
+Gestor de presupuesto personal con filosofía **Senior Financial Thinking**: trazabilidad total, sin correcciones automáticas "mágicas" y **offline-first** (el núcleo no necesita red).
 
 ## Principios del Proyecto
 - **La Reconciliación no corrige el pasado**: No borramos ni editamos transacciones antiguas. Solo dejamos evidencia y fotos (snapshots) del estado financiero.
 - **Trazabilidad Total**: Cualquier ajuste al saldo debe ser una transacción explícita (`isAdjustment: true`).
-- **Offline-First**: Tus datos nunca salen de tu dispositivo. Usamos IndexedDB para persistencia local robusta.
+- **Offline-First**: Tus datos de presupuesto viven en el dispositivo (IndexedDB). El núcleo funciona sin red.
 - **Saldos Atómicos**: El saldo calculado es la verdad absoluta derivada de la historia de transacciones.
+
+## PRO: Gemini (BYOK)
+
+La app **no** trae una API key en el servidor. PRO desbloquea pegar **tu** key:
+
+| Qué | Valor |
+|---|---|
+| Proveedor (hoy) | Google Gemini — el que funciona sin backend (CORS en el navegador) |
+| Dónde crear la key | [Google AI Studio](https://aistudio.google.com/apikey) — tier gratis o de pago |
+| Modelo que usa la app | `gemini-flash-latest` (alias Flash; no se elige otro en la UI) |
+| Qué **no** sirve aún | ChatGPT Plus, Claude.ai, keys `sk-` de OpenAI o Anthropic (hace falta un servidor). Más adelante se pueden sumar Groq, OpenRouter u otros con CORS. |
+
+La key se guarda en `localStorage` de **este** dispositivo. No entra al backup JSON. Sin red o sin key, se usan solo las reglas locales. Al consultar Gemini se envían la descripción del movimiento y los nombres de tus categorías (no montos ni cuentas).
 
 ## Características Clave
 - ✅ **Gestión Multi-cuenta**: Bancos, Efectivo y Crédito.
 - ✅ **Reconciliación Auditable**: Historial de snapshots con diferencias y notas.
 - ✅ **Ajustes Explícitos**: Cierre de brechas mediante transacciones automáticas marcadas.
 - ✅ **Reservas por Cuenta**: Crea, edita y elimina montos reservados sin alterar el saldo real.
-- ✅ **Categorización Inteligente**: Sugerencias basadas en historial y reglas heurísticas.
+- ✅ **Categorización Inteligente**: reglas e historial locales; en PRO, Gemini (`gemini-flash-latest`) con **tu** API key de [Google AI Studio](https://aistudio.google.com/apikey).
 - ✅ **UI Mobile-First**: Diseñada para una entrada de datos rápida y sin fricción.
 
 ## Gestión de Reservas

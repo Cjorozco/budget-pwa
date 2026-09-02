@@ -28,6 +28,7 @@ Estos son los principios que el proyecto ya declara (y que deben mantenerse siem
 - **Trazabilidad Total**: cualquier ajuste al saldo debe ser una transacción explícita (`isAdjustment: true`).
 - **Offline-First**: los datos nunca salen del dispositivo; persistimos robustamente en IndexedDB.
 - **Saldos Atómicos**: el saldo calculado es la verdad absoluta derivada de la historia de transacciones.
+- **Gemini BYOK (PRO):** la única llamada de red opcional **hoy** es a `generativelanguage.googleapis.com` con la API key que el usuario pega (Google AI Studio, modelo `gemini-flash-latest`). No hay proxy ni key en el build. ChatGPT/Claude no aplican todavía (CORS / no es API key). El orquestador `suggestWithLlm` es el punto para enganchar otros proveedores después.
 
 # Mobile-first como regla no negociable
 
@@ -61,6 +62,7 @@ Reglas de marca:
   - asegurar que la experiencia base (assets) funciona offline vía service worker
   - mantener `manifest` consistente con la UX (tema, íconos, display)
   - cuidar la evolución de cache/actualizaciones (sin romper la experiencia)
+  - runtime caching: `NetworkOnly` para `generativelanguage.googleapis.com` (Gemini BYOK)
 - **Offline UX**: cuando una acción requiera datos persistidos, debe funcionar aun sin red; mostrar feedback claro ante fallos.
 - **Seguridad/privacidad por diseño**: no introducir analytics/telemetría sin justificación; validar importaciones/exportaciones (ya se usa Zod, mantener el estándar).
 - **Calidad**: mantener tests con Vitest para lógica pura/DB/validación cuando aplique; evitar “tests de UI” de bajo valor.

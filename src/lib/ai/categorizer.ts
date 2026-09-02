@@ -26,6 +26,8 @@ export interface CategorySuggestion {
     };
     /** Otras categorías del usuario con puntaje similar */
     alternatives?: Array<{ categoryId: string; categoryPath: string }>;
+    /** local = reglas/historial; gemini = Google Gemini (PRO + API key) */
+    source?: 'local' | 'gemini';
 }
 
 const KNOWN_ESTABLISHMENTS = [

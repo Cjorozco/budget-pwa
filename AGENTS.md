@@ -98,6 +98,7 @@ PWA & OFFLINE-FIRST RULES
 - Service Worker via `vite-plugin-pwa` with `registerType: 'autoUpdate'`
 - Never assume network availability. All core features must work offline.
 - Cache-first for static assets; only add network strategies if the project gains remote APIs
+- **Excepción actual:** PRO + BYOK llama a Google Gemini (`gemini-flash-latest`, host `generativelanguage.googleapis.com`) desde el cliente. Workbox: `NetworkOnly` para ese host. Sin key / sin red = categorizador local. La key NUNCA va en `VITE_*`, Dexie ni backups.
 
 ═══════════════════════════════════════════════
 DATA LAYER RULES (Dexie.js)
@@ -135,6 +136,7 @@ SECURITY & PRIVACY (offline app)
 - Input validation with Zod on forms and backup import/export
 - No analytics or telemetry without explicit justification
 - Data stays on-device; do not add remote sync unless requested
+- Optional Gemini: only description + category names leave the device, and only if the user pasted a Gemini API key (PRO)
 
 ═══════════════════════════════════════════════
 PREFERRED LIBRARIES (new choices only)
