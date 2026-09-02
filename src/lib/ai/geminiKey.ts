@@ -58,10 +58,13 @@ export function maskGeminiApiKey(key: string): string {
     return `${trimmed.slice(0, 4)}…${trimmed.slice(-4)}`;
 }
 
-/** Gemini keys from AI Studio start with AIza. OpenAI/Anthropic prefixes are rejected in the UI. */
+/** Google AI Studio keys vary in prefix (AIza…, AQ…). Reject obvious OpenAI/Anthropic keys. */
+const MIN_GEMINI_KEY_LENGTH = 16;
+
 export function looksLikeGeminiApiKey(value: string): boolean {
     const trimmed = value.trim();
-    return trimmed.startsWith('AIza') && trimmed.length >= 30;
+    if (trimmed.startsWith('sk-')) return false;
+    return trimmed.length >= MIN_GEMINI_KEY_LENGTH;
 }
 
 export function rejectedKeyReason(value: string): string | null {
@@ -73,8 +76,8 @@ export function rejectedKeyReason(value: string): string | null {
     if (trimmed.startsWith('sk-')) {
         return 'Eso parece una key de OpenAI. Por ahora solo se llama a Google Gemini (AI Studio).';
     }
-    if (!looksLikeGeminiApiKey(trimmed)) {
-        return 'La key de Gemini suele empezar por AIza. Crea una en Google AI Studio.';
+    if (trimmed.length < MIN_GEMINI_KEY_LENGTH) {
+        return 'La key parece incompleta. Pégala completa desde Google AI Studio.';
     }
     return null;
 }

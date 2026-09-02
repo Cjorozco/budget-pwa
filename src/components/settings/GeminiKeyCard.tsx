@@ -121,9 +121,10 @@ export function GeminiKeyCard() {
             <Input
                 label="API key de Gemini"
                 type="password"
+                revealPassword
                 autoComplete="off"
                 spellCheck={false}
-                placeholder="AIza…"
+                placeholder="Pega la key de AI Studio"
                 value={draft}
                 error={fieldError}
                 onChange={(e) => {

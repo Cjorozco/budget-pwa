@@ -29,4 +29,9 @@ describe('geminiKey', () => {
         expect(looksLikeGeminiApiKey('sk-proj-abc')).toBe(false);
         expect(looksLikeGeminiApiKey('AIzaSyDummyKeyForUnitTests1234567890')).toBe(true);
     });
+
+    it('accepts Google AI Studio keys that do not start with AIza', () => {
+        expect(looksLikeGeminiApiKey('AQxxxxxxxxxxxxxxxxxxxxxxxxxxxx')).toBe(true);
+        expect(rejectedKeyReason('AQxxxxxxxxxxxxxxxxxxxxxxxxxxxx')).toBeNull();
+    });
 });
