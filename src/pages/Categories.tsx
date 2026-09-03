@@ -6,8 +6,10 @@ import { Modal } from '@/components/ui/Modal';
 import { CategoryForm } from '@/components/forms/CategoryForm';
 import { Plus, Pencil, Trash2, ChevronRight } from 'lucide-react';
 import type { Category } from '@/lib/types';
+import { useUIStore } from '@/store/ui';
 
 export default function CategoriesPage() {
+    const { confirm, addToast } = useUIStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState<Category | null>(null);
     const [defaultType, setDefaultType] = useState<'income' | 'expense'>('expense');
@@ -34,23 +36,28 @@ export default function CategoriesPage() {
         const txCount = await db.transactions.where('categoryId').equals(category.id).count();
 
         if (txCount > 0) {
-            if (!confirm(`Esta categoría tiene ${txCount} transacciones. ¿Seguro que quieres eliminarla? Las transacciones quedarán sin categoría.`)) {
-                return;
-            }
+            const ok = await confirm({
+                title: '¿Eliminar categoría?',
+                message: `Esta categoría tiene ${txCount} transacciones asociadas. ¿Seguro que quieres eliminarla? Las transacciones quedarán sin categoría.`,
+                confirmLabel: 'Eliminar categoría',
+                variant: 'danger',
+            });
+            if (!ok) return;
         }
 
         // Check if it's a parent with children
         const children = getChildren(category.id);
         if (children.length > 0) {
-            alert(`No puedes eliminar esta categoría porque tiene ${children.length} subcategorías. Elimina primero las subcategorías.`);
+            addToast(`No puedes eliminar esta categoría porque tiene ${children.length} subcategorías. Elimina primero las subcategorías.`, 'error');
             return;
         }
 
         try {
             await db.categories.update(category.id, { isActive: false });
+            addToast('Categoría eliminada', 'success');
         } catch (error) {
             console.error('Error deleting category:', error);
-            alert('Error al eliminar la categoría');
+            addToast('Error al eliminar la categoría', 'error');
         }
     };
 

@@ -31,6 +31,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
     const allCategories = useLiveQuery(() => db.categories.filter(c => c.isActive).toArray()) || [];
 
     const isPro = useUIStore((s) => s.isPro);
+    const addToast = useUIStore((s) => s.addToast);
     const [aiSuggestion, setAiSuggestion] = useState<CategorySuggestion | null>(null);
     const [showAiSuggestion, setShowAiSuggestion] = useState(false);
     const [geminiPending, setGeminiPending] = useState(false);
@@ -161,7 +162,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
             setShowAiSuggestion(false);
         } catch (error) {
             console.error('Error creating category:', error);
-            alert('No se pudo crear la categoría sugerida');
+            addToast('No se pudo crear la categoría sugerida', 'error');
         }
     };
 
@@ -310,10 +311,11 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
             }
 
             reset();
+            addToast(initialData ? 'Transacción actualizada' : 'Transacción guardada', 'success');
             onSuccess();
         } catch (error) {
             console.error('Failed to save transaction:', error);
-            alert('Error al guardar la transacción');
+            addToast('Error al guardar la transacción', 'error');
         }
     };
 
@@ -466,10 +468,11 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
             )}
 
             <div className="space-y-2">
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                <label htmlFor="category-select" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
                     Categoría
                 </label>
                 <select
+                    id="category-select"
                     data-testid="category-select"
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     {...register('categoryId', {
@@ -506,10 +509,12 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
             </div>
 
             <div className="space-y-2">
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                <label htmlFor="account-select" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
                     Cuenta
                 </label>
                 <select
+                    id="account-select"
+                    data-testid="account-select"
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     {...register('accountId')}
                 >

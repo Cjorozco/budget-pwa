@@ -13,7 +13,7 @@ export default function Budget() {
   const [newItemName, setNewItemName] = useState('');
   const [newItemAmount, setNewItemAmount] = useState('');
   const [expenseSortOrder, setExpenseSortOrder] = useState<'az' | 'za' | 'amount-asc' | 'amount-desc'>('amount-desc');
-  const addToast = useUIStore(state => state.addToast);
+  const { addToast, confirm } = useUIStore();
 
   const budgetItems = useLiveQuery(() => db.budgetItems.toArray()) || [];
 
@@ -73,14 +73,20 @@ export default function Budget() {
   };
 
   const handleDeleteItem = async (id: string) => {
-    if (window.confirm("¿Seguro que deseas eliminar este rubro?")) {
-      try {
-        await db.budgetItems.delete(id);
-        addToast("Eliminado exitosamente", "success");
-      } catch (error) {
-        console.error("Error deleting budget item:", error);
-        addToast("Error al eliminar", "error");
-      }
+    const ok = await confirm({
+      title: '¿Eliminar rubro?',
+      message: '¿Seguro que deseas eliminar este rubro del presupuesto?',
+      confirmLabel: 'Eliminar',
+      variant: 'danger',
+    });
+    if (!ok) return;
+
+    try {
+      await db.budgetItems.delete(id);
+      addToast("Eliminado exitosamente", "success");
+    } catch (error) {
+      console.error("Error deleting budget item:", error);
+      addToast("Error al eliminar", "error");
     }
   };
 

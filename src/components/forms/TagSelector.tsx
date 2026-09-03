@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import type { Tag } from '@/lib/types';
 import { X, Plus, Tag as TagIcon, Check, Trash2 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
+import { useUIStore } from '@/store/ui';
 
 interface TagSelectorProps {
     selectedTagIds: string[];
@@ -11,6 +12,7 @@ interface TagSelectorProps {
 }
 
 export function TagSelector({ selectedTagIds, onChange }: TagSelectorProps) {
+    const { confirm, addToast } = useUIStore();
     const allTags = useLiveQuery(() => db.tags.orderBy('usageCount').reverse().toArray()) || [];
     const [isCreating, setIsCreating] = useState(false);
     const [newTagName, setNewTagName] = useState('');
@@ -44,25 +46,37 @@ export function TagSelector({ selectedTagIds, onChange }: TagSelectorProps) {
     const handleDeleteTag = async (tagId: string) => {
         const tag = allTags.find(t => t.id === tagId);
         if (!tag) return;
-        if (!window.confirm(`¿Eliminar la etiqueta "${tag.name}"? Se quitará de todas las transacciones.`)) return;
+        const ok = await confirm({
+            title: '¿Eliminar etiqueta?',
+            message: `¿Eliminar la etiqueta "${tag.name}"? Se quitará de todas las transacciones asociadas.`,
+            confirmLabel: 'Eliminar',
+            variant: 'danger',
+        });
+        if (!ok) return;
 
         // Quitar de selección actual si está seleccionada
         if (selectedTagIds.includes(tagId)) {
             onChange(selectedTagIds.filter(id => id !== tagId));
         }
 
-        // Limpiar tagIds en transacciones que la referencien
-        const txsWithTag = await db.transactions
-            .filter(tx => (tx.tagIds || []).includes(tagId))
-            .toArray();
-        for (const tx of txsWithTag) {
-            await db.transactions.update(tx.id, {
-                tagIds: tx.tagIds.filter(id => id !== tagId)
-            });
-        }
+        try {
+            // Limpiar tagIds en transacciones que la referencien
+            const txsWithTag = await db.transactions
+                .filter(tx => (tx.tagIds || []).includes(tagId))
+                .toArray();
+            for (const tx of txsWithTag) {
+                await db.transactions.update(tx.id, {
+                    tagIds: tx.tagIds.filter(id => id !== tagId)
+                });
+            }
 
-        // Eliminar la etiqueta de la base de datos
-        await db.tags.delete(tagId);
+            // Eliminar la etiqueta de la base de datos
+            await db.tags.delete(tagId);
+            addToast(`Etiqueta "${tag.name}" eliminada`, 'success');
+        } catch (error) {
+            console.error('Error deleting tag:', error);
+            addToast('Error al eliminar la etiqueta', 'error');
+        }
     };
 
     const handleCreateTag = async () => {

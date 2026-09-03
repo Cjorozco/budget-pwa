@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { v4 as uuidv4 } from 'uuid';
 import type { Category } from '@/lib/types';
+import { useUIStore } from '@/store/ui';
 
 const CategoryFormSchema = z.object({
     name: z.string().min(1, 'El nombre es requerido'),
@@ -81,6 +82,7 @@ const EXPENSE_COLORS = [
 ];
 
 export function CategoryForm({ onSuccess, onCancel, initialData, defaultType, defaultParentId }: CategoryFormProps) {
+    const addToast = useUIStore((s) => s.addToast);
     const parentCategories = useLiveQuery(() =>
         db.categories.filter(c => c.isActive && !c.parentId).toArray()
     ) || [];
@@ -144,10 +146,11 @@ export function CategoryForm({ onSuccess, onCancel, initialData, defaultType, de
                     isActive: true,
                 });
             }
+            addToast(initialData ? 'Categoría actualizada' : 'Categoría creada', 'success');
             onSuccess();
         } catch (error) {
             console.error('Error saving category:', error);
-            alert('Error al guardar la categoría');
+            addToast('Error al guardar la categoría', 'error');
         }
     };
 

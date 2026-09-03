@@ -8,6 +8,7 @@ import { formatCurrency } from '@/lib/utils';
 import { v4 as uuidv4 } from 'uuid';
 import type { Account } from '@/lib/types';
 import { AlertTriangle, CheckCircle } from 'lucide-react';
+import { useUIStore } from '@/store/ui';
 
 const ReconciliationSchema = z.object({
     declaredBalance: z.number(),
@@ -24,7 +25,7 @@ interface ReconciliationFormProps {
 }
 
 export function ReconciliationForm({ account, onSuccess, onCancel }: ReconciliationFormProps) {
-
+    const addToast = useUIStore((s) => s.addToast);
     const {
         register,
         handleSubmit,
@@ -118,10 +119,11 @@ export function ReconciliationForm({ account, onSuccess, onCancel }: Reconciliat
                 });
             });
 
+            addToast('Cuenta reconciliada exitosamente', 'success');
             onSuccess();
         } catch (error) {
             console.error('Error during reconciliation:', error);
-            alert('Error al reconciliar la cuenta');
+            addToast('Error al reconciliar la cuenta', 'error');
         }
     };
 

@@ -6,6 +6,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { XCircle, PiggyBank, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import type { Reserve } from '@/lib/types';
+import { useUIStore } from '@/store/ui';
 
 interface ReservesListProps {
     accountId: string;
@@ -13,6 +14,7 @@ interface ReservesListProps {
 }
 
 export function ReservesList({ accountId, onEditReserve }: ReservesListProps) {
+    const { confirm, addToast } = useUIStore();
     const reserves = useLiveQuery(
         () => db.reserves
             .where('accountId').equals(accountId)
@@ -23,11 +25,23 @@ export function ReservesList({ accountId, onEditReserve }: ReservesListProps) {
     ) || [];
 
     const handleDeactivate = async (id: string) => {
-        if (confirm('¿Deseas eliminar esta reserva? El dinero volverá a estar disponible.')) {
+        const ok = await confirm({
+            title: '¿Eliminar reserva?',
+            message: '¿Deseas eliminar esta reserva? El dinero reservado volverá a estar disponible.',
+            confirmLabel: 'Eliminar',
+            variant: 'danger',
+        });
+        if (!ok) return;
+
+        try {
             await db.reserves.update(id, {
                 isActive: false,
                 updatedAt: Date.now()
             });
+            addToast('Reserva eliminada', 'success');
+        } catch (error) {
+            console.error('Error deactivating reserve:', error);
+            addToast('Error al eliminar la reserva', 'error');
         }
     };
 

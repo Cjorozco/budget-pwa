@@ -9,8 +9,10 @@ import { Modal } from '@/components/ui/Modal';
 import { TransactionForm } from '@/components/forms/TransactionForm';
 import { formatCurrency } from '@/lib/utils';
 import type { Transaction } from '@/lib/types';
+import { useUIStore } from '@/store/ui';
 
 export default function TransactionsPage() {
+    const { confirm, addToast } = useUIStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -41,7 +43,13 @@ export default function TransactionsPage() {
     });
 
     const handleDelete = async (transaction: any) => {
-        if (!confirm('¿Eliminar esta transacción? Esta acción no se puede deshacer.')) {
+        const ok = await confirm({
+            title: '¿Eliminar transacción?',
+            message: 'Esta acción no se puede deshacer y revertirá el efecto sobre el saldo.',
+            confirmLabel: 'Eliminar',
+            variant: 'danger',
+        });
+        if (!ok) {
             return;
         }
 
@@ -97,9 +105,10 @@ export default function TransactionsPage() {
                 // 2. Delete the transaction
                 await db.transactions.delete(transaction.id);
             });
+            addToast('Transacción eliminada', 'success');
         } catch (error) {
             console.error('Error deleting transaction:', error);
-            alert('Error al eliminar la transacción');
+            addToast('Error al eliminar la transacción', 'error');
         } finally {
             setDeletingId(null);
         }
