@@ -64,14 +64,21 @@ describe('suggestCategoryWithLlm', () => {
         expect(suggestWithGemini).not.toHaveBeenCalled();
     });
 
-    it('returns local without calling Gemini when the leaf match is strong', async () => {
+    it('prioritizes Gemini over strong local when PRO + key + online', async () => {
         vi.mocked(suggestCategory).mockResolvedValue(strongLocal);
+        vi.mocked(suggestWithGemini).mockResolvedValue({
+            ...strongLocal,
+            categoryId: 'gemini-cat',
+            categoryPath: 'Gemini Category',
+            source: 'gemini',
+        });
         setGeminiApiKey('AIzaSyDummyKeyForUnitTests1234567890');
 
         const result = await suggestCategoryWithLlm('luz', 'expense', { isPro: true, online: true });
 
-        expect(result?.categoryId).toBe('luz');
-        expect(suggestWithGemini).not.toHaveBeenCalled();
+        expect(suggestWithGemini).toHaveBeenCalledOnce();
+        expect(result?.source).toBe('gemini');
+        expect(result?.categoryId).toBe('gemini-cat');
     });
 
     it('uses Gemini when PRO + key + online + weak local', async () => {

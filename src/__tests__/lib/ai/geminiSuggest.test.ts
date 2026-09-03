@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseLlmSuggestionJson, mapLlmPayloadToSuggestion } from '@/lib/ai/geminiSuggest';
+import { parseLlmSuggestionJson, mapLlmPayloadToSuggestion, buildPrompt } from '@/lib/ai/geminiSuggest';
 import { GEMINI_MODEL } from '@/lib/ai/geminiConfig';
 import { db } from '@/lib/db';
 import { beforeEach } from 'vitest';
@@ -87,6 +87,43 @@ describe('mapLlmPayloadToSuggestion', () => {
             subcategoryName: 'Impuesto predial',
         });
         expect(suggestion?.source).toBe('gemini');
+    });
+
+    it('rejects creating a subcategory under a root parent that does not exist in rootParentNames', async () => {
+        const suggestion = await mapLlmPayloadToSuggestion(
+            {
+                match: 'create',
+                categoryId: null,
+                parentName: 'Niños',
+                subcategoryName: 'Transporte',
+                confidence: 0.85,
+                reason: 'Transporte niños',
+            },
+            'expense',
+            new Set(['fin', 'imp']),
+            new Set(['gastos financieros']) // User only has Gastos financieros, not Niños
+        );
+
+        expect(suggestion).toBeNull();
+    });
+});
+
+describe('buildPrompt', () => {
+    it('includes user custom category guidance and recent transaction examples', () => {
+        const prompt = buildPrompt(
+            'Uber al jardín',
+            'expense',
+            [
+                { id: 'sofia', path: 'Sofía', isLeaf: false },
+                { id: 'ruta', path: 'Sofía › Ruta', isLeaf: true },
+            ],
+            [{ description: 'Ruta escolar', categoryPath: 'Sofía › Ruta' }]
+        );
+
+        expect(prompt).toContain('Sofía');
+        expect(prompt).toContain('Ruta escolar');
+        expect(prompt).toContain('PRIORIDAD TOTAL A CATEGORÍAS EXISTENTES');
+        expect(prompt).toContain('Uber al jardín');
     });
 });
 

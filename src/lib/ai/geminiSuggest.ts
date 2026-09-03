@@ -6,6 +6,7 @@ import {
     formatCategoryPath,
     resolveCategoryPathLabel,
 } from './categoryResolver';
+import { normalizeForMatch } from './categoryRules';
 import {
     GEMINI_GENERATE_URL,
     GEMINI_MODEL,
@@ -78,30 +79,85 @@ export function parseLlmSuggestionJson(text: string): LlmSuggestionPayload | nul
     }
 }
 
-function buildPrompt(
+export async function loadRecentTransactionExamples(
+    type: 'income' | 'expense',
+    limit = 10
+): Promise<Array<{ description: string; categoryPath: string }>> {
+    try {
+        const txs = await db.transactions
+            .where('type')
+            .equals(type)
+            .reverse()
+            .limit(40)
+            .toArray();
+
+        if (txs.length === 0) return [];
+
+        const categories = await db.categories.toArray();
+        const byId = new Map(categories.map((c) => [c.id, c]));
+
+        const examples: Array<{ description: string; categoryPath: string }> = [];
+        const seenDescriptions = new Set<string>();
+
+        for (const tx of txs) {
+            const desc = tx.description?.trim();
+            if (!desc || !tx.categoryId) continue;
+            const lowerDesc = desc.toLowerCase();
+            if (seenDescriptions.has(lowerDesc)) continue;
+            seenDescriptions.add(lowerDesc);
+
+            const cat = byId.get(tx.categoryId);
+            if (!cat) continue;
+
+            const path = cat.parentId && byId.get(cat.parentId)
+                ? `${byId.get(cat.parentId)!.name} › ${cat.name}`
+                : cat.name;
+
+            examples.push({ description: desc, categoryPath: path });
+            if (examples.length >= limit) break;
+        }
+
+        return examples;
+    } catch {
+        return [];
+    }
+}
+
+export function buildPrompt(
     description: string,
     type: 'income' | 'expense',
-    catalog: CatalogRow[]
+    catalog: CatalogRow[],
+    recentExamples: Array<{ description: string; categoryPath: string }> = []
 ): string {
     const lines = catalog
         .map((row) => `- ${row.id} | ${row.path}${row.isLeaf ? '' : ' (raíz)'}`)
         .join('\n');
 
+    const historySection = recentExamples.length > 0
+        ? [
+            'historial de transacciones previas del usuario (aprende cómo categoriza):',
+            ...recentExamples.map((ex) => `- "${ex.description}" → ${ex.categoryPath}`),
+        ].join('\n')
+        : '';
+
     return [
-        'Eres un asistente de categorización para un presupuesto personal en Colombia.',
+        'Eres un asistente experto de categorización para un presupuesto personal en Colombia.',
         'Responde SOLO un objeto JSON con este esquema:',
         '{"match":"existing"|"create"|"none","categoryId":string|null,"parentName":string|null,"subcategoryName":string|null,"confidence":number,"reason":string}',
-        'Reglas:',
-        '- match=existing: categoryId DEBE ser un id de la lista. Prefiere hojas, no raíces.',
-        '- match=create: parentName debe coincidir con una categoría de la lista; subcategoryName es la hoja nueva.',
-        '- match=none: no encaja con el catálogo.',
+        'Reglas fundamentales:',
+        '- PRIORIDAD TOTAL A CATEGORÍAS EXISTENTES: Muchos usuarios personalizan sus categorías con nombres de hijos o familiares (ej: "Sofía", "Mateo" para gastos de niños/dependientes; subcategorías como "Ruta" para transporte escolar, "Pensión" para educación, etc.).',
+        '- Si la descripción encaja semánticamente en una categoría existente del usuario (ej: "Uber al jardín" encaja en "Sofía › Ruta" o en "Transporte › Privado"), DEBES responder match=existing con el categoryId exacto del catálogo.',
+        '- NUNCA inventes categorías raíz como "Niños" si el usuario ya tiene categorías personalizadas que cubran ese ámbito.',
+        '- match=create: SOLO si realmente no hay ninguna categoría que encaje en el catálogo. En tal caso, parentName DEBE ser el nombre exacto de una categoría raíz que YA exista en el catálogo de la lista; subcategoryName es la hoja nueva.',
+        '- match=none: si no encaja.',
         '- reason: una frase corta en español.',
         '- No inventes ids. No uses montos ni cuentas.',
         `tipo: ${type}`,
         `descripción: ${description}`,
         'catálogo:',
         lines || '(vacío)',
-    ].join('\n');
+        historySection,
+    ].filter(Boolean).join('\n');
 }
 
 interface GenerateOptions {
@@ -159,7 +215,8 @@ export async function generateGeminiText(options: GenerateOptions): Promise<stri
 export async function mapLlmPayloadToSuggestion(
     payload: LlmSuggestionPayload,
     type: 'income' | 'expense',
-    catalogIds: Set<string>
+    catalogIds: Set<string>,
+    rootParentNames?: Set<string>
 ): Promise<CategorySuggestion | null> {
     const confidence = payload.confidence;
     const reason = payload.reason;
@@ -195,6 +252,12 @@ export async function mapLlmPayloadToSuggestion(
         };
     }
 
+    // Grounding: Si el modelo intenta crear bajo una categoría raíz que NO existe en la base de datos
+    // del usuario, no permitimos crear raíces arbitrarias (ej. 'Niños').
+    if (rootParentNames && !rootParentNames.has(normalizeForMatch(parentName))) {
+        return null;
+    }
+
     return {
         categoryId: null,
         categoryPath: formatCategoryPath(parentName, subcategoryName),
@@ -214,10 +277,15 @@ export async function suggestWithGemini(
     const apiKey = getGeminiApiKey();
     if (!apiKey) return null;
 
-    const catalog = await loadCategoryCatalog(type);
+    const [catalog, recentExamples, rootCategories] = await Promise.all([
+        loadCategoryCatalog(type),
+        loadRecentTransactionExamples(type, 10),
+        db.categories.filter((c) => c.isActive && c.type === type && !c.parentId).toArray(),
+    ]);
+
     const text = await generateGeminiText({
         apiKey,
-        prompt: buildPrompt(description, type, catalog),
+        prompt: buildPrompt(description, type, catalog, recentExamples),
         signal,
     });
     if (!text) return null;
@@ -225,10 +293,13 @@ export async function suggestWithGemini(
     const payload = parseLlmSuggestionJson(text);
     if (!payload) return null;
 
+    const rootParentNames = new Set(rootCategories.map((c) => normalizeForMatch(c.name)));
+
     return mapLlmPayloadToSuggestion(
         payload,
         type,
-        new Set(catalog.map((row) => row.id))
+        new Set(catalog.map((row) => row.id)),
+        rootParentNames
     );
 }
 
