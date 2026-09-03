@@ -1,5 +1,6 @@
 import { db } from '../db';
 import {
+    categoryNamesAreSimilar,
     DESCRIPTION_CATEGORY_HINTS,
     matchCategoryRule,
     normalizeForMatch,
@@ -226,46 +227,41 @@ async function buildRuleSuggestion(
     };
 }
 
-/**
- * Sugiere categoría según descripción, reglas y historial local.
- */
-export async function suggestCategory(
+async function matchTransactionHistory(
     description: string,
-    type: 'income' | 'expense' = 'expense'
+    type: 'income' | 'expense'
 ): Promise<CategorySuggestion | null> {
-    if (!description || description.length < 2) return null;
+    const lowerDesc = normalizeForMatch(description);
+    const currentTokens = tokenize(description);
 
-    const lowerDesc = description.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const allTransactions = await db.transactions
+        .where('type')
+        .equals(type)
+        .reverse()
+        .limit(200)
+        .toArray();
 
-    // 1. Árbol del usuario + reglas. Se prefiere la opción MÁS específica:
-    // caer en una raíz ("Gastos financieros") cuando la regla conoce la hoja
-    // ("Gastos financieros › Impuestos") obliga al usuario a crearla a mano.
-    const catalogMatch = await matchUserCatalog(description, type);
-    const rule = matchCategoryRule(description, type);
-    const ruleTargetsSubcategory = Boolean(rule?.subcategoryName);
-    const ruleSuggestion = rule ? await buildRuleSuggestion(rule, type) : null;
+    if (allTransactions.length === 0) return null;
 
-    if (catalogMatch && !(catalogMatch.isBroadParent && ruleTargetsSubcategory)) {
-        return buildCatalogSuggestion(catalogMatch);
+    // 1. Coincidencia exacta de texto con transacciones previas
+    const exactTx = allTransactions.find(
+        (tx) => normalizeForMatch(tx.description) === lowerDesc && Boolean(tx.categoryId)
+    );
+    if (exactTx) {
+        const activeCat = await db.categories.get(exactTx.categoryId);
+        if (activeCat && activeCat.isActive) {
+            return {
+                categoryId: exactTx.categoryId,
+                categoryPath: await resolveCategoryPathLabel(exactTx.categoryId),
+                confidence: 0.95,
+                reason: 'Coincide con tus transacciones anteriores.',
+                needsCategoryCreation: false,
+            };
+        }
     }
 
-    if (ruleSuggestion) {
-        if (!catalogMatch) return ruleSuggestion;
-        // La raíz que ya tiene sigue disponible por si prefiere no crear la hoja.
-        return {
-            ...ruleSuggestion,
-            alternatives: [
-                {
-                    categoryId: catalogMatch.category.id,
-                    categoryPath: await resolveCategoryPathLabel(catalogMatch.category.id),
-                },
-            ],
-        };
-    }
-
-    // 2. Establecimientos conocidos + historial
+    // 2. Establecimientos conocidos con transacciones previas
     let establishmentMatch: string | null = null;
-
     for (const est of KNOWN_ESTABLISHMENTS) {
         if (lowerDesc.includes(est)) {
             establishmentMatch = est;
@@ -289,12 +285,10 @@ export async function suggestCategory(
     }
 
     if (establishmentMatch) {
-        const prevTxsWithMatch = await db.transactions
-            .filter((tx) => {
-                const txDesc = tx.description.toLowerCase();
-                return txDesc.includes(establishmentMatch!) && tx.type === type;
-            })
-            .toArray();
+        const prevTxsWithMatch = allTransactions.filter((tx) => {
+            const txDesc = normalizeForMatch(tx.description);
+            return txDesc.includes(establishmentMatch!) && Boolean(tx.categoryId);
+        });
 
         if (prevTxsWithMatch.length > 0) {
             const catFreq = new Map<string, number>();
@@ -304,42 +298,35 @@ export async function suggestCategory(
             });
 
             const bestCategoryId = Array.from(catFreq.entries()).sort((a, b) => b[1] - a[1])[0][0];
-            const confidence = prevTxsWithMatch.length >= 3 ? 0.95 : 0.8;
-
-            return {
-                categoryId: bestCategoryId,
-                categoryPath: await resolveCategoryPathLabel(bestCategoryId),
-                confidence,
-                reason: `Detecté "${establishmentMatch.charAt(0).toUpperCase() + establishmentMatch.slice(1)}" (aprox). Basado en historial.`,
-                needsCategoryCreation: false,
-            };
+            const activeCat = await db.categories.get(bestCategoryId);
+            if (activeCat && activeCat.isActive) {
+                const confidence = prevTxsWithMatch.length >= 2 ? 0.95 : 0.85;
+                return {
+                    categoryId: bestCategoryId,
+                    categoryPath: await resolveCategoryPathLabel(bestCategoryId),
+                    confidence,
+                    reason: `Detecté "${establishmentMatch.charAt(0).toUpperCase() + establishmentMatch.slice(1)}" (aprendido de tu historial).`,
+                    needsCategoryCreation: false,
+                };
+            }
         }
     }
 
-    // 3. Similitud con transacciones recientes
-    const allTransactions = await db.transactions
-        .where('type')
-        .equals(type)
-        .reverse()
-        .limit(200)
-        .toArray();
-
-    if (allTransactions.length < 3) return null;
-
-    const currentTokens = tokenize(description);
     if (currentTokens.length === 0) return null;
 
-    const matches = allTransactions.map((tx) => {
-        const txTokens = tokenize(tx.description);
-        const intersection = currentTokens.filter((t) => txTokens.includes(t));
-        const union = new Set([...currentTokens, ...txTokens]).size;
-        let similarity = union > 0 ? intersection.length / union : 0;
-        if (txTokens.some((t) => currentTokens.includes(t))) similarity += 0.1;
-        return { tx, similarity };
-    });
+    const matches = allTransactions
+        .filter((tx) => Boolean(tx.categoryId))
+        .map((tx) => {
+            const txTokens = tokenize(tx.description);
+            const intersection = currentTokens.filter((t) => txTokens.includes(t));
+            const union = new Set([...currentTokens, ...txTokens]).size;
+            let similarity = union > 0 ? intersection.length / union : 0;
+            if (txTokens.some((t) => currentTokens.includes(t))) similarity += 0.1;
+            return { tx, similarity };
+        });
 
     const highSimilarityMatches = matches
-        .filter((m) => m.similarity > 0.2)
+        .filter((m) => m.similarity >= 0.3)
         .sort((a, b) => b.similarity - a.similarity)
         .slice(0, 10);
 
@@ -360,16 +347,77 @@ export async function suggestCategory(
         }
     });
 
+    if (!bestCategoryId) return null;
+    const activeCat = await db.categories.get(bestCategoryId);
+    if (!activeCat || !activeCat.isActive) return null;
+
     const topMatch = highSimilarityMatches[0];
-    const confidence = Math.min((topMatch.similarity * 0.5) + (maxCatScore > 1.5 ? 0.4 : 0.2), 0.9);
+    const confidence = Math.min((topMatch.similarity * 0.5) + (maxCatScore > 1.2 ? 0.4 : 0.25), 0.9);
 
     return {
         categoryId: bestCategoryId,
         categoryPath: await resolveCategoryPathLabel(bestCategoryId),
         confidence,
-        reason: `Basado en ${highSimilarityMatches.length} transacciones similares`,
+        reason: `Basado en transacciones similares ("${topMatch.tx.description}").`,
         needsCategoryCreation: false,
     };
+}
+
+/**
+ * Sugiere categoría según historial aprendido, árbol del usuario y reglas locales.
+ */
+export async function suggestCategory(
+    description: string,
+    type: 'income' | 'expense' = 'expense'
+): Promise<CategorySuggestion | null> {
+    if (!description || description.length < 2) return null;
+
+    // 1. Historial previo del usuario (aprendizaje de transacciones reales).
+    // Si el usuario ya categorizó esta descripción o establecimiento antes, esa elección manda.
+    const historyMatch = await matchTransactionHistory(description, type);
+    if (historyMatch && historyMatch.confidence >= 0.8) {
+        return historyMatch;
+    }
+
+    // 2. Árbol del usuario + reglas. Se prefiere la opción MÁS específica:
+    // Solo si el usuario tiene una raíz ("Gastos financieros") y la regla conoce una hoja
+    // bajo ESA MISMA raíz ("Gastos financieros › Impuestos"), se ofrece crearla.
+    // Si la regla propone una raíz inexistente (ej: "Niños") pero el usuario ya tiene
+    // una categoría personalizada (ej: "Sofía › Ruta"), gana la categoría del usuario.
+    const catalogMatch = await matchUserCatalog(description, type);
+    const rule = matchCategoryRule(description, type);
+    const ruleTargetsSubcategory = Boolean(rule?.subcategoryName);
+    const ruleTargetsSameParent = Boolean(
+        rule &&
+        catalogMatch &&
+        categoryNamesAreSimilar(catalogMatch.category.name, rule.parentName)
+    );
+
+    if (catalogMatch && !(catalogMatch.isBroadParent && ruleTargetsSubcategory && ruleTargetsSameParent)) {
+        return buildCatalogSuggestion(catalogMatch);
+    }
+
+    const ruleSuggestion = rule ? await buildRuleSuggestion(rule, type) : null;
+    if (ruleSuggestion) {
+        if (!catalogMatch) return ruleSuggestion;
+        // La raíz que ya tiene sigue disponible por si prefiere no crear la hoja.
+        return {
+            ...ruleSuggestion,
+            alternatives: [
+                {
+                    categoryId: catalogMatch.category.id,
+                    categoryPath: await resolveCategoryPathLabel(catalogMatch.category.id),
+                },
+            ],
+        };
+    }
+
+    // 3. Fallback de historial si tuvo confianza moderada
+    if (historyMatch) {
+        return historyMatch;
+    }
+
+    return null;
 }
 
 /** @deprecated Usar suggestCategory */

@@ -117,6 +117,30 @@ export const DESCRIPTION_CATEGORY_HINTS: { keywords: string[]; nameHints: string
         keywords: ['arriendo', 'alquiler', 'hipoteca', 'administracion'],
         nameHints: ['vivienda', 'alquiler', 'arriendo', 'hipoteca'],
     },
+    {
+        keywords: [
+            'jardin',
+            'jardín',
+            'guarderia',
+            'guardería',
+            'colegio',
+            'escuela',
+            'kinder',
+            'hijo',
+            'hija',
+            'nene',
+            'bebe',
+            'bebé',
+            'ruta',
+            'pension escolar',
+            'matricula',
+        ],
+        nameHints: ['niñ', 'hij', 'familia', 'educa', 'colegio', 'jardin', 'ruta', 'infant', 'guarder', 'estudio'],
+    },
+    {
+        keywords: ['uber', 'didi', 'cabify', 'beat', 'taxi', 'transporte', 'pasaje', 'gasolina', 'combustible', 'peaje'],
+        nameHints: ['transporte', 'ruta', 'movilidad', 'viaje', 'auto', 'vehiculo', 'gasolina'],
+    },
 ];
 
 export const CATEGORY_KEYWORD_RULES: CategoryKeywordRule[] = [

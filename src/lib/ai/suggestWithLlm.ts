@@ -18,35 +18,33 @@ export interface SuggestWithLlmOptions {
 }
 
 /**
- * Local rules first. Optional cloud LLM when PRO + key + online and the local match is weak.
- * Today the cloud adapter is Gemini; swap/add providers here without touching the form.
+ * AI Suggestions:
+ * When PRO + API key + online, Gemini takes top priority as the primary intelligent engine.
+ * Local rules and heuristics act as safety fallback when offline, no key, or on AI error/timeout.
  */
 export async function suggestCategoryWithLlm(
     description: string,
     type: 'income' | 'expense',
     options: SuggestWithLlmOptions
 ): Promise<CategorySuggestion | null> {
-    const local = await suggestCategory(description, type);
-    const taggedLocal: CategorySuggestion | null = local
-        ? { ...local, source: local.source ?? 'local' }
-        : null;
+    if (options.signal?.aborted) return null;
 
     const online = options.online ?? (typeof navigator !== 'undefined' ? navigator.onLine : false);
+    const canUseGemini = options.isPro && hasGeminiApiKey() && online;
 
-    if (
-        options.signal?.aborted ||
-        !options.isPro ||
-        !hasGeminiApiKey() ||
-        !online ||
-        !shouldCallGemini(taggedLocal)
-    ) {
-        return taggedLocal;
+    if (canUseGemini) {
+        try {
+            const gemini = await suggestWithGemini(description, type, options.signal);
+            if (gemini) {
+                return gemini;
+            }
+        } catch {
+            // Fall back to local rules if Gemini fails or times out
+        }
     }
 
-    try {
-        const gemini = await suggestWithGemini(description, type, options.signal);
-        return gemini ?? taggedLocal;
-    } catch {
-        return taggedLocal;
-    }
+    if (options.signal?.aborted) return null;
+
+    const local = await suggestCategory(description, type);
+    return local ? { ...local, source: local.source ?? 'local' } : null;
 }
