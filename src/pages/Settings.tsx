@@ -15,7 +15,7 @@ export default function SettingsPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [importJson, setImportJson] = useState<string | null>(null);
     const [isPaywallOpen, setIsPaywallOpen] = useState(false);
-    const { addToast, isPro, unlockPro } = useUIStore();
+    const { addToast, isPro, unlockPro, confirm } = useUIStore();
 
     const handleExportJSON = async () => {
         try {
@@ -91,9 +91,12 @@ export default function SettingsPage() {
     const handleSeedDemoMarketing = async () => {
         if (!import.meta.env.DEV) return;
 
-        const ok = window.confirm(
-            'Esto BORRA movimientos, reservas y reconciliaciones de este localhost y carga datos ficticios de demo.\n\nNo afecta producción. ¿Continuar?'
-        );
+        const ok = await confirm({
+            title: '¿Cargar datos demo para marketing?',
+            message: 'Esto BORRA movimientos, reservas y reconciliaciones de este localhost y carga datos ficticios de demo.\n\nNo afecta producción. ¿Continuar?',
+            confirmLabel: 'Cargar Demo',
+            variant: 'danger',
+        });
         if (!ok) return;
 
         setIsLoading(true);
@@ -101,9 +104,13 @@ export default function SettingsPage() {
             const { seedDemoMarketing } = await import('@/lib/db/seedDemoMarketing');
             const result = await seedDemoMarketing();
             addToast('Datos de demo cargados', 'success');
-            window.alert(
-                `Demo lista.\n\nEn Cuentas → Reconciliar Bancolombia, escribe:\n${result.bancolombiaDeclaredOnCamera.toLocaleString('es-CO')} COP\n\n(calculado ${result.bancolombiaCalculated.toLocaleString('es-CO')} + 35.000)\n\nLuego, en cámara, crea un gasto nuevo: "Uber al jardín".`
-            );
+            await confirm({
+                title: 'Demo lista',
+                message: `En Cuentas → Reconciliar Bancolombia, escribe:\n${result.bancolombiaDeclaredOnCamera.toLocaleString('es-CO')} COP\n\n(calculado ${result.bancolombiaCalculated.toLocaleString('es-CO')} + 35.000)\n\nLuego, en cámara, crea un gasto nuevo: "Uber al jardín".`,
+                confirmLabel: 'Entendido, recargar',
+                cancelLabel: 'Cerrar',
+                variant: 'primary',
+            });
             window.location.reload();
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : 'Error al sembrar demo';

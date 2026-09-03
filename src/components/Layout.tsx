@@ -2,6 +2,8 @@ import { Link, Outlet, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Wallet, ArrowRightLeft, Settings, Calculator, PieChart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+
 export default function Layout() {
     const location = useLocation();
 
@@ -17,7 +19,9 @@ export default function Layout() {
     return (
         <div className="flex flex-col min-h-dvh bg-slate-50 dark:bg-slate-950">
             <main className="flex-1 overflow-y-auto pb-20">
-                <Outlet />
+                <ErrorBoundary>
+                    <Outlet />
+                </ErrorBoundary>
             </main>
 
             <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-4 pb-safe pt-2">

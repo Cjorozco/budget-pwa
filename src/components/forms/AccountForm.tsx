@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { db } from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
+import { useUIStore } from '@/store/ui';
 
 interface AccountFormProps {
     onSuccess: () => void;
@@ -14,6 +15,7 @@ interface AccountFormProps {
 }
 
 export function AccountForm({ onSuccess, onCancel, initialData }: AccountFormProps) {
+    const { confirm, addToast } = useUIStore();
     const {
         register,
         handleSubmit,
@@ -92,24 +94,31 @@ export function AccountForm({ onSuccess, onCancel, initialData }: AccountFormPro
                             variant="ghost"
                             className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
                             onClick={async () => {
-                                if (confirm('¿Estás seguro de reiniciar esta cuenta? Se borrarán TODAS las transacciones, reconciliaciones y reservas de esta cuenta.')) {
-                                    try {
-                                        await db.transaction('rw', [db.transactions, db.reconciliations, db.reserves, db.accounts], async () => {
-                                            const id = initialData.id!;
-                                            await db.transactions.where('accountId').equals(id).delete();
-                                            await db.reconciliations.where('accountId').equals(id).delete();
-                                            await db.reserves.where('accountId').equals(id).delete();
-                                            await db.accounts.update(id, {
-                                                calculatedBalance: 0,
-                                                actualBalance: undefined,
-                                                lastReconciliationDate: undefined
-                                            });
+                                const ok = await confirm({
+                                    title: '¿Reiniciar historial de la cuenta?',
+                                    message: '¿Estás seguro de reiniciar esta cuenta? Se borrarán TODAS las transacciones, reconciliaciones y reservas asociadas.',
+                                    confirmLabel: 'Reiniciar Historial',
+                                    variant: 'danger',
+                                });
+                                if (!ok) return;
+
+                                try {
+                                    await db.transaction('rw', [db.transactions, db.reconciliations, db.reserves, db.accounts], async () => {
+                                        const id = initialData.id!;
+                                        await db.transactions.where('accountId').equals(id).delete();
+                                        await db.reconciliations.where('accountId').equals(id).delete();
+                                        await db.reserves.where('accountId').equals(id).delete();
+                                        await db.accounts.update(id, {
+                                            calculatedBalance: 0,
+                                            actualBalance: undefined,
+                                            lastReconciliationDate: undefined
                                         });
-                                        onSuccess();
-                                    } catch (error) {
-                                        console.error('Error resetting account:', error);
-                                        alert('Error al reiniciar la cuenta');
-                                    }
+                                    });
+                                    addToast('Cuenta reiniciada correctamente', 'success');
+                                    onSuccess();
+                                } catch (error) {
+                                    console.error('Error resetting account:', error);
+                                    addToast('Error al reiniciar la cuenta', 'error');
                                 }
                             }}
                         >

@@ -13,7 +13,7 @@ export default function TemplatesPage() {
     const templates = useLiveQuery(() => db.quickTemplates.toArray()) || [];
     const [editingTemplate, setEditingTemplate] = useState<QuickTemplate | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const addToast = useUIStore(s => s.addToast);
+    const { addToast, confirm } = useUIStore();
 
     const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -27,7 +27,7 @@ export default function TemplatesPage() {
                     id: uuidv4(),
                     createdAt: Date.now(),
                     updatedAt: Date.now()
-                } as any);
+                });
                 addToast('Plantilla creada', 'success');
             } else {
                 await db.quickTemplates.update(editingTemplate.id, {
@@ -44,10 +44,16 @@ export default function TemplatesPage() {
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm('¿Borrar esta plantilla?')) return;
+        const ok = await confirm({
+            title: '¿Borrar plantilla?',
+            message: '¿Estás seguro de que deseas eliminar esta plantilla rápida?',
+            confirmLabel: 'Borrar',
+            variant: 'danger',
+        });
+        if (!ok) return;
         try {
             await db.quickTemplates.delete(id);
-            addToast('Plantilla eliminated', 'success');
+            addToast('Plantilla eliminada', 'success');
         } catch (error) {
             addToast('Error al eliminar', 'error');
         }

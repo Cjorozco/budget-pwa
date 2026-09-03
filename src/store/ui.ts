@@ -8,12 +8,27 @@ interface Toast {
     type: ToastType;
 }
 
+export interface ConfirmDialogOptions {
+    title: string;
+    message: string;
+    confirmLabel?: string;
+    cancelLabel?: string;
+    variant?: 'danger' | 'primary';
+}
+
+interface ActiveConfirmDialog extends ConfirmDialogOptions {
+    resolve: (value: boolean) => void;
+}
+
 interface UIState {
     isSidebarOpen: boolean;
     toggleSidebar: () => void;
     toasts: Toast[];
     addToast: (message: string, type?: ToastType) => void;
     removeToast: (id: string) => void;
+    confirmDialog: ActiveConfirmDialog | null;
+    confirm: (options: ConfirmDialogOptions) => Promise<boolean>;
+    closeConfirmDialog: (result: boolean) => void;
     isPro: boolean;
     unlockPro: () => void;
 }
@@ -51,5 +66,24 @@ export const useUIStore = create<UIState>((set) => ({
     removeToast: (id) => set((state) => ({
         toasts: state.toasts.filter((t) => t.id !== id)
     })),
+    confirmDialog: null,
+    confirm: (options) => {
+        return new Promise<boolean>((resolve) => {
+            set({
+                confirmDialog: {
+                    ...options,
+                    resolve,
+                }
+            });
+        });
+    },
+    closeConfirmDialog: (result) => {
+        set((state) => {
+            if (state.confirmDialog) {
+                state.confirmDialog.resolve(result);
+            }
+            return { confirmDialog: null };
+        });
+    },
 }));
 

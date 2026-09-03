@@ -8,8 +8,10 @@ import { Modal } from '@/components/ui/Modal';
 import { TransactionForm } from '@/components/forms/TransactionForm';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useUIStore } from '@/store/ui';
 
 export default function AmbiguousReviewPage() {
+    const { confirm, addToast } = useUIStore();
     const [editingTx, setEditingTx] = useState<any>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -27,21 +29,33 @@ export default function AmbiguousReviewPage() {
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm('¿Estás seguro de eliminar esta transacción?')) return;
-
-        await db.transaction('rw', db.transactions, db.accounts, async () => {
-            const tx = await db.transactions.get(id);
-            if (tx) {
-                const account = await db.accounts.get(tx.accountId);
-                if (account) {
-                    const newBalance = tx.type === 'income'
-                        ? account.calculatedBalance - tx.amount
-                        : account.calculatedBalance + tx.amount;
-                    await db.accounts.update(tx.accountId, { calculatedBalance: newBalance });
-                }
-                await db.transactions.delete(id);
-            }
+        const ok = await confirm({
+            title: '¿Eliminar transacción?',
+            message: '¿Estás seguro de eliminar esta transacción ambigua? Se revertirá su efecto en el saldo.',
+            confirmLabel: 'Eliminar',
+            variant: 'danger',
         });
+        if (!ok) return;
+
+        try {
+            await db.transaction('rw', db.transactions, db.accounts, async () => {
+                const tx = await db.transactions.get(id);
+                if (tx) {
+                    const account = await db.accounts.get(tx.accountId);
+                    if (account) {
+                        const newBalance = tx.type === 'income'
+                            ? account.calculatedBalance - tx.amount
+                            : account.calculatedBalance + tx.amount;
+                        await db.accounts.update(tx.accountId, { calculatedBalance: newBalance });
+                    }
+                    await db.transactions.delete(id);
+                }
+            });
+            addToast('Transacción eliminada', 'success');
+        } catch (error) {
+            console.error('Error deleting transaction:', error);
+            addToast('Error al eliminar la transacción', 'error');
+        }
     };
 
     const handleConfirm = async (tx: any) => {

@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input';
 import { v4 as uuidv4 } from 'uuid';
 import type { Account } from '@/lib/types';
 import { PiggyBank } from 'lucide-react';
+import { useUIStore } from '@/store/ui';
 
 const ReserveSchema = z.object({
     amount: z.number().min(1, 'El monto debe ser mayor a 0'),
@@ -27,15 +28,16 @@ interface ReserveFormProps {
 }
 
 export function ReserveForm({ account, onSuccess, onCancel, initialData }: ReserveFormProps) {
+    const addToast = useUIStore((s) => s.addToast);
     const {
         register,
         handleSubmit,
         formState: { errors, isSubmitting },
     } = useForm<ReserveFormData>({
         resolver: zodResolver(ReserveSchema),
-        defaultValues: {
-            amount: initialData?.amount ?? 0,
-            description: initialData?.description ?? '',
+        defaultValues: initialData || {
+            amount: undefined,
+            description: '',
         },
     });
 
@@ -47,6 +49,7 @@ export function ReserveForm({ account, onSuccess, onCancel, initialData }: Reser
                     description: data.description,
                     updatedAt: Date.now(),
                 });
+                addToast('Reserva actualizada', 'success');
             } else {
                 await db.reserves.add({
                     id: uuidv4(),
@@ -57,12 +60,13 @@ export function ReserveForm({ account, onSuccess, onCancel, initialData }: Reser
                     createdAt: Date.now(),
                     updatedAt: Date.now(),
                 });
+                addToast('Reserva creada', 'success');
             }
 
             onSuccess();
         } catch (error) {
             console.error('Error saving reserve:', error);
-            alert(initialData?.id ? 'Error al editar la reserva' : 'Error al crear la reserva');
+            addToast(initialData?.id ? 'Error al editar la reserva' : 'Error al crear la reserva', 'error');
         }
     };
 

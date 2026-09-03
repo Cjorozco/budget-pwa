@@ -119,4 +119,44 @@ describe('useUIStore', () => {
       expect(toasts[0].id).not.toBe(toasts[1].id);
     });
   });
+
+  describe('confirm dialog', () => {
+    it('starts with no active confirm dialog', () => {
+      expect(useUIStore.getState().confirmDialog).toBeNull();
+    });
+
+    it('sets confirmDialog and resolves true when confirmed', async () => {
+      const confirmPromise = useUIStore.getState().confirm({
+        title: '¿Confirmar acción?',
+        message: 'Mensaje de prueba',
+        variant: 'danger',
+      });
+
+      const dialog = useUIStore.getState().confirmDialog;
+      expect(dialog).not.toBeNull();
+      expect(dialog?.title).toBe('¿Confirmar acción?');
+      expect(dialog?.message).toBe('Mensaje de prueba');
+      expect(dialog?.variant).toBe('danger');
+
+      useUIStore.getState().closeConfirmDialog(true);
+
+      const result = await confirmPromise;
+      expect(result).toBe(true);
+      expect(useUIStore.getState().confirmDialog).toBeNull();
+    });
+
+    it('resolves false when canceled', async () => {
+      const confirmPromise = useUIStore.getState().confirm({
+        title: '¿Eliminar?',
+        message: '¿Estás seguro?',
+      });
+
+      useUIStore.getState().closeConfirmDialog(false);
+
+      const result = await confirmPromise;
+      expect(result).toBe(false);
+      expect(useUIStore.getState().confirmDialog).toBeNull();
+    });
+  });
 });
+
