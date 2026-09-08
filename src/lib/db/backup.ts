@@ -1,18 +1,102 @@
 import { db } from './index';
 import { z } from 'zod';
 
+// Row-level Zod schemas for backup validation
+export const BackupTransactionSchema = z.object({
+    id: z.string().min(1),
+    type: z.enum(['income', 'expense', 'transfer']),
+    amount: z.number(),
+    description: z.string(),
+    date: z.number(),
+    categoryId: z.string(),
+    tagIds: z.array(z.string()).default([]),
+    accountId: z.string(),
+    suggestedCategoryId: z.string().optional(),
+    wasCategorySuggestionAccepted: z.boolean().optional(),
+    aiConfidence: z.number().optional(),
+    isAmbiguous: z.boolean().optional(),
+    needsReview: z.boolean().optional(),
+    isAdjustment: z.boolean().optional(),
+    reconciliationId: z.string().optional(),
+    transferId: z.string().optional(),
+    createdAt: z.number().optional(),
+    updatedAt: z.number().optional(),
+}).passthrough();
+
+export const BackupAccountSchema = z.object({
+    id: z.string().min(1),
+    name: z.string().min(1),
+    type: z.enum(['bank', 'cash', 'credit']),
+    calculatedBalance: z.number(),
+    actualBalance: z.number().optional(),
+    lastReconciliationDate: z.number().optional(),
+    currency: z.literal('COP').default('COP'),
+    isActive: z.boolean().default(true),
+}).passthrough();
+
+export const BackupReconciliationSchema = z.object({
+    id: z.string().min(1),
+    accountId: z.string().min(1),
+    date: z.number(),
+    calculatedBalance: z.number(),
+    declaredBalance: z.number(),
+    difference: z.number(),
+    notes: z.string().optional(),
+    adjustmentTransactionId: z.string().optional(),
+}).passthrough();
+
+export const BackupCategorySchema = z.object({
+    id: z.string().min(1),
+    name: z.string().min(1),
+    type: z.enum(['income', 'expense']),
+    color: z.string(),
+    icon: z.string().optional(),
+    parentId: z.string().optional(),
+    usageCount: z.number().default(0),
+    isActive: z.boolean().default(true),
+}).passthrough();
+
+export const BackupTagSchema = z.object({
+    id: z.string().min(1),
+    name: z.string().min(1),
+    color: z.string(),
+    usageCount: z.number().default(0),
+    createdAt: z.number().optional(),
+    updatedAt: z.number().optional(),
+}).passthrough();
+
+export const BackupReserveSchema = z.object({
+    id: z.string().min(1),
+    accountId: z.string().min(1),
+    amount: z.number(),
+    description: z.string(),
+    categoryId: z.string().optional(),
+    isActive: z.boolean().default(true),
+    fulfilledAt: z.number().optional(),
+    fulfilledTransactionId: z.string().optional(),
+    createdAt: z.number().optional(),
+    updatedAt: z.number().optional(),
+}).passthrough();
+
+export const BackupAppConfigSchema = z.object({
+    id: z.literal('singleton'),
+    defaultCurrency: z.literal('COP').default('COP'),
+    minConfidenceThreshold: z.number().optional(),
+    enableAISuggestions: z.boolean().optional(),
+}).passthrough();
+
 // Zod schema for backup validation
-const BackupSchema = z.object({
+export const BackupSchema = z.object({
     version: z.number(),
     timestamp: z.number(),
     tables: z.object({
-        transactions: z.array(z.any()),
-        accounts: z.array(z.any()),
-        reconciliations: z.array(z.any()),
-        categories: z.array(z.any()),
-        tags: z.array(z.any()),
-        reserves: z.array(z.any()),
-        appConfig: z.array(z.any()),
+        transactions: z.array(BackupTransactionSchema),
+        accounts: z.array(BackupAccountSchema),
+        reconciliations: z.array(BackupReconciliationSchema),
+        categories: z.array(BackupCategorySchema),
+        tags: z.array(BackupTagSchema),
+        reserves: z.array(BackupReserveSchema),
+        appConfig: z.array(BackupAppConfigSchema),
     })
 });
 
@@ -41,7 +125,7 @@ export async function importDatabase(jsonString: string): Promise<void> {
     let rawData: any;
     try {
         rawData = JSON.parse(jsonString);
-    } catch (e) {
+    } catch {
         throw new Error('El archivo no es un JSON válido');
     }
 
@@ -75,13 +159,13 @@ export async function importDatabase(jsonString: string): Promise<void> {
                 db.appConfig.clear(),
             ]);
 
-            if (data.tables.transactions.length > 0) await db.transactions.bulkAdd(data.tables.transactions);
-            if (data.tables.accounts.length > 0) await db.accounts.bulkAdd(data.tables.accounts);
-            if (data.tables.reconciliations.length > 0) await db.reconciliations.bulkAdd(data.tables.reconciliations);
-            if (data.tables.categories.length > 0) await db.categories.bulkAdd(data.tables.categories);
-            if (data.tables.tags.length > 0) await db.tags.bulkAdd(data.tables.tags);
-            if (data.tables.reserves.length > 0) await db.reserves.bulkAdd(data.tables.reserves);
-            if (data.tables.appConfig.length > 0) await db.appConfig.bulkAdd(data.tables.appConfig);
+            if (data.tables.transactions.length > 0) await db.transactions.bulkAdd(data.tables.transactions as any);
+            if (data.tables.accounts.length > 0) await db.accounts.bulkAdd(data.tables.accounts as any);
+            if (data.tables.reconciliations.length > 0) await db.reconciliations.bulkAdd(data.tables.reconciliations as any);
+            if (data.tables.categories.length > 0) await db.categories.bulkAdd(data.tables.categories as any);
+            if (data.tables.tags.length > 0) await db.tags.bulkAdd(data.tables.tags as any);
+            if (data.tables.reserves.length > 0) await db.reserves.bulkAdd(data.tables.reserves as any);
+            if (data.tables.appConfig.length > 0) await db.appConfig.bulkAdd(data.tables.appConfig as any);
         } catch (error) {
             console.error('Error during bulk import:', error);
             throw new Error('Error al insertar los datos en la base de datos local');
@@ -109,6 +193,17 @@ export function downloadBackup(jsonString: string) {
     URL.revokeObjectURL(url);
 }
 
+/**
+ * Sanitizes a CSV cell to prevent Formula Injection (CWE-1236).
+ * If content begins with =, +, -, @, \t, or \r, prepend a single quote to force spreadsheet apps to treat it as plain text.
+ */
+export function sanitizeCsvCell(value: string | number | null | undefined): string {
+    if (value === null || value === undefined) return '""';
+    const str = String(value);
+    const sanitized = /^[=+\-@\t\r]/.test(str) ? `'${str}` : str;
+    return `"${sanitized.replace(/"/g, '""')}"`;
+}
+
 export async function exportToCSV(): Promise<string> {
     const txs = await db.transactions.toArray();
     const categories = await db.categories.toArray();
@@ -120,11 +215,11 @@ export async function exportToCSV(): Promise<string> {
     const headers = ['Fecha', 'Descripción', 'Monto', 'Tipo', 'Categoría', 'Cuenta'];
     const rows = txs.map(tx => [
         new Date(tx.date).toLocaleDateString(),
-        `"${tx.description.replace(/"/g, '""')}"`,
+        sanitizeCsvCell(tx.description),
         tx.amount,
         tx.type,
-        `"${catMap.get(tx.categoryId) || 'Sin Categoría'}"`,
-        `"${accMap.get(tx.accountId) || 'Cuenta Borrada'}"`
+        sanitizeCsvCell(catMap.get(tx.categoryId) || 'Sin Categoría'),
+        sanitizeCsvCell(accMap.get(tx.accountId) || 'Cuenta Borrada')
     ]);
 
     return [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
@@ -143,3 +238,4 @@ export function downloadCSV(csvString: string) {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 }
+
