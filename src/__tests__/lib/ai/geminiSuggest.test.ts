@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseLlmSuggestionJson, mapLlmPayloadToSuggestion, buildPrompt } from '@/lib/ai/geminiSuggest';
+import { parseLlmSuggestionJson, mapLlmPayloadToSuggestion, buildPrompt, sanitizePii } from '@/lib/ai/geminiSuggest';
 import { GEMINI_MODEL } from '@/lib/ai/geminiConfig';
 import { db } from '@/lib/db';
 import { beforeEach } from 'vitest';
@@ -108,6 +108,13 @@ describe('mapLlmPayloadToSuggestion', () => {
     });
 });
 
+describe('sanitizePii', () => {
+    it('replaces email addresses and numbers >= 6 digits', () => {
+        expect(sanitizePii('Pago a test@example.com CC 1020304050')).toBe('Pago a [EMAIL] CC [NUM]');
+        expect(sanitizePii('Compra por $50 en tienda')).toBe('Compra por $50 en tienda');
+    });
+});
+
 describe('buildPrompt', () => {
     it('includes user custom category guidance and recent transaction examples', () => {
         const prompt = buildPrompt(
@@ -125,6 +132,21 @@ describe('buildPrompt', () => {
         expect(prompt).toContain('PRIORIDAD TOTAL A CATEGORÍAS EXISTENTES');
         expect(prompt).toContain('Uber al jardín');
     });
+
+    it('sanitizes PII in description and recent transaction examples', () => {
+        const prompt = buildPrompt(
+            'Transferencia a 1032456789 juan@gmail.com',
+            'expense',
+            [{ id: 'trans', path: 'Transferencias', isLeaf: true }],
+            [{ description: 'Pago de nómina a 987654321', categoryPath: 'Nómina' }]
+        );
+
+        expect(prompt).not.toContain('1032456789');
+        expect(prompt).not.toContain('juan@gmail.com');
+        expect(prompt).not.toContain('987654321');
+        expect(prompt).toContain('[NUM]');
+        expect(prompt).toContain('[EMAIL]');
+    });
 });
 
 describe('gemini model constant', () => {
@@ -132,3 +154,4 @@ describe('gemini model constant', () => {
         expect(GEMINI_MODEL).toBe('gemini-flash-latest');
     });
 });
+

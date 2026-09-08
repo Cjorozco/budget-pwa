@@ -123,12 +123,21 @@ export async function loadRecentTransactionExamples(
     }
 }
 
+export function sanitizePii(text: string): string {
+    return text
+        // Email addresses
+        .replace(/[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+/g, '[EMAIL]')
+        // Numbers with 6 or more consecutive digits (IDs, account/card numbers, phones)
+        .replace(/\b\d{6,}\b/g, '[NUM]');
+}
+
 export function buildPrompt(
     description: string,
     type: 'income' | 'expense',
     catalog: CatalogRow[],
     recentExamples: Array<{ description: string; categoryPath: string }> = []
 ): string {
+    const sanitizedDescription = sanitizePii(description);
     const lines = catalog
         .map((row) => `- ${row.id} | ${row.path}${row.isLeaf ? '' : ' (raíz)'}`)
         .join('\n');
@@ -136,7 +145,7 @@ export function buildPrompt(
     const historySection = recentExamples.length > 0
         ? [
             'historial de transacciones previas del usuario (aprende cómo categoriza):',
-            ...recentExamples.map((ex) => `- "${ex.description}" → ${ex.categoryPath}`),
+            ...recentExamples.map((ex) => `- "${sanitizePii(ex.description)}" → ${ex.categoryPath}`),
         ].join('\n')
         : '';
 
@@ -153,7 +162,7 @@ export function buildPrompt(
         '- reason: una frase corta en español.',
         '- No inventes ids. No uses montos ni cuentas.',
         `tipo: ${type}`,
-        `descripción: ${description}`,
+        `descripción: ${sanitizedDescription}`,
         'catálogo:',
         lines || '(vacío)',
         historySection,
@@ -176,10 +185,12 @@ export async function generateGeminiText(options: GenerateOptions): Promise<stri
     const timer = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
-        const url = `${GEMINI_GENERATE_URL}?key=${encodeURIComponent(options.apiKey)}`;
-        const response = await fetch(url, {
+        const response = await fetch(GEMINI_GENERATE_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'x-goog-api-key': options.apiKey,
+            },
             referrerPolicy: 'no-referrer',
             signal: controller.signal,
             body: JSON.stringify({

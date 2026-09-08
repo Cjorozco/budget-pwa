@@ -1,0 +1,51 @@
+---
+description: Principios universales de UX y diseno frontend adaptados a personal-buget-pwa
+alwaysApply: true
+---
+
+# SKILL: Universal UX & Frontend Design Principles
+
+## Descripción
+Este skill define las heurísticas universales de diseño y experiencia de usuario (UX) que debes seguir al generar, refactorizar o sugerir código para componentes frontend en React y TypeScript. El objetivo es crear interfaces escalables, consistentes y con baja carga cognitiva.
+
+## Principios y Reglas de Implementación
+
+### 1. Gestión de Complejidad y Claridad (Ley de Tesler & Ley de Hick)
+- **Abstracción Técnica:** Asume la complejidad (estado, transformaciones de datos) en el código para que la interfaz se mantenga limpia.
+- **Límites de Decisión:** Limita las opciones presentadas al usuario simultáneamente (máximo 3 a 5).
+- **Flujos Progresivos:** Prefiere flujos paso a paso (`multi-step`) usando estado local sobre formularios largos.
+- **Lenguaje UI:** Genera copys (labels, tooltips) directos y accionables. Cero jerga técnica en la UI (en español `es-CO`).
+
+### 2. Consistencia y Patrones (Ley de Jakob)
+- **Reutilización Estricta:** Construye ensamblando componentes base, *design tokens* y patrones ya existentes en el repositorio (`src/components/ui/`). No inventes elementos de UI si ya existe un equivalente.
+- **Familiaridad:** Utiliza patrones de navegación e interacción estándar (barra de navegación inferior fija para mobile, diálogos modales accesibles). Evita animaciones que sacrifiquen usabilidad o fluidez.
+
+### 3. Flexibilidad de Entradas y Prevención de Errores (Ley de Postel)
+- **Inputs Resilientes:** Sé estricto en lo que envías a la persistencia (IndexedDB / Dexie), pero flexible en lo que recibes del usuario. Formatea y sanitiza valores (montos en COP, fechas, textos) automáticamente mediante esquemas Zod.
+- **Tolerancia a Fallos:** Usa `ErrorBoundary` (implementado en `src/components/ui/ErrorBoundary.tsx`) y maneja estados `null` o `undefined` sin romper la app.
+- **Acciones Destructivas:** Exige siempre un paso de confirmación explícito con semántica de advertencia antes de borrar o alterar datos sensibles (usando `ConfirmDialog` de UI state, nunca `window.confirm` ni alertas nativas).
+
+### 4. Sistemas de Feedback (Peak-End Rule)
+- **Visibilidad del Estado:** Provee feedback visual inmediato (ej. `disabled` al hacer submit, spinners, loaders, skeletons).
+- **Notificaciones Claras:** Usa `toasts` informativos y no invasivos (a través de `useUIStore`) para confirmar el éxito o fracaso de acciones importantes.
+
+### 5. Arquitectura de UI y Jerarquía (Ley de Miller & Efecto von Restorff)
+- **Agrupación Visual (Chunking):** Agrupa la información en bloques lógicos cortos (máximo 7±2 elementos) tanto en resúmenes de transacciones como en tarjetas de presupuestos.
+- **Jerarquía de Acción:** Destaca el *Call to Action* (CTA) principal de la vista visualmente (ej. botón flotante/fijo de registrar transacción o conciliar).
+
+### 6. Accesibilidad (Ley de Fitts & Estándares Web)
+- **Mobile-first:** Define estilos base para móvil y escala con media queries (Tailwind CSS 4).
+- **Áreas de Interacción:** Botones y enlaces deben tener un tamaño táctil adecuado (mínimo 44x44px recomendado para dedos) y espacio seguro entre ellos.
+- **Semántica y A11y:** Usa HTML semántico, `aria-labels` donde no haya texto visible (como botones de solo ícono de Lucide), roles de diálogo accesibles y respeta el contraste de colores WCAG tanto en modo claro como oscuro.
+
+---
+
+## 📌 Contexto de Aplicación Específico en este Repositorio (`personal-buget-pwa`)
+
+1. **Stack de Ejecución:** SPA offline-first con **React 19 + Vite 7 + Tailwind CSS 4 + TypeScript** (sin SSR ni Next.js).
+2. **Capa de Datos ("Backend Local"):** La persistencia estricta es **IndexedDB vía Dexie.js**. La sanitización y validación con Zod opera en las fronteras de formularios y de importación/exportación de backups.
+3. **Moneda y Formato:** Todos los valores monetarios se gestionan en **COP (Pesos Colombianos)** mediante `formatCurrency()` y formateadores locales resilientes al typing del usuario.
+4. **Integración con Componentes Reales:**
+   - Confirmaciones destructivas: `useConfirmDialog` (`src/components/ui/ConfirmDialog.tsx`).
+   - Toasts y alertas no invasivas: `useUIStore.getState().addToast(...)` (`src/components/ui/ToastContainer.tsx`).
+   - Captura de excepciones: `ErrorBoundary` (`src/components/ui/ErrorBoundary.tsx`).
