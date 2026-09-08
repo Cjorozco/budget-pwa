@@ -1,5 +1,14 @@
 import { db } from './index';
 import { z } from 'zod';
+import type {
+    Transaction,
+    Account,
+    Reconciliation,
+    Category,
+    Tag,
+    Reserve,
+    AppConfig,
+} from '../types';
 
 // Row-level Zod schemas for backup validation
 export const BackupTransactionSchema = z.object({
@@ -100,7 +109,19 @@ export const BackupSchema = z.object({
     })
 });
 
-export type BackupData = z.infer<typeof BackupSchema>;
+export interface BackupData {
+    version: number;
+    timestamp: number;
+    tables: {
+        transactions: Transaction[];
+        accounts: Account[];
+        reconciliations: Reconciliation[];
+        categories: Category[];
+        tags: Tag[];
+        reserves: Reserve[];
+        appConfig: AppConfig[];
+    };
+}
 
 export async function exportDatabase(): Promise<string> {
     // Do not include Gemini API keys: they live in localStorage, not Dexie.
