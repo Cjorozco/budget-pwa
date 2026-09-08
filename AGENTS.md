@@ -15,7 +15,7 @@
    - Respect existing patterns, folder structure, and architecture.
    - Only suggest migrations if explicitly asked.
 
-3. **Stack de este repo:** ver `.cursor/rules/architecture.mdc` (fuente de verdad del stack instalado y principios de dominio).
+3. **Stack de este repo:** ver `.agents/rules/architecture.md` (o `.cursor/rules/architecture.mdc`) como fuente de verdad del stack instalado y principios de dominio.
 
 4. **If stack differs from expectations**, flag it and adapt:
    ```
@@ -159,7 +159,7 @@ proyecto aún no resuelve. No reemplaza ni cuestiona lo que ya está en
 | Drag & drop | pragmatic-drag-and-drop |
 | Estado en la URL | nuqs |
 
-**En este repo**, el stack ya instalado en `.cursor/rules/architecture.mdc` manda
+**En este repo**, el stack ya instalado en `.agents/rules/architecture.md` (y `.cursor/rules/architecture.mdc`) manda
 (p. ej. `date-fns` y `recharts` hoy; Temporal/chart.js solo si se migra a propósito).
 
 ═══════════════════════════════════════════════
