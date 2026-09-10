@@ -21,7 +21,7 @@ export const GEMINI_API_HOST = 'generativelanguage.googleapis.com';
 export const GEMINI_GENERATE_URL =
     `https://${GEMINI_API_HOST}/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
-export const GEMINI_TIMEOUT_MS = 2500;
+export const GEMINI_TIMEOUT_MS = 4500;
 
 export const GEMINI_KEY_STORAGE_KEY = 'budget_gemini_api_key';
 

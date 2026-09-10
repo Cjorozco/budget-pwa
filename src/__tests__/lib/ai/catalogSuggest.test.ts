@@ -73,4 +73,16 @@ describe('suggestCategory: declaración de renta', () => {
     expect(suggestion?.categoryId).toBe('luz');
     expect(suggestion?.needsCategoryCreation).toBe(false);
   });
+
+  it('suggests Hogar > Servicios when user enters Gases del caribe and has Hogar > Servicios', async () => {
+    await db.categories.bulkAdd([
+      root('hogar', 'Hogar'),
+      child('serv', 'Servicios', 'hogar'),
+    ]);
+
+    const suggestion = await suggestCategory('Gases del caribe', 'expense');
+
+    expect(suggestion?.categoryId).toBe('serv');
+    expect(suggestion?.needsCategoryCreation).toBe(false);
+  });
 });
