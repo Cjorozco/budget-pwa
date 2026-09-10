@@ -6,7 +6,10 @@ import {
     formatCategoryPath,
     resolveCategoryPathLabel,
 } from './categoryResolver';
-import { normalizeForMatch } from './categoryRules';
+import {
+    categoryNamesAreSimilar,
+    normalizeForMatch,
+} from './categoryRules';
 import {
     GEMINI_GENERATE_URL,
     GEMINI_MODEL,
@@ -154,9 +157,9 @@ export function buildPrompt(
         'Responde SOLO un objeto JSON con este esquema:',
         '{"match":"existing"|"create"|"none","categoryId":string|null,"parentName":string|null,"subcategoryName":string|null,"confidence":number,"reason":string}',
         'Reglas fundamentales:',
-        '- PRIORIDAD TOTAL A CATEGORÍAS EXISTENTES: Muchos usuarios personalizan sus categorías con nombres de hijos o familiares (ej: "Sofía", "Mateo" para gastos de niños/dependientes; subcategorías como "Ruta" para transporte escolar, "Pensión" para educación, etc.).',
-        '- Si la descripción encaja semánticamente en una categoría existente del usuario (ej: "Uber al jardín" encaja en "Sofía › Ruta" o en "Transporte › Privado"), DEBES responder match=existing con el categoryId exacto del catálogo.',
-        '- NUNCA inventes categorías raíz como "Niños" si el usuario ya tiene categorías personalizadas que cubran ese ámbito.',
+        '- PRIORIDAD TOTAL A CATEGORÍAS EXISTENTES: Muchos usuarios personalizan sus categorías (ej: "Hogar › Servicios" o "Servicios básicos" para luz/agua/gas; nombres de hijos como "Sofía", "Mateo" para gastos de dependientes).',
+        '- Si la descripción encaja semánticamente en una categoría existente del usuario (ej: "Gases del caribe", "Vanti", "Enel" o "recibo de luz" encaja en "Hogar › Servicios" o "Servicios básicos"; "Uber al jardín" encaja en "Sofía › Ruta"), DEBES responder match=existing con el categoryId exacto del catálogo.',
+        '- NUNCA inventes categorías raíz como "Niños" o "Servicios públicos" si el usuario ya tiene categorías personalizadas que cubran ese ámbito.',
         '- match=create: SOLO si realmente no hay ninguna categoría que encaje en el catálogo. En tal caso, parentName DEBE ser el nombre exacto de una categoría raíz que YA exista en el catálogo de la lista; subcategoryName es la hoja nueva.',
         '- match=none: si no encaja.',
         '- reason: una frase corta en español.',
@@ -207,6 +210,9 @@ export async function generateGeminiText(options: GenerateOptions): Promise<stri
         const envelope = GeminiApiEnvelopeSchema.safeParse(json);
 
         if (!response.ok) {
+            if (import.meta.env?.DEV) {
+                console.warn(`[Gemini API error] status: ${response.status}`, json);
+            }
             return null;
         }
 
@@ -215,7 +221,10 @@ export async function generateGeminiText(options: GenerateOptions): Promise<stri
             : undefined;
 
         return text?.trim() ? text : null;
-    } catch {
+    } catch (err: unknown) {
+        if (import.meta.env?.DEV) {
+            console.warn('[Gemini API request failed or timed out]', err);
+        }
         return null;
     } finally {
         clearTimeout(timer);
@@ -235,7 +244,18 @@ export async function mapLlmPayloadToSuggestion(
     if (payload.match === 'none') return null;
 
     if (payload.match === 'existing') {
-        const id = payload.categoryId;
+        let id = payload.categoryId;
+        if (!id || !catalogIds.has(id)) {
+            // Fallback: Gemini sometimes outputs category name or subcategory instead of raw catalog UUID
+            const candidateName = payload.categoryId || payload.subcategoryName || payload.parentName;
+            if (candidateName) {
+                const subName = payload.subcategoryName?.trim() || undefined;
+                const match = await findCategoryByPath(type, payload.parentName || candidateName, subName);
+                if (match && catalogIds.has(match.id)) {
+                    id = match.id;
+                }
+            }
+        }
         if (!id || !catalogIds.has(id)) return null;
         return {
             categoryId: id,
@@ -256,6 +276,24 @@ export async function mapLlmPayloadToSuggestion(
         return {
             categoryId: existing.id,
             categoryPath: await resolveCategoryPathLabel(existing.id),
+            confidence,
+            reason,
+            needsCategoryCreation: false,
+            source: 'gemini',
+        };
+    }
+
+    // Si Gemini propuso un parentName que ya existe como categoría activa en el árbol del usuario
+    // (incluso si es una subcategoría con padre, ej. el usuario tiene "Hogar › Servicios"
+    // y Gemini propuso parentName: "Servicios" o "Hogar"), mapeamos a esa categoría existente.
+    const allActive = await db.categories.filter((c) => c.isActive && c.type === type).toArray();
+    const existingNamedCategory = allActive.find(
+        (c) => normalizeForMatch(c.name) === normalizeForMatch(parentName) || categoryNamesAreSimilar(c.name, parentName)
+    );
+    if (existingNamedCategory && existingNamedCategory.parentId) {
+        return {
+            categoryId: existingNamedCategory.id,
+            categoryPath: await resolveCategoryPathLabel(existingNamedCategory.id),
             confidence,
             reason,
             needsCategoryCreation: false,

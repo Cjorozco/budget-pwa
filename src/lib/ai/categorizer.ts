@@ -35,6 +35,8 @@ const KNOWN_ESTABLISHMENTS = [
     'oxxo', '7-eleven', 'crepes', 'starbucks', 'uber', 'didi', 'netflix', 'spotify',
     'exito', 'carulla', 'd1', 'jumbo', 'alkosto', 'mercado libre', 'amazon',
     'rappi', 'ifood', 'dominos', 'tostao', 'juan valdez',
+    'gases del caribe', 'gas natural', 'vanti', 'epm', 'enel', 'codensa', 'air-e', 'afinia',
+    'triple a', 'claro', 'tigo', 'movistar', 'etb', 'wom',
 ];
 
 const STOP_WORDS = new Set([

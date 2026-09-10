@@ -106,6 +106,26 @@ describe('mapLlmPayloadToSuggestion', () => {
 
         expect(suggestion).toBeNull();
     });
+
+    it('maps to existing subcategory when Gemini proposes parentName matching an active child category', async () => {
+        const suggestion = await mapLlmPayloadToSuggestion(
+            {
+                match: 'create',
+                categoryId: null,
+                parentName: 'Impuestos',
+                subcategoryName: 'Predial',
+                confidence: 0.88,
+                reason: 'Impuesto predial',
+            },
+            'expense',
+            new Set(['fin', 'imp']),
+            new Set(['gastos financieros'])
+        );
+
+        expect(suggestion).not.toBeNull();
+        expect(suggestion?.categoryId).toBe('imp');
+        expect(suggestion?.needsCategoryCreation).toBe(false);
+    });
 });
 
 describe('sanitizePii', () => {

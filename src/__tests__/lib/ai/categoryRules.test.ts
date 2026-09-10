@@ -55,6 +55,31 @@ describe('matchCategoryRule', () => {
     const rule = matchCategoryRule('Uber al trabajo', 'expense');
     expect(rule?.parentName).toBe('Transporte');
   });
+
+  it('maps Gases del caribe to Hogar > Servicios', () => {
+    const rule = matchCategoryRule('Gases del caribe', 'expense');
+    expect(rule?.parentName).toBe('Hogar');
+    expect(rule?.subcategoryName).toBe('Servicios');
+    expect(rule?.reason).toContain('gas');
+  });
+
+  it('maps Enel or Afinia electricity to Hogar > Servicios', () => {
+    const rule = matchCategoryRule('Pago Enel factura de luz', 'expense');
+    expect(rule?.parentName).toBe('Hogar');
+    expect(rule?.subcategoryName).toBe('Servicios');
+  });
+
+  it('maps Acueducto or Triple A to Hogar > Servicios', () => {
+    const rule = matchCategoryRule('Triple A recibo del agua', 'expense');
+    expect(rule?.parentName).toBe('Hogar');
+    expect(rule?.subcategoryName).toBe('Servicios');
+  });
+
+  it('maps Claro or Tigo telecom to Hogar > Servicios', () => {
+    const rule = matchCategoryRule('Claro internet hogar', 'expense');
+    expect(rule?.parentName).toBe('Hogar');
+    expect(rule?.subcategoryName).toBe('Servicios');
+  });
 });
 
 describe('categoryNamesAreSimilar', () => {
