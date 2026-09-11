@@ -11,21 +11,25 @@ export const GEMINI_KEY_URL = 'https://aistudio.google.com/apikey';
 
 /**
  * Model id sent to generateContent.
- * `gemini-flash-latest` is Google’s generation-free Flash alias (tracks the current Flash).
- * Pinned version ids like gemini-2.5-flash 404 for new API keys.
+ * Arrancamos con un modelo base veloz y de alta disponibilidad (gemini-2.5-flash)
+ * para minimizar saturaciones y errores 503 por alta demanda.
  */
-export const GEMINI_MODEL = 'gemini-flash-latest';
+export const GEMINI_MODEL = 'gemini-2.5-flash';
+
+/**
+ * Modelos de respaldo ordenados de menor a mayor (desde modelos estables y ligeros,
+ * pasando por modelos Pro de razonamiento profundo, hasta la familia Gemini 3).
+ * Todos priorizan salida de texto estructurado en JSON.
+ */
 export const GEMINI_FALLBACK_MODELS = [
-    // Modelos estables de la familia Gemini 3
-    'gemini-3.8-flash',
-    'gemini-3.7-flash',
-    'gemini-3.5-flash',
-    'gemini-3.5-flash-lite',
-    'gemini-3.1-flash-lite',
-    // Modelos de la familia Gemini 2.5 y 2.0
-    'gemini-2.5-flash',
     'gemini-2.5-flash-lite',
     'gemini-2.0-flash',
+    'gemini-2.5-pro',
+    'gemini-3.5-flash',
+    'gemini-3.5-flash-lite',
+    'gemini-3.7-flash',
+    'gemini-3.1-pro-preview',
+    'gemini-flash-latest',
 ] as const;
 
 export const GEMINI_API_HOST = 'generativelanguage.googleapis.com';
@@ -44,5 +48,5 @@ export const GEMINI_KEY_HELP = {
     what: `API key de ${GEMINI_PROVIDER_LABEL}, creada en Google AI Studio. Sirve la gratuita o la de pago.`,
     whatNot:
         'Por ahora no sirven ChatGPT Plus, Claude.ai, ni keys de OpenAI (sk-…) o Anthropic: esta PWA no tiene servidor. Más adelante se pueden sumar otros proveedores que permitan llamada desde el navegador.',
-    model: `Modelo fijo: ${GEMINI_MODEL} (Flash). No se elige otro desde la app.`,
+    model: `Modelo principal: ${GEMINI_MODEL} (con respaldo automático en modelos Flash y Pro). No se elige otro desde la app.`,
 } as const;
