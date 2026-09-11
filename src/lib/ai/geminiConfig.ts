@@ -11,23 +11,23 @@ export const GEMINI_KEY_URL = 'https://aistudio.google.com/apikey';
 
 /**
  * Model id sent to generateContent.
- * Arrancamos con un modelo base veloz y de alta disponibilidad (gemini-2.5-flash)
- * para minimizar saturaciones y errores 503 por alta demanda.
+ * Usamos gemini-3.6-flash como modelo principal recomendado por Google AI Studio,
+ * equilibrado en velocidad, razonamiento y alta disponibilidad para cuentas nuevas y existentes.
  */
-export const GEMINI_MODEL = 'gemini-2.5-flash';
+export const GEMINI_MODEL = 'gemini-3.6-flash';
 
 /**
- * Modelos de respaldo ordenados de menor a mayor (desde modelos estables y ligeros,
- * pasando por modelos Pro de razonamiento profundo, hasta la familia Gemini 3).
+ * Modelos de respaldo ordenados de menor a mayor (desde modelos estables y ligeros de la familia 3,
+ * pasando por modelos Pro de razonamiento profundo, hasta la última generación).
  * Todos priorizan salida de texto estructurado en JSON.
  */
 export const GEMINI_FALLBACK_MODELS = [
-    'gemini-2.5-flash-lite',
-    'gemini-2.0-flash',
-    'gemini-2.5-pro',
     'gemini-3.5-flash',
     'gemini-3.5-flash-lite',
+    'gemini-3.1-flash-lite',
+    'gemini-2.5-pro',
     'gemini-3.7-flash',
+    'gemini-3.8-flash',
     'gemini-3.1-pro-preview',
     'gemini-flash-latest',
 ] as const;
