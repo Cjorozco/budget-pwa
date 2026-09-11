@@ -221,8 +221,13 @@ export async function generateGeminiText(options: GenerateOptions): Promise<stri
                     if (import.meta.env?.DEV) {
                         console.warn(`[Gemini API error on ${model}] status: ${response.status}`, json);
                     }
-                    // Si el modelo actual está saturado (503 alta demanda) o con rate limit (429), intentamos el siguiente modelo
-                    if ((response.status === 503 || response.status === 429) && i < modelsToTry.length - 1) {
+                    // Si el API key es inválido (401), no tiene sentido reintentar otros modelos con la misma key
+                    if (response.status === 401) {
+                        return null;
+                    }
+                    // Si el modelo actual está no disponible/deprecado (404), saturado (503), rate-limited (429), etc.
+                    // intentamos de inmediato con el siguiente modelo de respaldo
+                    if (i < modelsToTry.length - 1) {
                         continue;
                     }
                     return null;

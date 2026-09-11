@@ -170,12 +170,12 @@ describe('buildPrompt', () => {
 });
 
 describe('gemini model constant', () => {
-    it('uses gemini-2.5-flash as the primary baseline workhorse', () => {
-        expect(GEMINI_MODEL).toBe('gemini-2.5-flash');
+    it('uses gemini-3.6-flash as the primary baseline workhorse', () => {
+        expect(GEMINI_MODEL).toBe('gemini-3.6-flash');
     });
 });
 
-describe('generateGeminiText 503 resilience', () => {
+describe('generateGeminiText resilience', () => {
     it('tries fallback model when primary model returns 503 high demand', async () => {
         const fetchSpy = vi.spyOn(globalThis, 'fetch')
             .mockResolvedValueOnce(new Response(JSON.stringify({
@@ -194,18 +194,38 @@ describe('generateGeminiText 503 resilience', () => {
         expect(result).toBe('{"match":"none","categoryId":null}');
         fetchSpy.mockRestore();
     });
+
+    it('tries fallback model when primary model returns 404 model no longer available', async () => {
+        const fetchSpy = vi.spyOn(globalThis, 'fetch')
+            .mockResolvedValueOnce(new Response(JSON.stringify({
+                error: { code: 404, message: 'This model is no longer available to new users.' }
+            }), { status: 404 }))
+            .mockResolvedValueOnce(new Response(JSON.stringify({
+                candidates: [{ content: { parts: [{ text: '{"match":"none","categoryId":null}' }] } }]
+            }), { status: 200 }));
+
+        const result = await generateGeminiText({
+            apiKey: 'test-key',
+            prompt: 'test prompt',
+        });
+
+        expect(fetchSpy).toHaveBeenCalledTimes(2);
+        expect(result).toBe('{"match":"none","categoryId":null}');
+        fetchSpy.mockRestore();
+    });
 });
 
 describe('gemini fallback models', () => {
     it('includes stable Flash, Pro models and Gemini 3 family as progressive fallbacks', () => {
-        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-2.5-flash-lite');
-        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-2.0-flash');
-        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-2.5-pro');
         expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.5-flash');
         expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.5-flash-lite');
+        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.1-flash-lite');
+        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-2.5-pro');
         expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.7-flash');
+        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.8-flash');
         expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.1-pro-preview');
         expect(GEMINI_FALLBACK_MODELS).toContain('gemini-flash-latest');
+        expect(GEMINI_FALLBACK_MODELS).not.toContain('gemini-2.5-flash');
     });
 });
 
