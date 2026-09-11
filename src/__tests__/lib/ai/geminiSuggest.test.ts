@@ -170,8 +170,8 @@ describe('buildPrompt', () => {
 });
 
 describe('gemini model constant', () => {
-    it('uses the generation-free Flash alias', () => {
-        expect(GEMINI_MODEL).toBe('gemini-flash-latest');
+    it('uses gemini-2.5-flash as the primary baseline workhorse', () => {
+        expect(GEMINI_MODEL).toBe('gemini-2.5-flash');
     });
 });
 
@@ -197,12 +197,15 @@ describe('generateGeminiText 503 resilience', () => {
 });
 
 describe('gemini fallback models', () => {
-    it('includes Gemini 3 family models as fallbacks', () => {
-        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.8-flash');
-        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.7-flash');
+    it('includes stable Flash, Pro models and Gemini 3 family as progressive fallbacks', () => {
+        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-2.5-flash-lite');
+        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-2.0-flash');
+        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-2.5-pro');
         expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.5-flash');
         expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.5-flash-lite');
-        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.1-flash-lite');
+        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.7-flash');
+        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.1-pro-preview');
+        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-flash-latest');
     });
 });
 
