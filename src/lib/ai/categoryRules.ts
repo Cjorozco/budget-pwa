@@ -143,6 +143,50 @@ export const DESCRIPTION_CATEGORY_HINTS: { keywords: string[]; nameHints: string
     },
     {
         keywords: [
+            'tinto',
+            'tintico',
+            'cafe',
+            'café',
+            'cafecito',
+            'capuchino',
+            'latte',
+            'espresso',
+            'aromatica',
+            'aromática',
+            'starbucks',
+            'juan valdez',
+            'tostao',
+        ],
+        nameHints: ['cafe', 'cafeteria', 'tinto'],
+    },
+    {
+        keywords: [
+            'panaderia',
+            'panadería',
+            'desayuno',
+            'almuerzo',
+            'corrientazo',
+            'ejecutivo',
+            'cena',
+            'empanada',
+            'empanadas',
+            'buñuelo',
+            'buñuelos',
+            'arepa',
+            'arepas',
+            'refrigerio',
+            'onces',
+            'antojo',
+            'antojos',
+            'mecato',
+            'gaseosa',
+            'jugo',
+            'jugos',
+        ],
+        nameHints: ['comida', 'alimentacion', 'restaurante', 'antojo', 'bebida', 'panaderia'],
+    },
+    {
+        keywords: [
             'gases del caribe',
             'gas natural',
             'vanti',
@@ -206,6 +250,32 @@ export const DESCRIPTION_CATEGORY_HINTS: { keywords: string[]; nameHints: string
 ];
 
 export const CATEGORY_KEYWORD_RULES: CategoryKeywordRule[] = [
+    // --- Café, bebidas y tinto (Colombia) ---
+    {
+        type: 'expense',
+        keywordGroups: [
+            [
+                'tinto',
+                'tintico',
+                'cafe',
+                'café',
+                'cafecito',
+                'capuchino',
+                'latte',
+                'espresso',
+                'aromatica',
+                'aromática',
+                'starbucks',
+                'juan valdez',
+                'tostao',
+            ],
+        ],
+        parentName: 'Comida',
+        subcategoryName: 'Café',
+        confidence: 0.88,
+        reason: 'Café o bebidas calientes (tinto)',
+    },
+
     // --- Servicios públicos: Gas (Colombia) ---
     {
         type: 'expense',
