@@ -1,4 +1,4 @@
-﻿import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { db } from '@/lib/db';
 import { suggestCategory } from '@/lib/ai/categorizer';
 
@@ -78,5 +78,20 @@ describe('Custom category matching and learning (Sofia › Ruta vs generic Niño
         expect(suggestion?.categoryId).toBe('cat-ruta');
         expect(suggestion?.confidence).toBeGreaterThanOrEqual(0.9);
         expect(suggestion?.reason).toContain('transacciones');
+    });
+
+    it('matches "Tinto" to existing Comida › Café subcategory', async () => {
+        await db.categories.bulkAdd([
+            root('cat-food', 'Comida'),
+            child('cat-cafe', 'Café', 'cat-food'),
+            child('cat-antojos', 'Antojos y bebidas', 'cat-food'),
+        ]);
+
+        const suggestion = await suggestCategory('Tinto', 'expense');
+
+        expect(suggestion).not.toBeNull();
+        expect(suggestion?.categoryId).toBe('cat-cafe');
+        expect(suggestion?.categoryPath).toBe('Comida › Café');
+        expect(suggestion?.needsCategoryCreation).toBe(false);
     });
 });

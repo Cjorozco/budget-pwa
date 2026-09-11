@@ -11,9 +11,10 @@ import {
     normalizeForMatch,
 } from './categoryRules';
 import {
-    GEMINI_GENERATE_URL,
+    GEMINI_FALLBACK_MODELS,
     GEMINI_MODEL,
     GEMINI_TIMEOUT_MS,
+    getGeminiGenerateUrl,
 } from './geminiConfig';
 import { getGeminiApiKey } from './geminiKey';
 
@@ -186,44 +187,62 @@ export async function generateGeminiText(options: GenerateOptions): Promise<stri
     options.signal?.addEventListener('abort', onAbort);
 
     const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const modelsToTry = [GEMINI_MODEL, ...GEMINI_FALLBACK_MODELS];
 
     try {
-        const response = await fetch(GEMINI_GENERATE_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-goog-api-key': options.apiKey,
-            },
-            referrerPolicy: 'no-referrer',
-            signal: controller.signal,
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: options.prompt }] }],
-                generationConfig: {
-                    temperature: 0.2,
-                    maxOutputTokens: 256,
-                    responseMimeType: 'application/json',
-                },
-            }),
-        });
+        for (let i = 0; i < modelsToTry.length; i++) {
+            if (controller.signal.aborted) return null;
+            const model = modelsToTry[i];
+            const url = getGeminiGenerateUrl(model);
 
-        const json: unknown = await response.json().catch(() => null);
-        const envelope = GeminiApiEnvelopeSchema.safeParse(json);
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-goog-api-key': options.apiKey,
+                    },
+                    referrerPolicy: 'no-referrer',
+                    signal: controller.signal,
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: options.prompt }] }],
+                        generationConfig: {
+                            temperature: 0.2,
+                            maxOutputTokens: 256,
+                            responseMimeType: 'application/json',
+                        },
+                    }),
+                });
 
-        if (!response.ok) {
-            if (import.meta.env?.DEV) {
-                console.warn(`[Gemini API error] status: ${response.status}`, json);
+                const json: unknown = await response.json().catch(() => null);
+                const envelope = GeminiApiEnvelopeSchema.safeParse(json);
+
+                if (!response.ok) {
+                    if (import.meta.env?.DEV) {
+                        console.warn(`[Gemini API error on ${model}] status: ${response.status}`, json);
+                    }
+                    // Si el modelo actual está saturado (503 alta demanda) o con rate limit (429), intentamos el siguiente modelo
+                    if ((response.status === 503 || response.status === 429) && i < modelsToTry.length - 1) {
+                        continue;
+                    }
+                    return null;
+                }
+
+                const text = envelope.success
+                    ? envelope.data.candidates?.[0]?.content?.parts?.[0]?.text
+                    : undefined;
+
+                return text?.trim() ? text : null;
+            } catch (err: unknown) {
+                if (controller.signal.aborted) return null;
+                if (import.meta.env?.DEV) {
+                    console.warn(`[Gemini API request failed on ${model}]`, err);
+                }
+                if (i < modelsToTry.length - 1) {
+                    continue;
+                }
+                return null;
             }
-            return null;
-        }
-
-        const text = envelope.success
-            ? envelope.data.candidates?.[0]?.content?.parts?.[0]?.text
-            : undefined;
-
-        return text?.trim() ? text : null;
-    } catch (err: unknown) {
-        if (import.meta.env?.DEV) {
-            console.warn('[Gemini API request failed or timed out]', err);
         }
         return null;
     } finally {

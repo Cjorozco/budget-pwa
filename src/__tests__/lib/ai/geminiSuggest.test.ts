@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
-import { parseLlmSuggestionJson, mapLlmPayloadToSuggestion, buildPrompt, sanitizePii } from '@/lib/ai/geminiSuggest';
-import { GEMINI_MODEL } from '@/lib/ai/geminiConfig';
+import { describe, expect, it, vi } from 'vitest';
+import { parseLlmSuggestionJson, mapLlmPayloadToSuggestion, buildPrompt, sanitizePii, generateGeminiText } from '@/lib/ai/geminiSuggest';
+import { GEMINI_FALLBACK_MODELS, GEMINI_MODEL } from '@/lib/ai/geminiConfig';
 import { db } from '@/lib/db';
 import { beforeEach } from 'vitest';
 
@@ -172,6 +172,37 @@ describe('buildPrompt', () => {
 describe('gemini model constant', () => {
     it('uses the generation-free Flash alias', () => {
         expect(GEMINI_MODEL).toBe('gemini-flash-latest');
+    });
+});
+
+describe('generateGeminiText 503 resilience', () => {
+    it('tries fallback model when primary model returns 503 high demand', async () => {
+        const fetchSpy = vi.spyOn(globalThis, 'fetch')
+            .mockResolvedValueOnce(new Response(JSON.stringify({
+                error: { code: 503, message: 'This model is currently experiencing high demand.' }
+            }), { status: 503 }))
+            .mockResolvedValueOnce(new Response(JSON.stringify({
+                candidates: [{ content: { parts: [{ text: '{"match":"none","categoryId":null}' }] } }]
+            }), { status: 200 }));
+
+        const result = await generateGeminiText({
+            apiKey: 'test-key',
+            prompt: 'test prompt',
+        });
+
+        expect(fetchSpy).toHaveBeenCalledTimes(2);
+        expect(result).toBe('{"match":"none","categoryId":null}');
+        fetchSpy.mockRestore();
+    });
+});
+
+describe('gemini fallback models', () => {
+    it('includes Gemini 3 family models as fallbacks', () => {
+        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.8-flash');
+        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.7-flash');
+        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.5-flash');
+        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.5-flash-lite');
+        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.1-flash-lite');
     });
 });
 

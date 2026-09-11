@@ -15,13 +15,28 @@ export const GEMINI_KEY_URL = 'https://aistudio.google.com/apikey';
  * Pinned version ids like gemini-2.5-flash 404 for new API keys.
  */
 export const GEMINI_MODEL = 'gemini-flash-latest';
+export const GEMINI_FALLBACK_MODELS = [
+    // Modelos estables de la familia Gemini 3
+    'gemini-3.8-flash',
+    'gemini-3.7-flash',
+    'gemini-3.5-flash',
+    'gemini-3.5-flash-lite',
+    'gemini-3.1-flash-lite',
+    // Modelos de la familia Gemini 2.5 y 2.0
+    'gemini-2.5-flash',
+    'gemini-2.5-flash-lite',
+    'gemini-2.0-flash',
+] as const;
 
 export const GEMINI_API_HOST = 'generativelanguage.googleapis.com';
 
-export const GEMINI_GENERATE_URL =
-    `https://${GEMINI_API_HOST}/v1beta/models/${GEMINI_MODEL}:generateContent`;
+export function getGeminiGenerateUrl(model: string = GEMINI_MODEL): string {
+    return `https://${GEMINI_API_HOST}/v1beta/models/${model}:generateContent`;
+}
 
-export const GEMINI_TIMEOUT_MS = 4500;
+export const GEMINI_GENERATE_URL = getGeminiGenerateUrl(GEMINI_MODEL);
+
+export const GEMINI_TIMEOUT_MS = 6000;
 
 export const GEMINI_KEY_STORAGE_KEY = 'budget_gemini_api_key';
 
