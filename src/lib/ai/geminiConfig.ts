@@ -19,16 +19,14 @@ export const GEMINI_MODEL = 'gemini-3.1-pro-preview';
 /**
  * Modelos de respaldo ordenados:
  * 1. Gemini 3.1 Flash Lite (ultra rápido y ligero)
- * 2. Modelos Pro y Flash progresivos.
+ * 2. Modelos Flash estables y rápidos.
  * Todos priorizan salida de texto estructurado en JSON.
  */
 export const GEMINI_FALLBACK_MODELS = [
     'gemini-3.1-flash-lite',
-    'gemini-2.5-pro',
-    'gemini-3.7-flash',
-    'gemini-3.8-flash',
-    'gemini-3.6-flash',
-    'gemini-3.5-flash',
+    'gemini-2.5-flash',
+    'gemini-2.5-flash-lite',
+    'gemini-1.5-flash',
     'gemini-flash-latest',
 ] as const;
 
@@ -46,11 +44,9 @@ export function getFriendlyModelName(model: string): string {
     const map: Record<string, string> = {
         'gemini-3.1-pro-preview': 'Gemini 3.1 Pro',
         'gemini-3.1-flash-lite': 'Gemini 3.1 Flash Lite',
-        'gemini-2.5-pro': 'Gemini 2.5 Pro',
-        'gemini-3.7-flash': 'Gemini 3.7 Flash',
-        'gemini-3.8-flash': 'Gemini 3.8 Flash',
-        'gemini-3.6-flash': 'Gemini 3.6 Flash',
-        'gemini-3.5-flash': 'Gemini 3.5 Flash',
+        'gemini-2.5-flash': 'Gemini 2.5 Flash',
+        'gemini-2.5-flash-lite': 'Gemini 2.5 Flash Lite',
+        'gemini-1.5-flash': 'Gemini 1.5 Flash',
         'gemini-flash-latest': 'Gemini Flash',
     };
     return map[model] ?? model;
