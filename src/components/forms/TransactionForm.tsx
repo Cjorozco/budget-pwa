@@ -92,13 +92,14 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
             const mayCallGemini = isPro && hasGeminiApiKey();
             setGeminiPending(mayCallGemini);
             try {
-                const suggestion = await suggestCategoryWithLlm(description, type, {
+                const result = await suggestCategoryWithLlm(description, type, {
                     isPro,
                     signal: controller.signal,
                 });
                 if (controller.signal.aborted) return;
 
-                if (suggestion) {
+                if (result.status === 'success') {
+                    const suggestion = result.suggestion;
                     setAiSuggestion(suggestion);
                     setShowAiSuggestion(true);
 

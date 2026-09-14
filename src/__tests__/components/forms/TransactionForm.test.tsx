@@ -185,4 +185,18 @@ describe('TransactionForm', () => {
         const updatedTx = await db.transactions.get('tx-existing');
         expect(updatedTx?.amount).toBe(40000);
     });
+
+    it('does not display AI suggestions when description is shorter than 3 characters', async () => {
+        const user = userEvent.setup();
+        render(<TransactionForm onSuccess={mockOnSuccess} />);
+
+        const descInput = screen.getByTestId('description-input');
+        await user.type(descInput, 'ab');
+
+        // Allow debounce timer to fire
+        await new Promise((resolve) => setTimeout(resolve, 600));
+
+        expect(screen.queryByTestId('ai-suggestion-badge')).not.toBeInTheDocument();
+    });
 });
+
