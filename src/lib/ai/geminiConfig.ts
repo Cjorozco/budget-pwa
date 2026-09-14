@@ -42,6 +42,20 @@ export const GEMINI_GENERATE_URL = getGeminiGenerateUrl(GEMINI_MODEL);
 
 export const GEMINI_TIMEOUT_MS = 8000;
 
+export function getFriendlyModelName(model: string): string {
+    const map: Record<string, string> = {
+        'gemini-3.1-pro-preview': 'Gemini 3.1 Pro',
+        'gemini-3.1-flash-lite': 'Gemini 3.1 Flash Lite',
+        'gemini-2.5-pro': 'Gemini 2.5 Pro',
+        'gemini-3.7-flash': 'Gemini 3.7 Flash',
+        'gemini-3.8-flash': 'Gemini 3.8 Flash',
+        'gemini-3.6-flash': 'Gemini 3.6 Flash',
+        'gemini-3.5-flash': 'Gemini 3.5 Flash',
+        'gemini-flash-latest': 'Gemini Flash',
+    };
+    return map[model] ?? model;
+}
+
 export const GEMINI_KEY_STORAGE_KEY = 'budget_gemini_api_key';
 
 export const GEMINI_KEY_HELP = {
