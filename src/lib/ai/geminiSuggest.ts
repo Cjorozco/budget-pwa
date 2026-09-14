@@ -248,7 +248,7 @@ export async function generateGeminiText(options: GenerateOptions): Promise<Gene
                         contents: [{ parts: [{ text: options.prompt }] }],
                         generationConfig: {
                             temperature: 0.2,
-                            maxOutputTokens: 256,
+                            maxOutputTokens: 2048,
                             responseMimeType: 'application/json',
                         },
                     }),
