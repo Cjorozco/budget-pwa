@@ -26,6 +26,7 @@ const GeminiApiEnvelopeSchema = z.object({
     candidates: z
         .array(
             z.object({
+                finishReason: z.string().optional(),
                 content: z
                     .object({
                         parts: z.array(z.object({ text: z.string().optional() })).optional(),
@@ -259,8 +260,11 @@ export async function generateGeminiText(options: GenerateOptions): Promise<Gene
                         contents: [{ parts: [{ text: options.prompt }] }],
                         generationConfig: {
                             temperature: 0.2,
-                            maxOutputTokens: 2048,
+                            maxOutputTokens: 8192,
                             responseMimeType: 'application/json',
+                            thinkingConfig: {
+                                thinkingBudget: 0,
+                            },
                         },
                     }),
                 });
@@ -315,11 +319,21 @@ export async function generateGeminiText(options: GenerateOptions): Promise<Gene
                     return { ok: false, result: lastErrorResult };
                 }
 
-                const text = envelope.success
-                    ? envelope.data.candidates?.[0]?.content?.parts?.[0]?.text
-                    : undefined;
+                const candidate = envelope.success ? envelope.data.candidates?.[0] : undefined;
+                const isTruncated = candidate?.finishReason === 'MAX_TOKENS';
+                const text = candidate?.content?.parts?.[0]?.text;
 
-                if (text?.trim()) {
+                let isValidJson = false;
+                if (!isTruncated && text?.trim()) {
+                    try {
+                        extractJsonObject(text);
+                        isValidJson = true;
+                    } catch {
+                        isValidJson = false;
+                    }
+                }
+
+                if (isValidJson && text?.trim()) {
                     currentAttempt.status = 'success';
                     attempts.push(currentAttempt);
                     options.onProgress?.(currentAttempt, `Respuesta recibida de ${modelLabel}`);
@@ -327,7 +341,7 @@ export async function generateGeminiText(options: GenerateOptions): Promise<Gene
                 }
 
                 if (import.meta.env?.DEV) {
-                    console.debug(`[generateGeminiText] Empty response text from ${model}`);
+                    console.debug(`[generateGeminiText] Invalid or truncated response from ${model}. isTruncated: ${isTruncated}, text:`, text);
                 }
                 currentAttempt.status = 'failed';
                 currentAttempt.errorReason = 'invalid-json';
@@ -335,7 +349,10 @@ export async function generateGeminiText(options: GenerateOptions): Promise<Gene
 
                 lastErrorResult = { status: 'rejected', reason: 'invalid-json', attempts };
                 const nextModel = i < modelsToTry.length - 1 ? getFriendlyModelName(modelsToTry[i + 1]) : null;
-                options.onProgress?.(currentAttempt, `${modelLabel}: respuesta vacía o no válida${nextModel ? ` → Probando ${nextModel}…` : ''}`);
+                const failMsg = isTruncated
+                    ? `${modelLabel}: respuesta truncada${nextModel ? ` → Probando ${nextModel}…` : ''}`
+                    : `${modelLabel}: respuesta no válida${nextModel ? ` → Probando ${nextModel}…` : ''}`;
+                options.onProgress?.(currentAttempt, failMsg);
                 if (i < modelsToTry.length - 1) continue;
                 return { ok: false, result: lastErrorResult };
             } catch (err: unknown) {
