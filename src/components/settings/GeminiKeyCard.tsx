@@ -7,6 +7,7 @@ import {
     GEMINI_KEY_URL,
     GEMINI_MODEL,
     GEMINI_PROVIDER_LABEL,
+    getFriendlyModelName,
 } from '@/lib/ai/geminiConfig';
 import {
     clearGeminiApiKey,
@@ -76,7 +77,12 @@ export function GeminiKeyCard() {
             const result = await testGeminiApiKey(keyToTest);
             if (result.ok) {
                 if (draft.trim()) persistAndRefresh(draft.trim());
-                addToast(`Conexión OK con ${GEMINI_PROVIDER_LABEL} (${GEMINI_MODEL})`, 'success');
+                const usedLabel = getFriendlyModelName(result.modelUsed || GEMINI_MODEL);
+                const primaryLabel = getFriendlyModelName(GEMINI_MODEL);
+                const msg = result.modelUsed && result.modelUsed !== GEMINI_MODEL
+                    ? `Conexión OK con ${GEMINI_PROVIDER_LABEL} (${usedLabel} — ${primaryLabel} sin cuota)`
+                    : `Conexión OK con ${GEMINI_PROVIDER_LABEL} (${primaryLabel})`;
+                addToast(msg, 'success');
             } else {
                 addToast(result.message, 'error');
             }
@@ -192,7 +198,7 @@ export function GeminiKeyCard() {
                     isLoading={isTesting}
                     data-testid="gemini-api-key-test"
                 >
-                    Probar {GEMINI_MODEL}
+                    Probar {getFriendlyModelName(GEMINI_MODEL)}
                 </Button>
                 {hasKey && (
                     <Button

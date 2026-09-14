@@ -552,24 +552,37 @@ export async function suggestWithGemini(
     return mapped;
 }
 
-export async function testGeminiApiKey(apiKey: string): Promise<{ ok: true } | { ok: false; message: string }> {
+export async function testGeminiApiKey(
+    apiKey: string,
+    onProgress?: (attempt: ModelAttempt, friendlyMessage: string) => void
+): Promise<{ ok: true; modelUsed?: string; attempts?: ModelAttempt[] } | { ok: false; message: string; attempts?: ModelAttempt[] }> {
     const genResult = await generateGeminiText({
         apiKey,
         prompt: 'Responde exactamente {"match":"none","categoryId":null,"parentName":null,"subcategoryName":null,"confidence":0,"reason":"ok"}',
         timeoutMs: 8000,
+        onProgress,
     });
 
     if (!genResult.ok) {
+        const attempts = genResult.result.attempts || [];
+        const failedSummary = attempts.length > 0
+            ? attempts.map((a) => `${a.modelLabel} [${a.httpStatus ?? a.errorReason}]`).join(', ')
+            : getFriendlyModelName(GEMINI_MODEL);
         return {
             ok: false,
-            message: `No se pudo contactar a Gemini (${GEMINI_MODEL}). Revisa la key, la red y que sea de Google AI Studio.`,
+            message: `No se pudo contactar a Gemini (${failedSummary}). Revisa la key y la cuota en Google AI Studio.`,
+            attempts,
         };
     }
 
     const text = genResult.text;
     if (!parseLlmSuggestionJson(text) && !text.toLowerCase().includes('ok')) {
-        return { ok: false, message: `Gemini respondió, pero no en el formato esperado (${GEMINI_MODEL}).` };
+        return {
+            ok: false,
+            message: `Gemini respondió, pero no en el formato esperado (${getFriendlyModelName(genResult.modelUsed)}).`,
+            attempts: genResult.attempts,
+        };
     }
 
-    return { ok: true };
+    return { ok: true, modelUsed: genResult.modelUsed, attempts: genResult.attempts };
 }
