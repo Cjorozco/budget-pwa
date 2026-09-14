@@ -81,6 +81,7 @@ describe('suggestCategoryWithLlm', () => {
             status: 'success',
             suggestion: { ...weakLocal, source: 'local' },
             source: 'local',
+            geminiDiagnosis: { status: 'unavailable', reason: 'not-pro' },
         });
         expect(suggestWithGemini).not.toHaveBeenCalled();
     });
@@ -91,7 +92,10 @@ describe('suggestCategoryWithLlm', () => {
 
         const result = await suggestCategoryWithLlm('desconocido', 'expense', { isPro: false, online: true });
 
-        expect(result).toEqual({ status: 'no-match' });
+        expect(result).toEqual({
+            status: 'no-match',
+            geminiDiagnosis: { status: 'unavailable', reason: 'not-pro' },
+        });
         expect(suggestWithGemini).not.toHaveBeenCalled();
     });
 
@@ -101,7 +105,10 @@ describe('suggestCategoryWithLlm', () => {
 
         const result = await suggestCategoryWithLlm('desconocido', 'expense', { isPro: true, online: true });
 
-        expect(result).toEqual({ status: 'no-match' });
+        expect(result).toEqual({
+            status: 'no-match',
+            geminiDiagnosis: { status: 'unavailable', reason: 'no-api-key' },
+        });
         expect(suggestWithGemini).not.toHaveBeenCalled();
     });
 
@@ -111,7 +118,10 @@ describe('suggestCategoryWithLlm', () => {
 
         const result = await suggestCategoryWithLlm('desconocido', 'expense', { isPro: true, online: false });
 
-        expect(result).toEqual({ status: 'no-match' });
+        expect(result).toEqual({
+            status: 'no-match',
+            geminiDiagnosis: { status: 'unavailable', reason: 'offline' },
+        });
         expect(suggestWithGemini).not.toHaveBeenCalled();
     });
 
@@ -174,6 +184,7 @@ describe('suggestCategoryWithLlm', () => {
             status: 'success',
             suggestion: { ...weakLocal, source: 'local' },
             source: 'local',
+            geminiDiagnosis: { status: 'no-match', reason: 'model-none' },
         });
     });
 
@@ -191,6 +202,7 @@ describe('suggestCategoryWithLlm', () => {
             expect(result.source).toBe('local');
             expect(result.suggestion.categoryId).toBe('sofia-ropa');
             expect(result.suggestion.categoryPath).toBe('Sofia › Ropa');
+            expect(result.geminiDiagnosis).toEqual({ status: 'rejected', reason: 'unknown-root' });
         }
     });
 
@@ -208,6 +220,7 @@ describe('suggestCategoryWithLlm', () => {
             expect(result.source).toBe('local');
             expect(result.suggestion.categoryId).toBe('hogar-otros');
             expect(result.suggestion.categoryPath).toBe('Hogar › Otros');
+            expect(result.geminiDiagnosis).toEqual({ status: 'error', reason: 'timeout' });
         }
     });
 
@@ -222,6 +235,7 @@ describe('suggestCategoryWithLlm', () => {
             status: 'success',
             suggestion: { ...strongLocal, source: 'local' },
             source: 'local',
+            geminiDiagnosis: { status: 'rejected', reason: 'invalid-json' },
         });
     });
 
@@ -236,6 +250,7 @@ describe('suggestCategoryWithLlm', () => {
             status: 'success',
             suggestion: { ...strongLocal, source: 'local' },
             source: 'local',
+            geminiDiagnosis: { status: 'rejected', reason: 'invalid-schema' },
         });
     });
 
@@ -250,6 +265,7 @@ describe('suggestCategoryWithLlm', () => {
             status: 'success',
             suggestion: { ...strongLocal, source: 'local' },
             source: 'local',
+            geminiDiagnosis: { status: 'rejected', reason: 'invalid-category-id' },
         });
     });
 
@@ -264,10 +280,11 @@ describe('suggestCategoryWithLlm', () => {
             status: 'success',
             suggestion: { ...strongLocal, source: 'local' },
             source: 'local',
+            geminiDiagnosis: { status: 'error', reason: 'http-401' },
         });
     });
 
-    it('falls back to local when Gemini returns error: http-429', async () => {
+    it('falls back to local when Gemini returns error: http-429 and provides geminiDiagnosis', async () => {
         vi.mocked(suggestCategory).mockResolvedValue(strongLocal);
         vi.mocked(suggestWithGemini).mockResolvedValue({ status: 'error', reason: 'http-429' });
         setGeminiApiKey('AIzaSyDummyKeyForUnitTests1234567890');
@@ -278,6 +295,7 @@ describe('suggestCategoryWithLlm', () => {
             status: 'success',
             suggestion: { ...strongLocal, source: 'local' },
             source: 'local',
+            geminiDiagnosis: { status: 'error', reason: 'http-429' },
         });
     });
 
@@ -292,6 +310,7 @@ describe('suggestCategoryWithLlm', () => {
             status: 'success',
             suggestion: { ...strongLocal, source: 'local' },
             source: 'local',
+            geminiDiagnosis: { status: 'error', reason: 'http-5xx' },
         });
     });
 
@@ -306,17 +325,21 @@ describe('suggestCategoryWithLlm', () => {
             status: 'success',
             suggestion: { ...strongLocal, source: 'local' },
             source: 'local',
+            geminiDiagnosis: { status: 'error', reason: 'network-error' },
         });
     });
 
-    it('returns no-match when both Gemini and Local fail to find a match', async () => {
+    it('returns no-match with geminiDiagnosis when both Gemini and Local fail to find a match', async () => {
         vi.mocked(suggestCategory).mockResolvedValue(null);
         vi.mocked(suggestWithGemini).mockResolvedValue({ status: 'rejected', reason: 'unknown-root' });
         setGeminiApiKey('AIzaSyDummyKeyForUnitTests1234567890');
 
         const result = await suggestCategoryWithLlm('gasto totalmente nuevo', 'expense', { isPro: true, online: true });
 
-        expect(result).toEqual({ status: 'no-match' });
+        expect(result).toEqual({
+            status: 'no-match',
+            geminiDiagnosis: { status: 'rejected', reason: 'unknown-root' },
+        });
     });
 
     it('returns no-match when signal is already aborted', async () => {

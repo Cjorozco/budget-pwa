@@ -69,6 +69,7 @@ export async function suggestCategoryWithLlm(
     }
 
     const canUseGemini = geminiUnavailableReason === null;
+    let geminiDiagnosis: GeminiResult | undefined = undefined;
 
     if (canUseGemini) {
         try {
@@ -84,15 +85,19 @@ export async function suggestCategoryWithLlm(
                 };
             }
 
+            geminiDiagnosis = geminiResult;
+
             if (import.meta.env?.DEV) {
                 console.debug('[suggestCategoryWithLlm] Gemini did not produce a valid suggestion, falling back to local engine. Diagnosis:', geminiResult);
             }
         } catch (err) {
+            geminiDiagnosis = { status: 'error', reason: 'network-error' };
             if (import.meta.env?.DEV) {
                 console.debug('[suggestCategoryWithLlm] Unexpected error in suggestWithGemini, falling back to local:', err);
             }
         }
     } else {
+        geminiDiagnosis = { status: 'unavailable', reason: geminiUnavailableReason! };
         if (import.meta.env?.DEV) {
             console.debug(`[suggestCategoryWithLlm] Gemini unavailable (${geminiUnavailableReason}), using local engine.`);
         }
@@ -110,6 +115,7 @@ export async function suggestCategoryWithLlm(
             status: 'success',
             suggestion: { ...local, source: local.source ?? 'local' },
             source: 'local',
+            geminiDiagnosis,
         };
     }
 
@@ -117,5 +123,8 @@ export async function suggestCategoryWithLlm(
         console.debug('[suggestCategoryWithLlm] Neither Gemini nor Local found a suggestion.');
     }
 
-    return { status: 'no-match' };
+    return {
+        status: 'no-match',
+        geminiDiagnosis,
+    };
 }

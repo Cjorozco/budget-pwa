@@ -8,7 +8,23 @@ export type GeminiResult =
   | { status: 'error'; reason: 'timeout' | 'http-401' | 'http-429' | 'http-5xx' | 'network-error' };
 
 export type ResolverResult =
-  | { status: 'success'; suggestion: CategorySuggestion; source: 'gemini' | 'local' }
-  | { status: 'no-match' }
-  | { status: 'unavailable'; reason: string }
-  | { status: 'error'; reason: string };
+  | {
+      status: 'success';
+      suggestion: CategorySuggestion;
+      source: 'gemini' | 'local';
+      geminiDiagnosis?: GeminiResult;
+    }
+  | {
+      status: 'no-match';
+      geminiDiagnosis?: GeminiResult;
+    }
+  | {
+      status: 'unavailable';
+      reason: string;
+      geminiDiagnosis?: GeminiResult;
+    }
+  | {
+      status: 'error';
+      reason: string;
+      geminiDiagnosis?: GeminiResult;
+    };

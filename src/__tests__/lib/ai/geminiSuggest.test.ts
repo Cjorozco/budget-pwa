@@ -258,8 +258,8 @@ describe('buildPrompt', () => {
 });
 
 describe('gemini model constant', () => {
-    it('uses gemini-3.6-flash as the primary baseline workhorse', () => {
-        expect(GEMINI_MODEL).toBe('gemini-3.6-flash');
+    it('uses gemini-3.1-pro-preview as the primary baseline workhorse', () => {
+        expect(GEMINI_MODEL).toBe('gemini-3.1-pro-preview');
     });
 });
 
@@ -377,15 +377,14 @@ describe('generateGeminiText resilience & errors', () => {
 });
 
 describe('gemini fallback models', () => {
-    it('includes stable Flash, Pro models and Gemini 3 family as progressive fallbacks', () => {
-        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.5-flash');
-        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.5-flash-lite');
-        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.1-flash-lite');
+    it('includes stable Pro and Flash models as progressive fallbacks', () => {
         expect(GEMINI_FALLBACK_MODELS).toContain('gemini-2.5-pro');
         expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.7-flash');
         expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.8-flash');
-        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.1-pro-preview');
+        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.6-flash');
+        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.5-flash');
         expect(GEMINI_FALLBACK_MODELS).toContain('gemini-flash-latest');
         expect(GEMINI_FALLBACK_MODELS).not.toContain('gemini-2.5-flash');
     });
 });
+
