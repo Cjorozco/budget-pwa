@@ -18,6 +18,7 @@ import { format } from 'date-fns';
 import { PiggyBank, Sparkles, AlertCircle, FolderPlus } from 'lucide-react';
 import { formatCurrency, toSentenceCase } from '@/lib/utils';
 import type { Category, Transaction } from '@/lib/types';
+import type { ModelAttempt } from '@/lib/ai/types';
 
 type TransactionFormData = z.infer<typeof TransactionSchema>;
 
@@ -36,6 +37,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
     const [showAiSuggestion, setShowAiSuggestion] = useState(false);
     const [aiDiagnosticNotice, setAiDiagnosticNotice] = useState<string | null>(null);
     const [geminiPending, setGeminiPending] = useState(false);
+    const [geminiProgressMessage, setGeminiProgressMessage] = useState<string | null>(null);
     const [createdCategories, setCreatedCategories] = useState<Category[]>([]);
     const categoryTouchedRef = useRef(false);
 
@@ -84,6 +86,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
             setShowAiSuggestion(false);
             setAiDiagnosticNotice(null);
             setGeminiPending(false);
+            setGeminiProgressMessage(null);
             return;
         }
 
@@ -93,10 +96,14 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
         const timer = setTimeout(async () => {
             const mayCallGemini = isPro && hasGeminiApiKey();
             setGeminiPending(mayCallGemini);
+            setGeminiProgressMessage(mayCallGemini ? 'Consultando Gemini 3.1 Pro…' : null);
             try {
                 const result = await suggestCategoryWithLlm(description, type, {
                     isPro,
                     signal: controller.signal,
+                    onProgress: (_attempt, msg) => {
+                        setGeminiProgressMessage(msg);
+                    },
                 });
                 if (controller.signal.aborted) return;
 
@@ -105,7 +112,18 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                     setAiSuggestion(suggestion);
                     setShowAiSuggestion(true);
 
-                    if (result.geminiDiagnosis?.status === 'error' && result.geminiDiagnosis.reason === 'http-429') {
+                    // Si se usó un modelo de respaldo tras fallo de otros
+                    const attempts: ModelAttempt[] = result.geminiDiagnosis?.attempts || [];
+                    const failedAttempts = attempts.filter((a: ModelAttempt) => a.status === 'failed');
+                    if (result.source === 'gemini' && failedAttempts.length > 0) {
+                        const failedNames = failedAttempts.map((a: ModelAttempt) => `${a.modelLabel} (${a.httpStatus ?? a.errorReason})`).join(', ');
+                        const successAttempt = attempts.find((a: ModelAttempt) => a.status === 'success');
+                        const usedLabel = successAttempt?.modelLabel || 'modelo de respaldo';
+                        setAiDiagnosticNotice(`${failedNames} no disponibles. Obtenido con ${usedLabel}.`);
+                    } else if (result.source === 'local' && failedAttempts.length > 0) {
+                        const failedNames = failedAttempts.map((a: ModelAttempt) => `${a.modelLabel} (${a.httpStatus ?? a.errorReason})`).join(', ');
+                        setAiDiagnosticNotice(`Modelos de IA no disponibles (${failedNames}). Se usó categorización local.`);
+                    } else if (result.geminiDiagnosis?.status === 'error' && result.geminiDiagnosis.reason === 'http-429') {
                         setAiDiagnosticNotice('Límite de cuota diaria de Gemini alcanzado (Free tier: 20 req/día). Se usó categorización local.');
                     } else {
                         setAiDiagnosticNotice(null);
@@ -124,7 +142,12 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                     setAiSuggestion(null);
                     setShowAiSuggestion(false);
 
-                    if (result.geminiDiagnosis?.status === 'error' && result.geminiDiagnosis.reason === 'http-429') {
+                    const attempts: ModelAttempt[] = result.geminiDiagnosis?.attempts || [];
+                    const failedAttempts = attempts.filter((a: ModelAttempt) => a.status === 'failed');
+                    if (failedAttempts.length > 0) {
+                        const failedNames = failedAttempts.map((a: ModelAttempt) => `${a.modelLabel} (${a.httpStatus ?? a.errorReason})`).join(', ');
+                        setAiDiagnosticNotice(`Todos los modelos de IA fallaron (${failedNames}). No se encontró coincidencia local.`);
+                    } else if (result.geminiDiagnosis?.status === 'error' && result.geminiDiagnosis.reason === 'http-429') {
                         setAiDiagnosticNotice('Límite de cuota diaria alcanzado en Google AI Studio (Free tier: 20 req/día). No se encontró coincidencia local.');
                     } else if (result.geminiDiagnosis?.status === 'error' && result.geminiDiagnosis.reason === 'http-401') {
                         setAiDiagnosticNotice('API key de Gemini no válida. Revisa la clave en Ajustes.');
@@ -133,7 +156,10 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                     }
                 }
             } finally {
-                if (!controller.signal.aborted) setGeminiPending(false);
+                if (!controller.signal.aborted) {
+                    setGeminiPending(false);
+                    setGeminiProgressMessage(null);
+                }
             }
         }, 500);
 
@@ -389,8 +415,8 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
             />
 
             {geminiPending && (
-                <p className="text-[11px] text-indigo-600 dark:text-indigo-400" data-testid="gemini-pending">
-                    Consultando Gemini…
+                <p className="text-[11px] text-indigo-600 dark:text-indigo-400 font-medium animate-pulse" data-testid="gemini-pending">
+                    {geminiProgressMessage || 'Consultando Gemini…'}
                 </p>
             )}
 

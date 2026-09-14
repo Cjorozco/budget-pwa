@@ -273,13 +273,22 @@ describe('generateGeminiText resilience & errors', () => {
                 candidates: [{ content: { parts: [{ text: '{"match":"none","categoryId":null}' }] } }]
             }), { status: 200 }));
 
+        const progressMessages: string[] = [];
         const result = await generateGeminiText({
             apiKey: 'test-key',
             prompt: 'test prompt',
+            onProgress: (_attempt, msg) => progressMessages.push(msg),
         });
 
         expect(fetchSpy).toHaveBeenCalledTimes(2);
-        expect(result).toEqual({ ok: true, text: '{"match":"none","categoryId":null}' });
+        expect(result.ok).toBe(true);
+        if (result.ok) {
+            expect(result.text).toBe('{"match":"none","categoryId":null}');
+            expect(result.attempts.length).toBe(2);
+            expect(result.attempts[0].status).toBe('failed');
+            expect(result.attempts[1].status).toBe('success');
+        }
+        expect(progressMessages.length).toBeGreaterThan(0);
         fetchSpy.mockRestore();
     });
 
@@ -298,7 +307,10 @@ describe('generateGeminiText resilience & errors', () => {
         });
 
         expect(fetchSpy).toHaveBeenCalledTimes(2);
-        expect(result).toEqual({ ok: true, text: '{"match":"none","categoryId":null}' });
+        expect(result.ok).toBe(true);
+        if (result.ok) {
+            expect(result.text).toBe('{"match":"none","categoryId":null}');
+        }
         fetchSpy.mockRestore();
     });
 
@@ -314,7 +326,11 @@ describe('generateGeminiText resilience & errors', () => {
         });
 
         expect(fetchSpy).toHaveBeenCalledTimes(1);
-        expect(result).toEqual({ ok: false, result: { status: 'error', reason: 'http-401' } });
+        expect(result.ok).toBe(false);
+        if (!result.ok && result.result.status === 'error') {
+            expect(result.result.status).toBe('error');
+            expect(result.result.reason).toBe('http-401');
+        }
         fetchSpy.mockRestore();
     });
 
@@ -329,7 +345,12 @@ describe('generateGeminiText resilience & errors', () => {
             prompt: 'test prompt',
         });
 
-        expect(result).toEqual({ ok: false, result: { status: 'error', reason: 'http-429' } });
+        expect(result.ok).toBe(false);
+        if (!result.ok && result.result.status === 'error') {
+            expect(result.result.status).toBe('error');
+            expect(result.result.reason).toBe('http-429');
+            expect(result.result.attempts?.length).toBeGreaterThan(1);
+        }
         fetchSpy.mockRestore();
     });
 
@@ -344,7 +365,11 @@ describe('generateGeminiText resilience & errors', () => {
             prompt: 'test prompt',
         });
 
-        expect(result).toEqual({ ok: false, result: { status: 'error', reason: 'http-5xx' } });
+        expect(result.ok).toBe(false);
+        if (!result.ok && result.result.status === 'error') {
+            expect(result.result.status).toBe('error');
+            expect(result.result.reason).toBe('http-5xx');
+        }
         fetchSpy.mockRestore();
     });
 
@@ -358,7 +383,11 @@ describe('generateGeminiText resilience & errors', () => {
             timeoutMs: 10,
         });
 
-        expect(result).toEqual({ ok: false, result: { status: 'error', reason: 'timeout' } });
+        expect(result.ok).toBe(false);
+        if (!result.ok && result.result.status === 'error') {
+            expect(result.result.status).toBe('error');
+            expect(result.result.reason).toBe('timeout');
+        }
         fetchSpy.mockRestore();
     });
 
@@ -371,13 +400,18 @@ describe('generateGeminiText resilience & errors', () => {
             prompt: 'test prompt',
         });
 
-        expect(result).toEqual({ ok: false, result: { status: 'error', reason: 'network-error' } });
+        expect(result.ok).toBe(false);
+        if (!result.ok && result.result.status === 'error') {
+            expect(result.result.status).toBe('error');
+            expect(result.result.reason).toBe('network-error');
+        }
         fetchSpy.mockRestore();
     });
 });
 
 describe('gemini fallback models', () => {
     it('includes stable Pro and Flash models as progressive fallbacks', () => {
+        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.1-flash-lite');
         expect(GEMINI_FALLBACK_MODELS).toContain('gemini-2.5-pro');
         expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.7-flash');
         expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.8-flash');

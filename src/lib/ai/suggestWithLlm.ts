@@ -18,6 +18,7 @@ export interface SuggestWithLlmOptions {
     isPro: boolean;
     signal?: AbortSignal;
     online?: boolean;
+    onProgress?: (attempt: import('./types').ModelAttempt, friendlyMessage: string) => void;
 }
 
 async function compareWithLocalForDiagnostics(
@@ -73,7 +74,7 @@ export async function suggestCategoryWithLlm(
 
     if (canUseGemini) {
         try {
-            const geminiResult = await suggestWithGemini(description, type, options.signal);
+            const geminiResult = await suggestWithGemini(description, type, options.signal, options.onProgress);
 
             if (geminiResult.status === 'success') {
                 // PASO 2: Instrumentación diagnóstica no bloqueante
@@ -82,6 +83,7 @@ export async function suggestCategoryWithLlm(
                     status: 'success',
                     suggestion: geminiResult.suggestion,
                     source: 'gemini',
+                    geminiDiagnosis: geminiResult,
                 };
             }
 

@@ -13,12 +13,13 @@ import {
     GEMINI_FALLBACK_MODELS,
     GEMINI_MODEL,
     GEMINI_TIMEOUT_MS,
+    getFriendlyModelName,
     getGeminiGenerateUrl,
 } from './geminiConfig';
 import { getGeminiApiKey } from './geminiKey';
-import type { GeminiResult } from './types';
+import type { GeminiResult, ModelAttempt } from './types';
 
-export type { GeminiResult };
+export type { GeminiResult, ModelAttempt };
 export type SuggestionResult = GeminiResult;
 
 const GeminiApiEnvelopeSchema = z.object({
@@ -202,10 +203,11 @@ interface GenerateOptions {
     prompt: string;
     signal?: AbortSignal;
     timeoutMs?: number;
+    onProgress?: (attempt: ModelAttempt, friendlyMessage: string) => void;
 }
 
 export type GenerateGeminiTextResult =
-    | { ok: true; text: string }
+    | { ok: true; text: string; modelUsed: string; attempts: ModelAttempt[] }
     | { ok: false; result: GeminiResult };
 
 export async function generateGeminiText(options: GenerateOptions): Promise<GenerateGeminiTextResult> {
@@ -221,6 +223,7 @@ export async function generateGeminiText(options: GenerateOptions): Promise<Gene
     }, timeoutMs);
 
     const modelsToTry = [GEMINI_MODEL, ...GEMINI_FALLBACK_MODELS];
+    const attempts: ModelAttempt[] = [];
     let lastErrorResult: GeminiResult = { status: 'error', reason: 'network-error' };
 
     try {
@@ -230,10 +233,18 @@ export async function generateGeminiText(options: GenerateOptions): Promise<Gene
                 if (import.meta.env?.DEV) {
                     console.debug(`[generateGeminiText] Aborted (${reason})`);
                 }
-                return { ok: false, result: { status: 'error', reason } };
+                return { ok: false, result: { status: 'error', reason, attempts } };
             }
             const model = modelsToTry[i];
+            const modelLabel = getFriendlyModelName(model);
             const url = getGeminiGenerateUrl(model);
+
+            const currentAttempt: ModelAttempt = {
+                model,
+                modelLabel,
+                status: 'trying',
+            };
+            options.onProgress?.(currentAttempt, `Probando ${modelLabel}…`);
 
             try {
                 const response = await fetch(url, {
@@ -248,7 +259,7 @@ export async function generateGeminiText(options: GenerateOptions): Promise<Gene
                         contents: [{ parts: [{ text: options.prompt }] }],
                         generationConfig: {
                             temperature: 0.2,
-                            maxOutputTokens: 256,
+                            maxOutputTokens: 2048,
                             responseMimeType: 'application/json',
                         },
                     }),
@@ -262,19 +273,35 @@ export async function generateGeminiText(options: GenerateOptions): Promise<Gene
                         console.debug(`[Gemini API error on ${model}] status: ${response.status}`, json);
                     }
 
+                    let errorReason: 'http-401' | 'http-429' | 'http-5xx' | 'network-error' = 'network-error';
+                    if (response.status === 401) {
+                        errorReason = 'http-401';
+                    } else if (response.status === 429) {
+                        errorReason = 'http-429';
+                    } else if (response.status >= 500 && response.status <= 599) {
+                        errorReason = 'http-5xx';
+                    }
+
+                    currentAttempt.status = 'failed';
+                    currentAttempt.httpStatus = response.status;
+                    currentAttempt.errorReason = errorReason;
+                    attempts.push(currentAttempt);
+
                     if (response.status === 401) {
                         if (import.meta.env?.DEV) {
                             console.debug('[generateGeminiText] Error: http-401 (invalid API key). Stopping fallback.');
                         }
-                        return { ok: false, result: { status: 'error', reason: 'http-401' } };
+                        options.onProgress?.(currentAttempt, `${modelLabel}: API Key no válida (401)`);
+                        return { ok: false, result: { status: 'error', reason: 'http-401', attempts } };
                     }
-                    if (response.status === 429) {
-                        lastErrorResult = { status: 'error', reason: 'http-429' };
-                    } else if (response.status >= 500 && response.status <= 599) {
-                        lastErrorResult = { status: 'error', reason: 'http-5xx' };
-                    } else {
-                        lastErrorResult = { status: 'error', reason: 'network-error' };
-                    }
+
+                    lastErrorResult = { status: 'error', reason: errorReason, attempts };
+
+                    const nextModel = i < modelsToTry.length - 1 ? getFriendlyModelName(modelsToTry[i + 1]) : null;
+                    const failMsg = response.status === 429
+                        ? `${modelLabel}: cuota agotada (429)${nextModel ? ` → Probando ${nextModel}…` : ''}`
+                        : `${modelLabel}: error ${response.status}${nextModel ? ` → Probando ${nextModel}…` : ''}`;
+                    options.onProgress?.(currentAttempt, failMsg);
 
                     if (i < modelsToTry.length - 1) {
                         if (import.meta.env?.DEV) {
@@ -293,13 +320,22 @@ export async function generateGeminiText(options: GenerateOptions): Promise<Gene
                     : undefined;
 
                 if (text?.trim()) {
-                    return { ok: true, text };
+                    currentAttempt.status = 'success';
+                    attempts.push(currentAttempt);
+                    options.onProgress?.(currentAttempt, `Respuesta recibida de ${modelLabel}`);
+                    return { ok: true, text, modelUsed: model, attempts };
                 }
 
                 if (import.meta.env?.DEV) {
                     console.debug(`[generateGeminiText] Empty response text from ${model}`);
                 }
-                lastErrorResult = { status: 'rejected', reason: 'invalid-json' };
+                currentAttempt.status = 'failed';
+                currentAttempt.errorReason = 'invalid-json';
+                attempts.push(currentAttempt);
+
+                lastErrorResult = { status: 'rejected', reason: 'invalid-json', attempts };
+                const nextModel = i < modelsToTry.length - 1 ? getFriendlyModelName(modelsToTry[i + 1]) : null;
+                options.onProgress?.(currentAttempt, `${modelLabel}: respuesta vacía o no válida${nextModel ? ` → Probando ${nextModel}…` : ''}`);
                 if (i < modelsToTry.length - 1) continue;
                 return { ok: false, result: lastErrorResult };
             } catch (err: unknown) {
@@ -308,12 +344,18 @@ export async function generateGeminiText(options: GenerateOptions): Promise<Gene
                     if (import.meta.env?.DEV) {
                         console.debug(`[generateGeminiText] Fetch aborted on ${model} (${reason})`);
                     }
-                    return { ok: false, result: { status: 'error', reason } };
+                    return { ok: false, result: { status: 'error', reason, attempts } };
                 }
                 if (import.meta.env?.DEV) {
                     console.debug(`[Gemini API request failed on ${model}]`, err);
                 }
-                lastErrorResult = { status: 'error', reason: 'network-error' };
+                currentAttempt.status = 'failed';
+                currentAttempt.errorReason = 'network-error';
+                attempts.push(currentAttempt);
+
+                lastErrorResult = { status: 'error', reason: 'network-error', attempts };
+                const nextModel = i < modelsToTry.length - 1 ? getFriendlyModelName(modelsToTry[i + 1]) : null;
+                options.onProgress?.(currentAttempt, `${modelLabel}: error de red${nextModel ? ` → Probando ${nextModel}…` : ''}`);
                 if (i < modelsToTry.length - 1) {
                     continue;
                 }
@@ -446,7 +488,8 @@ export async function mapLlmPayloadToSuggestion(
 export async function suggestWithGemini(
     description: string,
     type: 'income' | 'expense',
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    onProgress?: (attempt: ModelAttempt, friendlyMessage: string) => void
 ): Promise<GeminiResult> {
     const apiKey = getGeminiApiKey();
     if (!apiKey) {
@@ -466,6 +509,7 @@ export async function suggestWithGemini(
         apiKey,
         prompt: buildPrompt(description, type, catalog, recentExamples),
         signal,
+        onProgress,
     });
 
     if (!genResult.ok) {
@@ -480,7 +524,12 @@ export async function suggestWithGemini(
         if (import.meta.env?.DEV) {
             console.debug('[suggestWithGemini] Parsing failed:', parseResult.result);
         }
-        return parseResult.result;
+        const res = parseResult.result;
+        if (res.status === 'rejected' || res.status === 'no-match' || res.status === 'success') {
+            res.modelUsed = genResult.modelUsed;
+            res.attempts = genResult.attempts;
+        }
+        return res;
     }
 
     const rootParentNames = new Set(rootCategories.map((c) => normalizeForMatch(c.name)));
@@ -492,30 +541,48 @@ export async function suggestWithGemini(
         rootParentNames
     );
 
+    if (mapped.status === 'success' || mapped.status === 'no-match' || mapped.status === 'rejected') {
+        mapped.modelUsed = genResult.modelUsed;
+        mapped.attempts = genResult.attempts;
+    }
+
     if (import.meta.env?.DEV) {
         console.debug('[suggestWithGemini] Final mapped result:', mapped);
     }
     return mapped;
 }
 
-export async function testGeminiApiKey(apiKey: string): Promise<{ ok: true } | { ok: false; message: string }> {
+export async function testGeminiApiKey(
+    apiKey: string,
+    onProgress?: (attempt: ModelAttempt, friendlyMessage: string) => void
+): Promise<{ ok: true; modelUsed?: string; attempts?: ModelAttempt[] } | { ok: false; message: string; attempts?: ModelAttempt[] }> {
     const genResult = await generateGeminiText({
         apiKey,
         prompt: 'Responde exactamente {"match":"none","categoryId":null,"parentName":null,"subcategoryName":null,"confidence":0,"reason":"ok"}',
         timeoutMs: 8000,
+        onProgress,
     });
 
     if (!genResult.ok) {
+        const attempts = genResult.result.attempts || [];
+        const failedSummary = attempts.length > 0
+            ? attempts.map((a) => `${a.modelLabel} [${a.httpStatus ?? a.errorReason}]`).join(', ')
+            : getFriendlyModelName(GEMINI_MODEL);
         return {
             ok: false,
-            message: `No se pudo contactar a Gemini (${GEMINI_MODEL}). Revisa la key, la red y que sea de Google AI Studio.`,
+            message: `No se pudo contactar a Gemini (${failedSummary}). Revisa la key y la cuota en Google AI Studio.`,
+            attempts,
         };
     }
 
     const text = genResult.text;
     if (!parseLlmSuggestionJson(text) && !text.toLowerCase().includes('ok')) {
-        return { ok: false, message: `Gemini respondió, pero no en el formato esperado (${GEMINI_MODEL}).` };
+        return {
+            ok: false,
+            message: `Gemini respondió, pero no en el formato esperado (${getFriendlyModelName(genResult.modelUsed)}).`,
+            attempts: genResult.attempts,
+        };
     }
 
-    return { ok: true };
+    return { ok: true, modelUsed: genResult.modelUsed, attempts: genResult.attempts };
 }
