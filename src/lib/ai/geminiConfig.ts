@@ -11,24 +11,21 @@ export const GEMINI_KEY_URL = 'https://aistudio.google.com/apikey';
 
 /**
  * Model id sent to generateContent.
- * Usamos gemini-3.6-flash como modelo principal recomendado por Google AI Studio,
- * equilibrado en velocidad, razonamiento y alta disponibilidad para cuentas nuevas y existentes.
+ * Usamos gemini-3.1-pro-preview como modelo principal para aprovechar los límites ampliados
+ * de suscripciones Pro y la mayor capacidad de razonamiento en clasificación estructurada.
  */
-export const GEMINI_MODEL = 'gemini-3.6-flash';
+export const GEMINI_MODEL = 'gemini-3.1-pro-preview';
 
 /**
- * Modelos de respaldo ordenados de menor a mayor (desde modelos estables y ligeros de la familia 3,
- * pasando por modelos Pro de razonamiento profundo, hasta la última generación).
+ * Modelos de respaldo ordenados (desde Pro estables hasta modelos Flash).
  * Todos priorizan salida de texto estructurado en JSON.
  */
 export const GEMINI_FALLBACK_MODELS = [
-    'gemini-3.5-flash',
-    'gemini-3.5-flash-lite',
-    'gemini-3.1-flash-lite',
     'gemini-2.5-pro',
     'gemini-3.7-flash',
     'gemini-3.8-flash',
-    'gemini-3.1-pro-preview',
+    'gemini-3.6-flash',
+    'gemini-3.5-flash',
     'gemini-flash-latest',
 ] as const;
 
@@ -40,7 +37,7 @@ export function getGeminiGenerateUrl(model: string = GEMINI_MODEL): string {
 
 export const GEMINI_GENERATE_URL = getGeminiGenerateUrl(GEMINI_MODEL);
 
-export const GEMINI_TIMEOUT_MS = 6000;
+export const GEMINI_TIMEOUT_MS = 8000;
 
 export const GEMINI_KEY_STORAGE_KEY = 'budget_gemini_api_key';
 
@@ -48,5 +45,5 @@ export const GEMINI_KEY_HELP = {
     what: `API key de ${GEMINI_PROVIDER_LABEL}, creada en Google AI Studio. Sirve la gratuita o la de pago.`,
     whatNot:
         'Por ahora no sirven ChatGPT Plus, Claude.ai, ni keys de OpenAI (sk-…) o Anthropic: esta PWA no tiene servidor. Más adelante se pueden sumar otros proveedores que permitan llamada desde el navegador.',
-    model: `Modelo principal: ${GEMINI_MODEL} (con respaldo automático en modelos Flash y Pro). No se elige otro desde la app.`,
+    model: `Modelo principal: ${GEMINI_MODEL} (con respaldo automático en modelos Pro y Flash).`,
 } as const;
