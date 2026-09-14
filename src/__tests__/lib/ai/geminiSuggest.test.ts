@@ -378,6 +378,7 @@ describe('generateGeminiText resilience & errors', () => {
 
 describe('gemini fallback models', () => {
     it('includes stable Pro and Flash models as progressive fallbacks', () => {
+        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.1-flash-lite');
         expect(GEMINI_FALLBACK_MODELS).toContain('gemini-2.5-pro');
         expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.7-flash');
         expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.8-flash');
