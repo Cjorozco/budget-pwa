@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { db } from '../db';
-import type { CategorySuggestion } from './categorizer';
 import {
     findCategoryByPath,
     formatCategoryPath,
@@ -17,6 +16,10 @@ import {
     getGeminiGenerateUrl,
 } from './geminiConfig';
 import { getGeminiApiKey } from './geminiKey';
+import type { GeminiResult } from './types';
+
+export type { GeminiResult };
+export type SuggestionResult = GeminiResult;
 
 const GeminiApiEnvelopeSchema = z.object({
     candidates: z
@@ -73,14 +76,35 @@ export function extractJsonObject(text: string): unknown {
     return JSON.parse(raw);
 }
 
-export function parseLlmSuggestionJson(text: string): LlmSuggestionPayload | null {
+export type ParseLlmResult =
+    | { ok: true; payload: LlmSuggestionPayload }
+    | { ok: false; result: GeminiResult };
+
+export function parseLlmSuggestion(text: string): ParseLlmResult {
+    let parsed: unknown;
     try {
-        const parsed = extractJsonObject(text);
-        const result = LlmSuggestionSchema.safeParse(parsed);
-        return result.success ? result.data : null;
-    } catch {
-        return null;
+        parsed = extractJsonObject(text);
+    } catch (err) {
+        if (import.meta.env?.DEV) {
+            console.debug('[parseLlmSuggestion] Rejected: invalid-json. Raw text:', text, 'Error:', err);
+        }
+        return { ok: false, result: { status: 'rejected', reason: 'invalid-json' } };
     }
+
+    const schemaResult = LlmSuggestionSchema.safeParse(parsed);
+    if (!schemaResult.success) {
+        if (import.meta.env?.DEV) {
+            console.debug('[parseLlmSuggestion] Rejected: invalid-schema. Parsed object:', parsed, 'Validation error:', schemaResult.error);
+        }
+        return { ok: false, result: { status: 'rejected', reason: 'invalid-schema' } };
+    }
+
+    return { ok: true, payload: schemaResult.data };
+}
+
+export function parseLlmSuggestionJson(text: string): LlmSuggestionPayload | null {
+    const res = parseLlmSuggestion(text);
+    return res.ok ? res.payload : null;
 }
 
 export async function loadRecentTransactionExamples(
@@ -180,18 +204,34 @@ interface GenerateOptions {
     timeoutMs?: number;
 }
 
-export async function generateGeminiText(options: GenerateOptions): Promise<string | null> {
+export type GenerateGeminiTextResult =
+    | { ok: true; text: string }
+    | { ok: false; result: GeminiResult };
+
+export async function generateGeminiText(options: GenerateOptions): Promise<GenerateGeminiTextResult> {
     const timeoutMs = options.timeoutMs ?? GEMINI_TIMEOUT_MS;
     const controller = new AbortController();
+    let isTimedOut = false;
     const onAbort = () => controller.abort();
     options.signal?.addEventListener('abort', onAbort);
 
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const timer = setTimeout(() => {
+        isTimedOut = true;
+        controller.abort();
+    }, timeoutMs);
+
     const modelsToTry = [GEMINI_MODEL, ...GEMINI_FALLBACK_MODELS];
+    let lastErrorResult: GeminiResult = { status: 'error', reason: 'network-error' };
 
     try {
         for (let i = 0; i < modelsToTry.length; i++) {
-            if (controller.signal.aborted) return null;
+            if (controller.signal.aborted) {
+                const reason = isTimedOut ? 'timeout' : 'network-error';
+                if (import.meta.env?.DEV) {
+                    console.debug(`[generateGeminiText] Aborted (${reason})`);
+                }
+                return { ok: false, result: { status: 'error', reason } };
+            }
             const model = modelsToTry[i];
             const url = getGeminiGenerateUrl(model);
 
@@ -219,37 +259,68 @@ export async function generateGeminiText(options: GenerateOptions): Promise<stri
 
                 if (!response.ok) {
                     if (import.meta.env?.DEV) {
-                        console.warn(`[Gemini API error on ${model}] status: ${response.status}`, json);
+                        console.debug(`[Gemini API error on ${model}] status: ${response.status}`, json);
                     }
-                    // Si el API key es inválido (401), no tiene sentido reintentar otros modelos con la misma key
+
                     if (response.status === 401) {
-                        return null;
+                        if (import.meta.env?.DEV) {
+                            console.debug('[generateGeminiText] Error: http-401 (invalid API key). Stopping fallback.');
+                        }
+                        return { ok: false, result: { status: 'error', reason: 'http-401' } };
                     }
-                    // Si el modelo actual está no disponible/deprecado (404), saturado (503), rate-limited (429), etc.
-                    // intentamos de inmediato con el siguiente modelo de respaldo
+                    if (response.status === 429) {
+                        lastErrorResult = { status: 'error', reason: 'http-429' };
+                    } else if (response.status >= 500 && response.status <= 599) {
+                        lastErrorResult = { status: 'error', reason: 'http-5xx' };
+                    } else {
+                        lastErrorResult = { status: 'error', reason: 'network-error' };
+                    }
+
                     if (i < modelsToTry.length - 1) {
+                        if (import.meta.env?.DEV) {
+                            console.debug(`[generateGeminiText] Falling back from ${model} to next model...`);
+                        }
                         continue;
                     }
-                    return null;
+                    if (import.meta.env?.DEV) {
+                        console.debug('[generateGeminiText] All fallback models exhausted. Final error:', lastErrorResult);
+                    }
+                    return { ok: false, result: lastErrorResult };
                 }
 
                 const text = envelope.success
                     ? envelope.data.candidates?.[0]?.content?.parts?.[0]?.text
                     : undefined;
 
-                return text?.trim() ? text : null;
-            } catch (err: unknown) {
-                if (controller.signal.aborted) return null;
-                if (import.meta.env?.DEV) {
-                    console.warn(`[Gemini API request failed on ${model}]`, err);
+                if (text?.trim()) {
+                    return { ok: true, text };
                 }
+
+                if (import.meta.env?.DEV) {
+                    console.debug(`[generateGeminiText] Empty response text from ${model}`);
+                }
+                lastErrorResult = { status: 'rejected', reason: 'invalid-json' };
+                if (i < modelsToTry.length - 1) continue;
+                return { ok: false, result: lastErrorResult };
+            } catch (err: unknown) {
+                if (controller.signal.aborted) {
+                    const reason = isTimedOut ? 'timeout' : 'network-error';
+                    if (import.meta.env?.DEV) {
+                        console.debug(`[generateGeminiText] Fetch aborted on ${model} (${reason})`);
+                    }
+                    return { ok: false, result: { status: 'error', reason } };
+                }
+                if (import.meta.env?.DEV) {
+                    console.debug(`[Gemini API request failed on ${model}]`, err);
+                }
+                lastErrorResult = { status: 'error', reason: 'network-error' };
                 if (i < modelsToTry.length - 1) {
                     continue;
                 }
-                return null;
+                return { ok: false, result: lastErrorResult };
             }
         }
-        return null;
+        return { ok: false, result: lastErrorResult };
     } finally {
         clearTimeout(timer);
         options.signal?.removeEventListener('abort', onAbort);
@@ -261,11 +332,16 @@ export async function mapLlmPayloadToSuggestion(
     type: 'income' | 'expense',
     catalogIds: Set<string>,
     rootParentNames?: Set<string>
-): Promise<CategorySuggestion | null> {
+): Promise<GeminiResult> {
     const confidence = payload.confidence;
     const reason = payload.reason;
 
-    if (payload.match === 'none') return null;
+    if (payload.match === 'none') {
+        if (import.meta.env?.DEV) {
+            console.debug('[mapLlmPayloadToSuggestion] No match: model-none. Reason given by model:', reason);
+        }
+        return { status: 'no-match', reason: 'model-none' };
+    }
 
     if (payload.match === 'existing') {
         let id = payload.categoryId;
@@ -280,30 +356,46 @@ export async function mapLlmPayloadToSuggestion(
                 }
             }
         }
-        if (!id || !catalogIds.has(id)) return null;
+        if (!id || !catalogIds.has(id)) {
+            if (import.meta.env?.DEV) {
+                console.debug('[mapLlmPayloadToSuggestion] Rejected: invalid-category-id. Payload:', payload, 'Known catalog IDs:', Array.from(catalogIds));
+            }
+            return { status: 'rejected', reason: 'invalid-category-id' };
+        }
         return {
-            categoryId: id,
-            categoryPath: await resolveCategoryPathLabel(id),
-            confidence,
-            reason,
-            needsCategoryCreation: false,
-            source: 'gemini',
+            status: 'success',
+            suggestion: {
+                categoryId: id,
+                categoryPath: await resolveCategoryPathLabel(id),
+                confidence,
+                reason,
+                needsCategoryCreation: false,
+                source: 'gemini',
+            },
         };
     }
 
     const parentName = payload.parentName?.trim();
-    if (!parentName) return null;
+    if (!parentName) {
+        if (import.meta.env?.DEV) {
+            console.debug('[mapLlmPayloadToSuggestion] Rejected: invalid-schema (create missing parentName)');
+        }
+        return { status: 'rejected', reason: 'invalid-schema' };
+    }
     const subcategoryName = payload.subcategoryName?.trim() || undefined;
 
     const existing = await findCategoryByPath(type, parentName, subcategoryName);
     if (existing) {
         return {
-            categoryId: existing.id,
-            categoryPath: await resolveCategoryPathLabel(existing.id),
-            confidence,
-            reason,
-            needsCategoryCreation: false,
-            source: 'gemini',
+            status: 'success',
+            suggestion: {
+                categoryId: existing.id,
+                categoryPath: await resolveCategoryPathLabel(existing.id),
+                confidence,
+                reason,
+                needsCategoryCreation: false,
+                source: 'gemini',
+            },
         };
     }
 
@@ -316,29 +408,38 @@ export async function mapLlmPayloadToSuggestion(
     );
     if (existingNamedCategory && existingNamedCategory.parentId) {
         return {
-            categoryId: existingNamedCategory.id,
-            categoryPath: await resolveCategoryPathLabel(existingNamedCategory.id),
-            confidence,
-            reason,
-            needsCategoryCreation: false,
-            source: 'gemini',
+            status: 'success',
+            suggestion: {
+                categoryId: existingNamedCategory.id,
+                categoryPath: await resolveCategoryPathLabel(existingNamedCategory.id),
+                confidence,
+                reason,
+                needsCategoryCreation: false,
+                source: 'gemini',
+            },
         };
     }
 
     // Grounding: Si el modelo intenta crear bajo una categoría raíz que NO existe en la base de datos
     // del usuario, no permitimos crear raíces arbitrarias (ej. 'Niños').
     if (rootParentNames && !rootParentNames.has(normalizeForMatch(parentName))) {
-        return null;
+        if (import.meta.env?.DEV) {
+            console.debug('[mapLlmPayloadToSuggestion] Rejected: unknown-root. Proposed parentName:', parentName, 'Known root parents:', Array.from(rootParentNames));
+        }
+        return { status: 'rejected', reason: 'unknown-root' };
     }
 
     return {
-        categoryId: null,
-        categoryPath: formatCategoryPath(parentName, subcategoryName),
-        confidence,
-        reason,
-        needsCategoryCreation: true,
-        pendingCategory: { type, parentName, subcategoryName },
-        source: 'gemini',
+        status: 'success',
+        suggestion: {
+            categoryId: null,
+            categoryPath: formatCategoryPath(parentName, subcategoryName),
+            confidence,
+            reason,
+            needsCategoryCreation: true,
+            pendingCategory: { type, parentName, subcategoryName },
+            source: 'gemini',
+        },
     };
 }
 
@@ -346,9 +447,14 @@ export async function suggestWithGemini(
     description: string,
     type: 'income' | 'expense',
     signal?: AbortSignal
-): Promise<CategorySuggestion | null> {
+): Promise<GeminiResult> {
     const apiKey = getGeminiApiKey();
-    if (!apiKey) return null;
+    if (!apiKey) {
+        if (import.meta.env?.DEV) {
+            console.debug('[suggestWithGemini] Unavailable: no-api-key');
+        }
+        return { status: 'unavailable', reason: 'no-api-key' };
+    }
 
     const [catalog, recentExamples, rootCategories] = await Promise.all([
         loadCategoryCatalog(type),
@@ -356,40 +462,57 @@ export async function suggestWithGemini(
         db.categories.filter((c) => c.isActive && c.type === type && !c.parentId).toArray(),
     ]);
 
-    const text = await generateGeminiText({
+    const genResult = await generateGeminiText({
         apiKey,
         prompt: buildPrompt(description, type, catalog, recentExamples),
         signal,
     });
-    if (!text) return null;
 
-    const payload = parseLlmSuggestionJson(text);
-    if (!payload) return null;
+    if (!genResult.ok) {
+        if (import.meta.env?.DEV) {
+            console.debug('[suggestWithGemini] Generation failed:', genResult.result);
+        }
+        return genResult.result;
+    }
+
+    const parseResult = parseLlmSuggestion(genResult.text);
+    if (!parseResult.ok) {
+        if (import.meta.env?.DEV) {
+            console.debug('[suggestWithGemini] Parsing failed:', parseResult.result);
+        }
+        return parseResult.result;
+    }
 
     const rootParentNames = new Set(rootCategories.map((c) => normalizeForMatch(c.name)));
 
-    return mapLlmPayloadToSuggestion(
-        payload,
+    const mapped = await mapLlmPayloadToSuggestion(
+        parseResult.payload,
         type,
         new Set(catalog.map((row) => row.id)),
         rootParentNames
     );
+
+    if (import.meta.env?.DEV) {
+        console.debug('[suggestWithGemini] Final mapped result:', mapped);
+    }
+    return mapped;
 }
 
 export async function testGeminiApiKey(apiKey: string): Promise<{ ok: true } | { ok: false; message: string }> {
-    const text = await generateGeminiText({
+    const genResult = await generateGeminiText({
         apiKey,
         prompt: 'Responde exactamente {"match":"none","categoryId":null,"parentName":null,"subcategoryName":null,"confidence":0,"reason":"ok"}',
         timeoutMs: 8000,
     });
 
-    if (!text) {
+    if (!genResult.ok) {
         return {
             ok: false,
             message: `No se pudo contactar a Gemini (${GEMINI_MODEL}). Revisa la key, la red y que sea de Google AI Studio.`,
         };
     }
 
+    const text = genResult.text;
     if (!parseLlmSuggestionJson(text) && !text.toLowerCase().includes('ok')) {
         return { ok: false, message: `Gemini respondió, pero no en el formato esperado (${GEMINI_MODEL}).` };
     }

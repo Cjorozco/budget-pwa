@@ -1,8 +1,16 @@
-import { describe, expect, it, vi } from 'vitest';
-import { parseLlmSuggestionJson, mapLlmPayloadToSuggestion, buildPrompt, sanitizePii, generateGeminiText } from '@/lib/ai/geminiSuggest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
+import {
+    parseLlmSuggestion,
+    parseLlmSuggestionJson,
+    mapLlmPayloadToSuggestion,
+    buildPrompt,
+    sanitizePii,
+    generateGeminiText,
+    suggestWithGemini,
+} from '@/lib/ai/geminiSuggest';
 import { GEMINI_FALLBACK_MODELS, GEMINI_MODEL } from '@/lib/ai/geminiConfig';
 import { db } from '@/lib/db';
-import { beforeEach } from 'vitest';
+import { clearGeminiApiKey } from '@/lib/ai/geminiKey';
 
 describe('parseLlmSuggestionJson', () => {
     it('parses a raw JSON object', () => {
@@ -26,6 +34,33 @@ describe('parseLlmSuggestionJson', () => {
     });
 });
 
+describe('parseLlmSuggestion (typed results)', () => {
+    it('returns ok: true with payload for valid JSON', () => {
+        const res = parseLlmSuggestion('{"match":"existing","categoryId":"cat-1","parentName":null,"subcategoryName":null,"confidence":0.9,"reason":"Supermercado"}');
+        expect(res.ok).toBe(true);
+        if (res.ok) {
+            expect(res.payload.match).toBe('existing');
+            expect(res.payload.categoryId).toBe('cat-1');
+        }
+    });
+
+    it('returns ok: false with rejected: invalid-json on corrupted or truncated JSON', () => {
+        const res = parseLlmSuggestion('{"match":"existing","cat');
+        expect(res).toEqual({
+            ok: false,
+            result: { status: 'rejected', reason: 'invalid-json' },
+        });
+    });
+
+    it('returns ok: false with rejected: invalid-schema when payload violates schema', () => {
+        const res = parseLlmSuggestion('{"match":"invalid_match_type","confidence":2.5}');
+        expect(res).toEqual({
+            ok: false,
+            result: { status: 'rejected', reason: 'invalid-schema' },
+        });
+    });
+});
+
 describe('mapLlmPayloadToSuggestion', () => {
     beforeEach(async () => {
         await db.categories.clear();
@@ -35,8 +70,8 @@ describe('mapLlmPayloadToSuggestion', () => {
         ]);
     });
 
-    it('maps an existing catalog id and marks source gemini', async () => {
-        const suggestion = await mapLlmPayloadToSuggestion(
+    it('maps an existing catalog id and returns success with source gemini', async () => {
+        const result = await mapLlmPayloadToSuggestion(
             {
                 match: 'existing',
                 categoryId: 'imp',
@@ -47,13 +82,33 @@ describe('mapLlmPayloadToSuggestion', () => {
             new Set(['fin', 'imp'])
         );
 
-        expect(suggestion?.categoryId).toBe('imp');
-        expect(suggestion?.source).toBe('gemini');
-        expect(suggestion?.categoryPath).toContain('Impuestos');
+        expect(result.status).toBe('success');
+        if (result.status === 'success') {
+            expect(result.suggestion.categoryId).toBe('imp');
+            expect(result.suggestion.source).toBe('gemini');
+            expect(result.suggestion.categoryPath).toContain('Impuestos');
+        }
     });
 
-    it('ignores an id that was not in the catalog sent to the model', async () => {
-        const suggestion = await mapLlmPayloadToSuggestion(
+    it('returns no-match when model returns match: none', async () => {
+        const result = await mapLlmPayloadToSuggestion(
+            {
+                match: 'none',
+                categoryId: null,
+                parentName: null,
+                subcategoryName: null,
+                confidence: 0.1,
+                reason: 'No coincide con nada',
+            },
+            'expense',
+            new Set(['fin', 'imp'])
+        );
+
+        expect(result).toEqual({ status: 'no-match', reason: 'model-none' });
+    });
+
+    it('returns rejected invalid-category-id when id is not in catalog and name does not match', async () => {
+        const result = await mapLlmPayloadToSuggestion(
             {
                 match: 'existing',
                 categoryId: 'forged',
@@ -63,11 +118,12 @@ describe('mapLlmPayloadToSuggestion', () => {
             'expense',
             new Set(['fin', 'imp'])
         );
-        expect(suggestion).toBeNull();
+
+        expect(result).toEqual({ status: 'rejected', reason: 'invalid-category-id' });
     });
 
-    it('maps create to needsCategoryCreation', async () => {
-        const suggestion = await mapLlmPayloadToSuggestion(
+    it('maps create to needsCategoryCreation with status success', async () => {
+        const result = await mapLlmPayloadToSuggestion(
             {
                 match: 'create',
                 categoryId: null,
@@ -77,20 +133,42 @@ describe('mapLlmPayloadToSuggestion', () => {
                 reason: 'Predial',
             },
             'expense',
-            new Set(['fin', 'imp'])
+            new Set(['fin', 'imp']),
+            new Set(['gastos financieros'])
         );
 
-        expect(suggestion?.needsCategoryCreation).toBe(true);
-        expect(suggestion?.pendingCategory).toEqual({
-            type: 'expense',
-            parentName: 'Gastos financieros',
-            subcategoryName: 'Impuesto predial',
-        });
-        expect(suggestion?.source).toBe('gemini');
+        expect(result.status).toBe('success');
+        if (result.status === 'success') {
+            expect(result.suggestion.needsCategoryCreation).toBe(true);
+            expect(result.suggestion.pendingCategory).toEqual({
+                type: 'expense',
+                parentName: 'Gastos financieros',
+                subcategoryName: 'Impuesto predial',
+            });
+            expect(result.suggestion.source).toBe('gemini');
+        }
     });
 
-    it('rejects creating a subcategory under a root parent that does not exist in rootParentNames', async () => {
-        const suggestion = await mapLlmPayloadToSuggestion(
+    it('rejects creating a subcategory when parentName is missing (rejected: invalid-schema)', async () => {
+        const result = await mapLlmPayloadToSuggestion(
+            {
+                match: 'create',
+                categoryId: null,
+                parentName: null,
+                subcategoryName: 'Transporte',
+                confidence: 0.85,
+                reason: 'Sin padre',
+            },
+            'expense',
+            new Set(['fin', 'imp']),
+            new Set(['gastos financieros'])
+        );
+
+        expect(result).toEqual({ status: 'rejected', reason: 'invalid-schema' });
+    });
+
+    it('rejects creating a subcategory under a root parent that does not exist in rootParentNames (rejected: unknown-root)', async () => {
+        const result = await mapLlmPayloadToSuggestion(
             {
                 match: 'create',
                 categoryId: null,
@@ -104,11 +182,11 @@ describe('mapLlmPayloadToSuggestion', () => {
             new Set(['gastos financieros']) // User only has Gastos financieros, not Niños
         );
 
-        expect(suggestion).toBeNull();
+        expect(result).toEqual({ status: 'rejected', reason: 'unknown-root' });
     });
 
     it('maps to existing subcategory when Gemini proposes parentName matching an active child category', async () => {
-        const suggestion = await mapLlmPayloadToSuggestion(
+        const result = await mapLlmPayloadToSuggestion(
             {
                 match: 'create',
                 categoryId: null,
@@ -122,9 +200,19 @@ describe('mapLlmPayloadToSuggestion', () => {
             new Set(['gastos financieros'])
         );
 
-        expect(suggestion).not.toBeNull();
-        expect(suggestion?.categoryId).toBe('imp');
-        expect(suggestion?.needsCategoryCreation).toBe(false);
+        expect(result.status).toBe('success');
+        if (result.status === 'success') {
+            expect(result.suggestion.categoryId).toBe('imp');
+            expect(result.suggestion.needsCategoryCreation).toBe(false);
+        }
+    });
+});
+
+describe('suggestWithGemini', () => {
+    it('returns unavailable: no-api-key when no API key is set', async () => {
+        clearGeminiApiKey();
+        const result = await suggestWithGemini('almuerzo', 'expense');
+        expect(result).toEqual({ status: 'unavailable', reason: 'no-api-key' });
     });
 });
 
@@ -175,7 +263,7 @@ describe('gemini model constant', () => {
     });
 });
 
-describe('generateGeminiText resilience', () => {
+describe('generateGeminiText resilience & errors', () => {
     it('tries fallback model when primary model returns 503 high demand', async () => {
         const fetchSpy = vi.spyOn(globalThis, 'fetch')
             .mockResolvedValueOnce(new Response(JSON.stringify({
@@ -191,7 +279,7 @@ describe('generateGeminiText resilience', () => {
         });
 
         expect(fetchSpy).toHaveBeenCalledTimes(2);
-        expect(result).toBe('{"match":"none","categoryId":null}');
+        expect(result).toEqual({ ok: true, text: '{"match":"none","categoryId":null}' });
         fetchSpy.mockRestore();
     });
 
@@ -210,7 +298,80 @@ describe('generateGeminiText resilience', () => {
         });
 
         expect(fetchSpy).toHaveBeenCalledTimes(2);
-        expect(result).toBe('{"match":"none","categoryId":null}');
+        expect(result).toEqual({ ok: true, text: '{"match":"none","categoryId":null}' });
+        fetchSpy.mockRestore();
+    });
+
+    it('returns error http-401 immediately on invalid API key without fallback loop', async () => {
+        const fetchSpy = vi.spyOn(globalThis, 'fetch')
+            .mockResolvedValueOnce(new Response(JSON.stringify({
+                error: { code: 401, message: 'API key not valid.' }
+            }), { status: 401 }));
+
+        const result = await generateGeminiText({
+            apiKey: 'bad-key',
+            prompt: 'test prompt',
+        });
+
+        expect(fetchSpy).toHaveBeenCalledTimes(1);
+        expect(result).toEqual({ ok: false, result: { status: 'error', reason: 'http-401' } });
+        fetchSpy.mockRestore();
+    });
+
+    it('returns error http-429 when rate limit exhausted across all models', async () => {
+        const fetchSpy = vi.spyOn(globalThis, 'fetch')
+            .mockResolvedValue(new Response(JSON.stringify({
+                error: { code: 429, message: 'Resource has been exhausted.' }
+            }), { status: 429 }));
+
+        const result = await generateGeminiText({
+            apiKey: 'test-key',
+            prompt: 'test prompt',
+        });
+
+        expect(result).toEqual({ ok: false, result: { status: 'error', reason: 'http-429' } });
+        fetchSpy.mockRestore();
+    });
+
+    it('returns error http-5xx when 500 error persists across all models', async () => {
+        const fetchSpy = vi.spyOn(globalThis, 'fetch')
+            .mockResolvedValue(new Response(JSON.stringify({
+                error: { code: 500, message: 'Internal error.' }
+            }), { status: 500 }));
+
+        const result = await generateGeminiText({
+            apiKey: 'test-key',
+            prompt: 'test prompt',
+        });
+
+        expect(result).toEqual({ ok: false, result: { status: 'error', reason: 'http-5xx' } });
+        fetchSpy.mockRestore();
+    });
+
+    it('returns error timeout when request times out', async () => {
+        const fetchSpy = vi.spyOn(globalThis, 'fetch')
+            .mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 50)));
+
+        const result = await generateGeminiText({
+            apiKey: 'test-key',
+            prompt: 'test prompt',
+            timeoutMs: 10,
+        });
+
+        expect(result).toEqual({ ok: false, result: { status: 'error', reason: 'timeout' } });
+        fetchSpy.mockRestore();
+    });
+
+    it('returns error network-error when network fetch throws', async () => {
+        const fetchSpy = vi.spyOn(globalThis, 'fetch')
+            .mockRejectedValue(new Error('Failed to fetch'));
+
+        const result = await generateGeminiText({
+            apiKey: 'test-key',
+            prompt: 'test prompt',
+        });
+
+        expect(result).toEqual({ ok: false, result: { status: 'error', reason: 'network-error' } });
         fetchSpy.mockRestore();
     });
 });
@@ -228,4 +389,3 @@ describe('gemini fallback models', () => {
         expect(GEMINI_FALLBACK_MODELS).not.toContain('gemini-2.5-flash');
     });
 });
-
