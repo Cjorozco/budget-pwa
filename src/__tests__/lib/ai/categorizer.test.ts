@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { levenshtein, tokenize } from '@/lib/ai/categorizer';
+import { matchCategoryRule } from '@/lib/ai/categoryRules';
 
 describe('levenshtein', () => {
   it('returns 0 for identical strings', () => {
@@ -94,3 +95,30 @@ describe('tokenize', () => {
     expect(tokens).toHaveLength(0);
   });
 });
+
+describe('matchCategoryRule (everyday common terms)', () => {
+  it('matches zapatos and medias to Ropa', () => {
+    const matchZapatos = matchCategoryRule('compra de zapatos deportivos', 'expense');
+    expect(matchZapatos?.subcategoryName).toBe('Ropa');
+
+    const matchMedias = matchCategoryRule('3 pares de medias', 'expense');
+    expect(matchMedias?.subcategoryName).toBe('Ropa');
+  });
+
+  it('matches cupcake and postres to Antojos', () => {
+    const matchCupcake = matchCategoryRule('cupcake de chocolate', 'expense');
+    expect(matchCupcake?.subcategoryName).toBe('Antojos');
+  });
+
+  it('matches bus to Transporte público', () => {
+    const matchBus = matchCategoryRule('pasaje de bus', 'expense');
+    expect(matchBus?.subcategoryName).toBe('Transporte público');
+  });
+
+  it('matches perfume to Cuidado personal', () => {
+    const matchPerfume = matchCategoryRule('compra de perfume en tienda', 'expense');
+    expect(matchPerfume?.subcategoryName).toBe('Cuidado personal');
+  });
+});
+
+

@@ -34,6 +34,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
     const addToast = useUIStore((s) => s.addToast);
     const [aiSuggestion, setAiSuggestion] = useState<CategorySuggestion | null>(null);
     const [showAiSuggestion, setShowAiSuggestion] = useState(false);
+    const [aiDiagnosticNotice, setAiDiagnosticNotice] = useState<string | null>(null);
     const [geminiPending, setGeminiPending] = useState(false);
     const [createdCategories, setCreatedCategories] = useState<Category[]>([]);
     const categoryTouchedRef = useRef(false);
@@ -81,6 +82,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
         if (!description || description.length < 3) {
             setAiSuggestion(null);
             setShowAiSuggestion(false);
+            setAiDiagnosticNotice(null);
             setGeminiPending(false);
             return;
         }
@@ -103,6 +105,12 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                     setAiSuggestion(suggestion);
                     setShowAiSuggestion(true);
 
+                    if (result.geminiDiagnosis?.status === 'error' && result.geminiDiagnosis.reason === 'http-429') {
+                        setAiDiagnosticNotice('Límite de cuota diaria de Gemini alcanzado (Free tier: 20 req/día). Se usó categorización local.');
+                    } else {
+                        setAiDiagnosticNotice(null);
+                    }
+
                     if (
                         !categoryTouchedRef.current &&
                         suggestion.categoryId &&
@@ -115,6 +123,14 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                 } else {
                     setAiSuggestion(null);
                     setShowAiSuggestion(false);
+
+                    if (result.geminiDiagnosis?.status === 'error' && result.geminiDiagnosis.reason === 'http-429') {
+                        setAiDiagnosticNotice('Límite de cuota diaria alcanzado en Google AI Studio (Free tier: 20 req/día). No se encontró coincidencia local.');
+                    } else if (result.geminiDiagnosis?.status === 'error' && result.geminiDiagnosis.reason === 'http-401') {
+                        setAiDiagnosticNotice('API key de Gemini no válida. Revisa la clave en Ajustes.');
+                    } else {
+                        setAiDiagnosticNotice(null);
+                    }
                 }
             } finally {
                 if (!controller.signal.aborted) setGeminiPending(false);
@@ -376,6 +392,16 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                 <p className="text-[11px] text-indigo-600 dark:text-indigo-400" data-testid="gemini-pending">
                     Consultando Gemini…
                 </p>
+            )}
+
+            {aiDiagnosticNotice && (
+                <div
+                    data-testid="ai-diagnostic-notice"
+                    className="flex items-start gap-2 p-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 text-amber-800 dark:text-amber-300 text-xs animate-fadeIn"
+                >
+                    <AlertCircle size={15} className="shrink-0 mt-0.5" />
+                    <span className="flex-1">{aiDiagnosticNotice}</span>
+                </div>
             )}
 
             {/* AI Suggestion Panel */}
