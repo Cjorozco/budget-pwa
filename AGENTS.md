@@ -51,7 +51,8 @@ CODE GENERATION RULES
    - Resource-efficient architectures.
 
 4. **BEST PRACTICES (rules):**
-   - Schema validation (Zod) on forms and import/export boundaries
+   - Schema validation (Zod) on forms, import/export boundaries, and ALL external/AI API responses.
+   - **AI Boundary Protection**: Treat all LLM outputs as untrusted inputs. Validate envelope & payload with Zod (`safeParse`), normalize/clamp ranges, apply DB grounding (prevent ungrounded/hallucinated IDs and root categories), and provide deterministic zero-crash fallbacks to local engines.
    - Accessibility: semantic HTML, labels, dialog roles, keyboard behavior
    - Loading and error feedback on async user actions (toasts, inline messages)
 
@@ -133,10 +134,11 @@ UI & LANGUAGE RULES
 SECURITY & PRIVACY (offline app)
 ═══════════════════════════════════════════════
 
-- Input validation with Zod on forms and backup import/export
+- Input validation with Zod on forms, backup import/export, and AI API responses (LLM boundary protection)
 - No analytics or telemetry without explicit justification
 - Data stays on-device; do not add remote sync unless requested
 - Optional Gemini: only description + category names leave the device, and only if the user pasted a Gemini API key (PRO)
+- AI Isolation: LLM responses never write directly to IndexedDB or UI state without schema parsing and grounding validation.
 
 ═══════════════════════════════════════════════
 PREFERRED LIBRARIES (new choices only)

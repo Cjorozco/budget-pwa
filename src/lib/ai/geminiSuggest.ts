@@ -22,6 +22,22 @@ import type { GeminiResult, ModelAttempt } from './types';
 export type { GeminiResult, ModelAttempt };
 export type SuggestionResult = GeminiResult;
 
+import {
+    GenericLlmSuggestionSchema,
+    LlmSuggestionSchema,
+    type GenericLlmSuggestionPayload,
+    type LlmSuggestionPayload,
+    extractJsonObject,
+} from './contracts';
+
+export {
+    GenericLlmSuggestionSchema,
+    LlmSuggestionSchema,
+    type GenericLlmSuggestionPayload,
+    type LlmSuggestionPayload,
+    extractJsonObject,
+};
+
 const GeminiApiEnvelopeSchema = z.object({
     candidates: z
         .array(
@@ -35,19 +51,14 @@ const GeminiApiEnvelopeSchema = z.object({
             })
         )
         .optional(),
-    error: z.object({ message: z.string().optional() }).optional(),
+    error: z
+        .object({
+            message: z.string().optional(),
+            code: z.number().optional(),
+            status: z.string().optional(),
+        })
+        .optional(),
 });
-
-const LlmSuggestionSchema = z.object({
-    match: z.enum(['existing', 'create', 'none']),
-    categoryId: z.string().nullable().optional(),
-    parentName: z.string().nullable().optional(),
-    subcategoryName: z.string().nullable().optional(),
-    confidence: z.number().min(0).max(1),
-    reason: z.string().min(1).max(280),
-});
-
-export type LlmSuggestionPayload = z.infer<typeof LlmSuggestionSchema>;
 
 interface CatalogRow {
     id: string;
@@ -69,13 +80,6 @@ export async function loadCategoryCatalog(
             : c.name,
         isLeaf: !parentIds.has(c.id),
     }));
-}
-
-export function extractJsonObject(text: string): unknown {
-    const trimmed = text.trim();
-    const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/);
-    const raw = fenced?.[1]?.trim() ?? trimmed;
-    return JSON.parse(raw);
 }
 
 export type ParseLlmResult =

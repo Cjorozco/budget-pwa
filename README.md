@@ -1,12 +1,29 @@
 # Personal Budget PWA 🏦
 
-Gestor de presupuesto personal con filosofía **Senior Financial Thinking**: trazabilidad total, sin correcciones automáticas "mágicas" y **offline-first** (el núcleo no necesita red).
+Gestor de presupuesto personal con filosofía **Senior Financial Thinking**: trazabilidad total, sin correcciones automáticas "mágicas", arquitectura orientada al dominio y modelo **offline-first** (el núcleo funciona 100% sin red).
+
+> **AI-Native Product Engineering Showcase**: Este software fue diseñado, arquitectado y desarrollado bajo un modelo de ingeniería asistida por Inteligencia Artificial. El rol humano actuó como **Product Owner, Arquitecto de Software y Orquestador**, guiando iterativamente al agente de IA para transformar requerimientos de negocio y reglas financieras en código de producción robusto, tipado y mantenible.
+
+---
+
+## 🛠️ Metodología de Desarrollo (AI-Native Engineering)
+
+El desarrollo del proyecto se ejecutó mediante un flujo de **co-creación y orquestación continua con agentes de IA**:
+
+1. **Definición de Dominio & Arquitectura**: Modelado de entidades, invariantes financieras y fronteras de datos con tipado estricto (`TypeScript` + `Zod`) antes de la implementación de interfaces.
+2. **"UI Tonta, Dominio Fuerte"**: Separación radical de responsabilidades. La lógica de negocio, cálculos de saldos atómicos, reconciliaciones y persistencia residen en capas desacopladas de la UI, asegurando componentes de vista puramente presentacionales, testeables y predecibles.
+3. **Aislamiento e Invariantes de IA (Boundary Protection)**: Las respuestas de modelos de IA (LLMs) se tratan como entradas de red no confiables. Se interceptan y validan estrictamente con esquemas `Zod` (envoltorio HTTP, extracción resiliente de JSON, normalización y límites de longitud) y pasan por una capa de *grounding* (validación contra el catálogo en IndexedDB) antes de tocar la UI o la base de datos.
+4. **Iteración Guiada & Estándares Rigurosos**: El orquestador humano define directrices arquitectónicas, valida decisiones técnicas y supervisa la entrega de código asegurando altos estándares de resiliencia y suites de pruebas automatizadas (**Vitest** para lógica pura y persistencia IndexedDB mockeada, junto con pruebas de integración y E2E como **Cypress**).
+5. **Resiliencia & FinOps**: Priorización de arquitecturas costo-cero (modelo BYOK para LLMs sin intermediarios, sin dependencias de backend centralizado ni costos fijos de servidor) y tolerancia total a fallos en entornos offline con fallback automático a motores heurísticos locales.
+
+---
 
 ## Principios del Proyecto
 - **La Reconciliación no corrige el pasado**: No borramos ni editamos transacciones antiguas. Solo dejamos evidencia y fotos (snapshots) del estado financiero.
 - **Trazabilidad Total**: Cualquier ajuste al saldo debe ser una transacción explícita (`isAdjustment: true`).
 - **Offline-First**: Tus datos de presupuesto viven en el dispositivo (IndexedDB). El núcleo funciona sin red.
 - **Saldos Atómicos**: El saldo calculado es la verdad absoluta derivada de la historia de transacciones.
+- **Inviolabilidad de Datos ante IA**: Ninguna salida de IA puede escribir directamente en la base de datos ni asumir identificadores inventados; todo pasa por validación Zod, confirmación explícita o grounding contra el catálogo local existente.
 
 ## PRO: Gemini (BYOK)
 

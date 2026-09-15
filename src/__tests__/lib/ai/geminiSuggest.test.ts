@@ -10,7 +10,8 @@ import {
 } from '@/lib/ai/geminiSuggest';
 import { GEMINI_FALLBACK_MODELS, GEMINI_MODEL } from '@/lib/ai/geminiConfig';
 import { db } from '@/lib/db';
-import { clearGeminiApiKey } from '@/lib/ai/geminiKey';
+import { clearGeminiApiKey, setGeminiApiKey } from '@/lib/ai/geminiKey';
+import { suggestCategoryWithLlm } from '@/lib/ai/suggestWithLlm';
 
 describe('parseLlmSuggestionJson', () => {
     it('parses a raw JSON object', () => {
@@ -26,6 +27,36 @@ describe('parseLlmSuggestionJson', () => {
             '```json\n{"match":"none","categoryId":null,"parentName":null,"subcategoryName":null,"confidence":0.1,"reason":"nada"}\n```'
         );
         expect(payload?.match).toBe('none');
+    });
+
+    it('extracts JSON surrounded by conversational text', () => {
+        const payload = parseLlmSuggestionJson(
+            'Claro, aquí tienes la sugerencia:\n{"match":"existing","categoryId":"cat-99","parentName":null,"subcategoryName":null,"confidence":0.85,"reason":"Gasto frecuente"}\nEspero te sirva!'
+        );
+        expect(payload?.match).toBe('existing');
+        expect(payload?.categoryId).toBe('cat-99');
+        expect(payload?.confidence).toBe(0.85);
+    });
+
+    it('normalizes percentage confidence (e.g. 85 -> 0.85) and string numbers', () => {
+        const payload1 = parseLlmSuggestionJson(
+            '{"match":"existing","categoryId":"cat-1","confidence":85,"reason":"Alimentación"}'
+        );
+        expect(payload1?.confidence).toBe(0.85);
+
+        const payload2 = parseLlmSuggestionJson(
+            '{"match":"existing","categoryId":"cat-1","confidence":"0.95","reason":"Alimentación"}'
+        );
+        expect(payload2?.confidence).toBe(0.95);
+    });
+
+    it('trims string properties and caps length safely', () => {
+        const payload = parseLlmSuggestionJson(
+            '{"match":"create","parentName":"   Hogar   ","subcategoryName":"  Servicios  ","confidence":0.8,"reason":"  Gasto de servicios del hogar  "}'
+        );
+        expect(payload?.parentName).toBe('Hogar');
+        expect(payload?.subcategoryName).toBe('Servicios');
+        expect(payload?.reason).toBe('Gasto de servicios del hogar');
     });
 
     it('returns null for garbage', () => {
@@ -54,6 +85,14 @@ describe('parseLlmSuggestion (typed results)', () => {
 
     it('returns ok: false with rejected: invalid-schema when payload violates schema', () => {
         const res = parseLlmSuggestion('{"match":"invalid_match_type","confidence":2.5}');
+        expect(res).toEqual({
+            ok: false,
+            result: { status: 'rejected', reason: 'invalid-schema' },
+        });
+    });
+
+    it('returns ok: false with rejected: invalid-schema when reason is empty', () => {
+        const res = parseLlmSuggestion('{"match":"existing","categoryId":"cat-1","confidence":0.8,"reason":"   "}');
         expect(res).toEqual({
             ok: false,
             result: { status: 'rejected', reason: 'invalid-schema' },
@@ -450,6 +489,127 @@ describe('gemini fallback models', () => {
         expect(GEMINI_FALLBACK_MODELS).not.toContain('gemini-2.5-flash-lite');
         expect(GEMINI_FALLBACK_MODELS).not.toContain('gemini-1.5-flash');
         expect(GEMINI_FALLBACK_MODELS).not.toContain('gemini-flash-latest');
+    });
+});
+
+describe('end-to-end resilience integration (fallback to local heuristic/regex engine)', () => {
+    beforeEach(async () => {
+        setGeminiApiKey('test-valid-api-key');
+        await db.categories.clear();
+        await db.transactions.clear();
+        await db.categories.bulkAdd([
+            { id: 'cat-serv', name: 'Servicios básicos', type: 'expense', color: '#3b82f6', usageCount: 0, isActive: true },
+            { id: 'cat-luz', name: 'Electricidad', type: 'expense', color: '#3b82f6', parentId: 'cat-serv', usageCount: 0, isActive: true },
+            { id: 'cat-diarios', name: 'Gastos diarios', type: 'expense', color: '#10b981', usageCount: 0, isActive: true },
+            { id: 'cat-super', name: 'Supermercado', type: 'expense', color: '#10b981', parentId: 'cat-diarios', usageCount: 0, isActive: true },
+        ]);
+    });
+
+    it('handles a network drop (network-error) and transparently falls back to local regex/rule engine without blocking the UI', async () => {
+        const fetchSpy = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Failed to fetch'));
+
+        const result = await suggestCategoryWithLlm('Pago recibo de Enel Codensa', 'expense', {
+            isPro: true,
+            online: true,
+        });
+
+        // 1. La UI no se bloquea ni lanza excepción
+        expect(result.status).toBe('success');
+        if (result.status === 'success') {
+            // 2. Se activó el fallback al motor local determinista
+            expect(result.source).toBe('local');
+            expect(result.suggestion.categoryId).toBe('cat-luz');
+            expect(result.suggestion.categoryPath).toContain('Electricidad');
+            // 3. El diagnóstico registra el error de red para telemetría/UI sin romper
+            expect(result.geminiDiagnosis?.status).toBe('error');
+            if (result.geminiDiagnosis?.status === 'error') {
+                expect(result.geminiDiagnosis.reason).toBe('network-error');
+            }
+        }
+
+        fetchSpy.mockRestore();
+    });
+
+    it('rejects invalid or hallucinated AI responses with Zod and falls back seamlessly to local engine', async () => {
+        // Simular que el modelo responde con un categoryId alucinado que no existe en el catálogo de IndexedDB
+        const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+            new Response(
+                JSON.stringify({
+                    candidates: [
+                        {
+                            content: {
+                                parts: [
+                                    {
+                                        text: JSON.stringify({
+                                            match: 'existing',
+                                            categoryId: 'uuid-alucinado-que-no-existe-en-db',
+                                            confidence: 0.95,
+                                            reason: 'Alucinación de IA',
+                                        }),
+                                    },
+                                ],
+                            },
+                        },
+                    ],
+                }),
+                { status: 200 }
+            )
+        );
+
+        const result = await suggestCategoryWithLlm('Mercado en Carulla', 'expense', {
+            isPro: true,
+            online: true,
+        });
+
+        // 1. Zod + Grounding rechazaron el ID inexistente
+        expect(result.status).toBe('success');
+        if (result.status === 'success') {
+            // 2. Fallback automático al motor local
+            expect(result.source).toBe('local');
+            expect(result.suggestion.categoryId).toBe('cat-super');
+            expect(result.suggestion.categoryPath).toContain('Supermercado');
+            // 3. Diagnóstico tipado de rechazo
+            expect(result.geminiDiagnosis?.status).toBe('rejected');
+            if (result.geminiDiagnosis?.status === 'rejected') {
+                expect(result.geminiDiagnosis.reason).toBe('invalid-category-id');
+            }
+        }
+
+        fetchSpy.mockRestore();
+    });
+
+    it('rejects malformed non-JSON / broken syntax from AI and falls back seamlessly to local engine', async () => {
+        const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+            new Response(
+                JSON.stringify({
+                    candidates: [
+                        {
+                            content: {
+                                parts: [{ text: '<<<Error 500: broken payload {match: invalid' }],
+                            },
+                        },
+                    ],
+                }),
+                { status: 200 }
+            )
+        );
+
+        const result = await suggestCategoryWithLlm('Mercado en Carulla', 'expense', {
+            isPro: true,
+            online: true,
+        });
+
+        expect(result.status).toBe('success');
+        if (result.status === 'success') {
+            expect(result.source).toBe('local');
+            expect(result.suggestion.categoryId).toBe('cat-super');
+            expect(result.geminiDiagnosis?.status).toBe('rejected');
+            if (result.geminiDiagnosis?.status === 'rejected') {
+                expect(result.geminiDiagnosis.reason).toBe('invalid-json');
+            }
+        }
+
+        fetchSpy.mockRestore();
     });
 });
 
