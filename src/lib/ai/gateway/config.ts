@@ -113,8 +113,8 @@ export const SUPPORTED_AI_PROVIDERS: ProviderMeta[] = [
         label: 'Groq Cloud',
         keyUrl: 'https://console.groq.com/keys',
         keyUrlLabel: 'Crear API key en Groq Console',
-        modelDescription: 'Modelo: Llama 3.3 70B Versatile (ultrarrápido, ~200ms)',
-        helpText: 'API key gratuita de Groq Cloud (gsk_...). Ideal para baja latencia en categorización.',
+        modelDescription: 'Modelo: openai/gpt-oss-120b (con respaldo en gpt-oss-20b y groq/compound-mini)',
+        helpText: 'API key gratuita de Groq Cloud (gsk_...). Categorización ultrarrápida en milisegundos.',
         placeholder: 'Pega tu key de Groq (gsk_...)',
     },
 ];
