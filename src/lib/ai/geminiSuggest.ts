@@ -178,7 +178,7 @@ export function buildPrompt(
 
     const historySection = recentExamples.length > 0
         ? [
-            'historial de transacciones previas del usuario (aprende cómo categoriza):',
+            'historial de transacciones previas del usuario (aprende cómo categoriza este usuario en particular):',
             ...recentExamples.map((ex) => `- "${sanitizePii(ex.description)}" → ${ex.categoryPath}`),
         ].join('\n')
         : '';
@@ -188,13 +188,13 @@ export function buildPrompt(
         'Responde SOLO un objeto JSON con este esquema:',
         '{"match":"existing"|"create"|"none","categoryId":string|null,"parentName":string|null,"subcategoryName":string|null,"confidence":number,"reason":string}',
         'Reglas fundamentales:',
-        '- PRIORIDAD TOTAL A CATEGORÍAS EXISTENTES: Muchos usuarios personalizan sus categorías (ej: "Hogar › Servicios" o "Servicios básicos" para luz/agua/gas; nombres de hijos como "Sofía", "Mateo" para gastos de dependientes).',
-        '- Si la descripción encaja semánticamente en una categoría existente del usuario (ej: "Gases del caribe", "Vanti", "Enel" o "recibo de luz" encaja en "Hogar › Servicios" o "Servicios básicos"; "Uber al jardín" encaja en "Sofía › Ruta"), DEBES responder match=existing con el categoryId exacto del catálogo.',
-        '- NUNCA inventes categorías raíz como "Niños" o "Servicios públicos" si el usuario ya tiene categorías personalizadas que cubran ese ámbito.',
-        '- match=create: SOLO si realmente no hay ninguna categoría que encaje en el catálogo. En tal caso, parentName DEBE ser el nombre exacto de una categoría raíz que YA exista en el catálogo de la lista; subcategoryName es la hoja nueva.',
-        '- match=none: si no encaja.',
-        '- reason: una frase corta en español.',
-        '- No inventes ids. No uses montos ni cuentas.',
+        '- PRIORIDAD TOTAL A CATEGORÍAS EXISTENTES: Clasifica el gasto basándote estrictamente en las categorías que existen en el catálogo del usuario y en sus transacciones previas.',
+        '- Analiza el catálogo provisto: Si el usuario tiene categorías estándar (ej: "Niños › Transporte", "Educación", "Transporte › Taxis / Apps") o personalizadas (nombres de dependientes, mascotas o servicios específicos), selecciona la subcategoría más adecuada y específica.',
+        '- Si la descripción encaja semánticamente en una categoría existente del catálogo (o según los patrones aprendidos en su historial de transacciones), DEBES responder match=existing con el categoryId exacto del catálogo.',
+        '- match=create: SOLO si ninguna categoría existente del catálogo encaja para este gasto. En tal caso, parentName DEBE ser el nombre exacto de una categoría raíz que YA exista en el catálogo del usuario (ej: "Niños", "Transporte", "Educación", etc.); subcategoryName es la subcategoría nueva a crear.',
+        '- match=none: si la descripción no tiene relación o no hay contexto suficiente.',
+        '- reason: una frase corta y descriptiva en español.',
+        '- No inventes IDs. No uses montos ni cuentas.',
         `tipo: ${type}`,
         `descripción: ${sanitizedDescription}`,
         'catálogo:',
