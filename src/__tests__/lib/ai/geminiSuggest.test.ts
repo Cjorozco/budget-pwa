@@ -353,6 +353,36 @@ describe('generateGeminiText resilience & errors', () => {
         fetchSpy.mockRestore();
     });
 
+    it('cascades past 429 and a slow/hanging model attempt timeout to succeed on 3rd model', async () => {
+        const fetchSpy = vi.spyOn(globalThis, 'fetch')
+            .mockResolvedValueOnce(new Response(JSON.stringify({
+                error: { code: 429, message: 'Resource has been exhausted.' }
+            }), { status: 429 }))
+            .mockImplementationOnce(() => new Promise((resolve) => setTimeout(resolve, 100)))
+            .mockResolvedValueOnce(new Response(JSON.stringify({
+                candidates: [{ content: { parts: [{ text: '{"match":"existing","categoryId":"cat-1"}' }] } }]
+            }), { status: 200 }));
+
+        const result = await generateGeminiText({
+            apiKey: 'test-key',
+            prompt: 'test prompt',
+            attemptTimeoutMs: 20,
+        });
+
+        expect(fetchSpy).toHaveBeenCalledTimes(3);
+        expect(result.ok).toBe(true);
+        if (result.ok) {
+            expect(result.text).toBe('{"match":"existing","categoryId":"cat-1"}');
+            expect(result.attempts.length).toBe(3);
+            expect(result.attempts[0].status).toBe('failed');
+            expect(result.attempts[0].httpStatus).toBe(429);
+            expect(result.attempts[1].status).toBe('failed');
+            expect(result.attempts[1].errorReason).toBe('timeout');
+            expect(result.attempts[2].status).toBe('success');
+        }
+        fetchSpy.mockRestore();
+    });
+
     it('returns error http-401 immediately on invalid API key without fallback loop', async () => {
         const fetchSpy = vi.spyOn(globalThis, 'fetch')
             .mockResolvedValueOnce(new Response(JSON.stringify({
@@ -479,16 +509,12 @@ describe('generateGeminiText resilience & errors', () => {
 });
 
 describe('gemini fallback models', () => {
-    it('includes only Gemini 3.x models and excludes models below version 3', () => {
+    it('includes reliable high-quota fallback models for mobile & desktop', () => {
         expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.1-flash-lite');
-        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.8-flash');
-        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.7-flash');
-        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.5-flash-lite');
-        expect(GEMINI_FALLBACK_MODELS).not.toContain('gemini-2.5-pro');
-        expect(GEMINI_FALLBACK_MODELS).not.toContain('gemini-2.5-flash');
-        expect(GEMINI_FALLBACK_MODELS).not.toContain('gemini-2.5-flash-lite');
-        expect(GEMINI_FALLBACK_MODELS).not.toContain('gemini-1.5-flash');
-        expect(GEMINI_FALLBACK_MODELS).not.toContain('gemini-flash-latest');
+        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-2.5-flash');
+        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-2.5-flash-lite');
+        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-2.0-flash');
+        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-1.5-flash');
     });
 });
 

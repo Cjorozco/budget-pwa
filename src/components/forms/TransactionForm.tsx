@@ -96,7 +96,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
         const timer = setTimeout(async () => {
             const mayCallGemini = isPro && hasGeminiApiKey();
             setGeminiPending(mayCallGemini);
-            setGeminiProgressMessage(mayCallGemini ? 'Consultando Gemini 3.1 Pro…' : null);
+            setGeminiProgressMessage(mayCallGemini ? 'Consultando IA…' : null);
             try {
                 const result = await suggestCategoryWithLlm(description, type, {
                     isPro,

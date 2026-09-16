@@ -17,17 +17,19 @@ export const GEMINI_KEY_URL = 'https://aistudio.google.com/apikey';
 export const GEMINI_MODEL = 'gemini-3.1-pro-preview';
 
 /**
- * Modelos de respaldo ordenados (exclusivamente familia Gemini 3+):
- * 1. Gemini 3.1 Flash Lite (ultra rápido y ligero)
- * 2. Gemini 3.8 Flash
- * 3. Gemini 3.7 Flash
- * 4. Gemini 3.5 Flash Lite
+ * Modelos de respaldo ordenados:
+ * 1. Gemini 3.1 Flash Lite (preview ligero y rápido)
+ * 2. Gemini 2.5 Flash (alta cuota, baja latencia, gran capacidad de categorización)
+ * 3. Gemini 2.5 Flash Lite (ultra rápido y económico)
+ * 4. Gemini 2.0 Flash
+ * 5. Gemini 1.5 Flash
  */
 export const GEMINI_FALLBACK_MODELS = [
     'gemini-3.1-flash-lite',
-    'gemini-3.8-flash',
-    'gemini-3.7-flash',
-    'gemini-3.5-flash-lite',
+    'gemini-2.5-flash',
+    'gemini-2.5-flash-lite',
+    'gemini-2.0-flash',
+    'gemini-1.5-flash',
 ] as const;
 
 export const GEMINI_API_HOST = 'generativelanguage.googleapis.com';
@@ -38,15 +40,17 @@ export function getGeminiGenerateUrl(model: string = GEMINI_MODEL): string {
 
 export const GEMINI_GENERATE_URL = getGeminiGenerateUrl(GEMINI_MODEL);
 
-export const GEMINI_TIMEOUT_MS = 8000;
+export const GEMINI_TIMEOUT_MS = 6000;
+export const GEMINI_ATTEMPT_TIMEOUT_MS = 6000;
 
 export function getFriendlyModelName(model: string): string {
     const map: Record<string, string> = {
         'gemini-3.1-pro-preview': 'Gemini 3.1 Pro',
         'gemini-3.1-flash-lite': 'Gemini 3.1 Flash Lite',
-        'gemini-3.8-flash': 'Gemini 3.8 Flash',
-        'gemini-3.7-flash': 'Gemini 3.7 Flash',
-        'gemini-3.5-flash-lite': 'Gemini 3.5 Flash Lite',
+        'gemini-2.5-flash': 'Gemini 2.5 Flash',
+        'gemini-2.5-flash-lite': 'Gemini 2.5 Flash Lite',
+        'gemini-2.0-flash': 'Gemini 2.0 Flash',
+        'gemini-1.5-flash': 'Gemini 1.5 Flash',
     };
     return map[model] ?? model;
 }

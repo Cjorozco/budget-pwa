@@ -208,6 +208,7 @@ interface GenerateOptions {
     prompt: string;
     signal?: AbortSignal;
     timeoutMs?: number;
+    attemptTimeoutMs?: number;
     onProgress?: (attempt: ModelAttempt, friendlyMessage: string) => void;
 }
 
@@ -216,178 +217,184 @@ export type GenerateGeminiTextResult =
     | { ok: false; result: GeminiResult };
 
 export async function generateGeminiText(options: GenerateOptions): Promise<GenerateGeminiTextResult> {
-    const timeoutMs = options.timeoutMs ?? GEMINI_TIMEOUT_MS;
-    const controller = new AbortController();
-    let isTimedOut = false;
-    const onAbort = () => controller.abort();
-    options.signal?.addEventListener('abort', onAbort);
-
-    const timer = setTimeout(() => {
-        isTimedOut = true;
-        controller.abort();
-    }, timeoutMs);
-
+    const perAttemptTimeout = options.attemptTimeoutMs ?? options.timeoutMs ?? GEMINI_TIMEOUT_MS;
     const modelsToTry = [GEMINI_MODEL, ...GEMINI_FALLBACK_MODELS];
     const attempts: ModelAttempt[] = [];
     let lastErrorResult: GeminiResult = { status: 'error', reason: 'network-error' };
 
-    try {
-        for (let i = 0; i < modelsToTry.length; i++) {
-            if (controller.signal.aborted) {
-                const reason = isTimedOut ? 'timeout' : 'network-error';
-                if (import.meta.env?.DEV) {
-                    console.debug(`[generateGeminiText] Aborted (${reason})`);
-                }
-                return { ok: false, result: { status: 'error', reason, attempts } };
+    for (let i = 0; i < modelsToTry.length; i++) {
+        // Si el usuario canceló la acción (ej. siguió escribiendo en el formulario), detener todo inmediatamente
+        if (options.signal?.aborted) {
+            if (import.meta.env?.DEV) {
+                console.debug('[generateGeminiText] Aborted by parent signal (user action)');
             }
-            const model = modelsToTry[i];
-            const modelLabel = getFriendlyModelName(model);
-            const url = getGeminiGenerateUrl(model);
+            return { ok: false, result: { status: 'error', reason: 'network-error', attempts } };
+        }
 
-            const currentAttempt: ModelAttempt = {
-                model,
-                modelLabel,
-                status: 'trying',
-            };
-            options.onProgress?.(currentAttempt, `Probando ${modelLabel}…`);
+        const model = modelsToTry[i];
+        const modelLabel = getFriendlyModelName(model);
+        const url = getGeminiGenerateUrl(model);
 
-            try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'x-goog-api-key': options.apiKey,
-                    },
-                    referrerPolicy: 'no-referrer',
-                    signal: controller.signal,
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: options.prompt }] }],
-                        generationConfig: {
-                            temperature: 0.2,
-                            maxOutputTokens: 8192,
-                            responseMimeType: 'application/json',
-                            thinkingConfig: {
-                                thinkingBudget: 0,
-                            },
+        const currentAttempt: ModelAttempt = {
+            model,
+            modelLabel,
+            status: 'trying',
+        };
+        options.onProgress?.(currentAttempt, `Probando ${modelLabel}…`);
+
+        const attemptController = new AbortController();
+        let isAttemptTimedOut = false;
+
+        const attemptTimer = setTimeout(() => {
+            isAttemptTimedOut = true;
+            attemptController.abort();
+        }, perAttemptTimeout);
+
+        const onParentAbort = () => attemptController.abort();
+        options.signal?.addEventListener('abort', onParentAbort);
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-goog-api-key': options.apiKey,
+                },
+                referrerPolicy: 'no-referrer',
+                signal: attemptController.signal,
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: options.prompt }] }],
+                    generationConfig: {
+                        temperature: 0.2,
+                        maxOutputTokens: 8192,
+                        responseMimeType: 'application/json',
+                        thinkingConfig: {
+                            thinkingBudget: 0,
                         },
-                    }),
-                });
+                    },
+                }),
+            });
 
-                const json: unknown = await response.json().catch(() => null);
-                const envelope = GeminiApiEnvelopeSchema.safeParse(json);
+            const json: unknown = await response.json().catch(() => null);
+            const envelope = GeminiApiEnvelopeSchema.safeParse(json);
 
-                if (!response.ok) {
-                    if (import.meta.env?.DEV) {
-                        console.debug(`[Gemini API error on ${model}] status: ${response.status}`, json);
-                    }
-
-                    let errorReason: 'http-401' | 'http-429' | 'http-5xx' | 'network-error' = 'network-error';
-                    if (response.status === 401) {
-                        errorReason = 'http-401';
-                    } else if (response.status === 429) {
-                        errorReason = 'http-429';
-                    } else if (response.status >= 500 && response.status <= 599) {
-                        errorReason = 'http-5xx';
-                    }
-
-                    currentAttempt.status = 'failed';
-                    currentAttempt.httpStatus = response.status;
-                    currentAttempt.errorReason = errorReason;
-                    attempts.push(currentAttempt);
-
-                    if (response.status === 401) {
-                        if (import.meta.env?.DEV) {
-                            console.debug('[generateGeminiText] Error: http-401 (invalid API key). Stopping fallback.');
-                        }
-                        options.onProgress?.(currentAttempt, `${modelLabel}: API Key no válida (401)`);
-                        return { ok: false, result: { status: 'error', reason: 'http-401', attempts } };
-                    }
-
-                    lastErrorResult = { status: 'error', reason: errorReason, attempts };
-
-                    const nextModel = i < modelsToTry.length - 1 ? getFriendlyModelName(modelsToTry[i + 1]) : null;
-                    const failMsg = response.status === 429
-                        ? `${modelLabel}: cuota agotada (429)${nextModel ? ` → Probando ${nextModel}…` : ''}`
-                        : `${modelLabel}: error ${response.status}${nextModel ? ` → Probando ${nextModel}…` : ''}`;
-                    options.onProgress?.(currentAttempt, failMsg);
-
-                    if (i < modelsToTry.length - 1) {
-                        if (import.meta.env?.DEV) {
-                            console.debug(`[generateGeminiText] Falling back from ${model} to next model...`);
-                        }
-                        continue;
-                    }
-                    if (import.meta.env?.DEV) {
-                        console.debug('[generateGeminiText] All fallback models exhausted. Final error:', lastErrorResult);
-                    }
-                    return { ok: false, result: lastErrorResult };
-                }
-
-                const candidate = envelope.success ? envelope.data.candidates?.[0] : undefined;
-                const isTruncated = candidate?.finishReason === 'MAX_TOKENS';
-                const text = candidate?.content?.parts?.[0]?.text;
-
-                let isValidJson = false;
-                if (!isTruncated && text?.trim()) {
-                    try {
-                        extractJsonObject(text);
-                        isValidJson = true;
-                    } catch {
-                        isValidJson = false;
-                    }
-                }
-
-                if (isValidJson && text?.trim()) {
-                    currentAttempt.status = 'success';
-                    attempts.push(currentAttempt);
-                    options.onProgress?.(currentAttempt, `Respuesta recibida de ${modelLabel}`);
-                    return { ok: true, text, modelUsed: model, attempts };
-                }
-
+            if (!response.ok) {
                 if (import.meta.env?.DEV) {
-                    console.debug(`[generateGeminiText] Invalid or truncated response from ${model}. isTruncated: ${isTruncated}, text:`, text);
+                    console.debug(`[Gemini API error on ${model}] status: ${response.status}`, json);
                 }
+
+                let errorReason: 'http-401' | 'http-429' | 'http-5xx' | 'network-error' = 'network-error';
+                if (response.status === 401) {
+                    errorReason = 'http-401';
+                } else if (response.status === 429) {
+                    errorReason = 'http-429';
+                } else if (response.status >= 500 && response.status <= 599) {
+                    errorReason = 'http-5xx';
+                }
+
                 currentAttempt.status = 'failed';
-                currentAttempt.errorReason = 'invalid-json';
+                currentAttempt.httpStatus = response.status;
+                currentAttempt.errorReason = errorReason;
                 attempts.push(currentAttempt);
 
-                lastErrorResult = { status: 'rejected', reason: 'invalid-json', attempts };
+                if (response.status === 401) {
+                    if (import.meta.env?.DEV) {
+                        console.debug('[generateGeminiText] Error: http-401 (invalid API key). Stopping fallback.');
+                    }
+                    options.onProgress?.(currentAttempt, `${modelLabel}: API Key no válida (401)`);
+                    return { ok: false, result: { status: 'error', reason: 'http-401', attempts } };
+                }
+
+                lastErrorResult = { status: 'error', reason: errorReason, attempts };
+
                 const nextModel = i < modelsToTry.length - 1 ? getFriendlyModelName(modelsToTry[i + 1]) : null;
-                const failMsg = isTruncated
-                    ? `${modelLabel}: respuesta truncada${nextModel ? ` → Probando ${nextModel}…` : ''}`
-                    : `${modelLabel}: respuesta no válida${nextModel ? ` → Probando ${nextModel}…` : ''}`;
+                const failMsg = response.status === 429
+                    ? `${modelLabel}: cuota agotada (429)${nextModel ? ` → Probando ${nextModel}…` : ''}`
+                    : `${modelLabel}: error ${response.status}${nextModel ? ` → Probando ${nextModel}…` : ''}`;
                 options.onProgress?.(currentAttempt, failMsg);
-                if (i < modelsToTry.length - 1) continue;
-                return { ok: false, result: lastErrorResult };
-            } catch (err: unknown) {
-                if (controller.signal.aborted) {
-                    const reason = isTimedOut ? 'timeout' : 'network-error';
-                    if (import.meta.env?.DEV) {
-                        console.debug(`[generateGeminiText] Fetch aborted on ${model} (${reason})`);
-                    }
-                    return { ok: false, result: { status: 'error', reason, attempts } };
-                }
-                if (import.meta.env?.DEV) {
-                    console.debug(`[Gemini API request failed on ${model}]`, err);
-                }
-                currentAttempt.status = 'failed';
-                currentAttempt.errorReason = 'network-error';
-                attempts.push(currentAttempt);
 
-                lastErrorResult = { status: 'error', reason: 'network-error', attempts };
-                const nextModel = i < modelsToTry.length - 1 ? getFriendlyModelName(modelsToTry[i + 1]) : null;
-                options.onProgress?.(currentAttempt, `${modelLabel}: error de red${nextModel ? ` → Probando ${nextModel}…` : ''}`);
                 if (i < modelsToTry.length - 1) {
+                    if (import.meta.env?.DEV) {
+                        console.debug(`[generateGeminiText] Falling back from ${model} to next model...`);
+                    }
                     continue;
                 }
+                if (import.meta.env?.DEV) {
+                    console.debug('[generateGeminiText] All fallback models exhausted. Final error:', lastErrorResult);
+                }
                 return { ok: false, result: lastErrorResult };
             }
+
+            const candidate = envelope.success ? envelope.data.candidates?.[0] : undefined;
+            const isTruncated = candidate?.finishReason === 'MAX_TOKENS';
+            const text = candidate?.content?.parts?.[0]?.text;
+
+            let isValidJson = false;
+            if (!isTruncated && text?.trim()) {
+                try {
+                    extractJsonObject(text);
+                    isValidJson = true;
+                } catch {
+                    isValidJson = false;
+                }
+            }
+
+            if (isValidJson && text?.trim()) {
+                currentAttempt.status = 'success';
+                attempts.push(currentAttempt);
+                options.onProgress?.(currentAttempt, `Respuesta recibida de ${modelLabel}`);
+                return { ok: true, text, modelUsed: model, attempts };
+            }
+
+            if (import.meta.env?.DEV) {
+                console.debug(`[generateGeminiText] Invalid or truncated response from ${model}. isTruncated: ${isTruncated}, text:`, text);
+            }
+            currentAttempt.status = 'failed';
+            currentAttempt.errorReason = 'invalid-json';
+            attempts.push(currentAttempt);
+
+            lastErrorResult = { status: 'rejected', reason: 'invalid-json', attempts };
+            const nextModel = i < modelsToTry.length - 1 ? getFriendlyModelName(modelsToTry[i + 1]) : null;
+            const failMsg = isTruncated
+                ? `${modelLabel}: respuesta truncada${nextModel ? ` → Probando ${nextModel}…` : ''}`
+                : `${modelLabel}: respuesta no válida${nextModel ? ` → Probando ${nextModel}…` : ''}`;
+            options.onProgress?.(currentAttempt, failMsg);
+            if (i < modelsToTry.length - 1) continue;
+            return { ok: false, result: lastErrorResult };
+        } catch (err: unknown) {
+            // Si el abort vino del padre (usuario canceló en UI)
+            if (options.signal?.aborted) {
+                return { ok: false, result: { status: 'error', reason: 'network-error', attempts } };
+            }
+
+            const isTimeout = isAttemptTimedOut;
+            const errorReason = isTimeout ? 'timeout' : 'network-error';
+
+            if (import.meta.env?.DEV) {
+                console.debug(`[Gemini API attempt failed on ${model}] reason: ${errorReason}`, err);
+            }
+            currentAttempt.status = 'failed';
+            currentAttempt.errorReason = errorReason;
+            attempts.push(currentAttempt);
+
+            lastErrorResult = { status: 'error', reason: errorReason, attempts };
+            const nextModel = i < modelsToTry.length - 1 ? getFriendlyModelName(modelsToTry[i + 1]) : null;
+            const failMsg = isTimeout
+                ? `${modelLabel}: tiempo de espera agotado${nextModel ? ` → Probando ${nextModel}…` : ''}`
+                : `${modelLabel}: error de red${nextModel ? ` → Probando ${nextModel}…` : ''}`;
+            options.onProgress?.(currentAttempt, failMsg);
+
+            if (i < modelsToTry.length - 1) {
+                continue;
+            }
+            return { ok: false, result: lastErrorResult };
+        } finally {
+            clearTimeout(attemptTimer);
+            options.signal?.removeEventListener('abort', onParentAbort);
         }
-        return { ok: false, result: lastErrorResult };
-    } finally {
-        clearTimeout(timer);
-        options.signal?.removeEventListener('abort', onAbort);
     }
+
+    return { ok: false, result: lastErrorResult };
 }
 
 export async function mapLlmPayloadToSuggestion(
