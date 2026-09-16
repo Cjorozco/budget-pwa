@@ -7,7 +7,6 @@ import { Modal } from '@/components/ui/Modal';
 import { exportDatabase, downloadBackup, importDatabase, exportToCSV, downloadCSV } from '@/lib/db/backup';
 import { useUIStore } from '@/store/ui';
 import { GeminiKeyCard } from '@/components/settings/GeminiKeyCard';
-import { GEMINI_MODEL, GEMINI_PROVIDER_LABEL } from '@/lib/ai/geminiConfig';
 
 export default function SettingsPage() {
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -224,7 +223,7 @@ export default function SettingsPage() {
                         <p className="text-sm text-amber-50 mb-4 opacity-90">
                             {isPro 
                                 ? "¡Gracias por tu apoyo! Tienes acceso a todas las funciones premium." 
-                                : "Desbloquea CSV, categorización con Gemini (tu API key) y apoya el desarrollo."}
+                                : "Desbloquea CSV, categorización con IA (Gemini / Groq con tu API key) y apoya el desarrollo."}
                         </p>
                         {!isPro && (
                             <Button 
@@ -409,12 +408,14 @@ export default function SettingsPage() {
                         <li className="flex items-start gap-3">
                             <CheckCircle2 className="text-green-500 shrink-0 mt-0.5" size={18} />
                             <span className="text-sm text-slate-700 dark:text-slate-300">
-                                <strong>Categorización con {GEMINI_PROVIDER_LABEL}:</strong> pegas tu API key de{' '}
-                                <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="underline">
+                                <strong>Categorización con IA (Google Gemini / Groq):</strong> pegas tu API key gratuita o de pago de{' '}
+                                <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="underline font-semibold">
                                     Google AI Studio
                                 </a>
-                                {' '}(gratis o de pago). La app usa el modelo <code className="text-xs">{GEMINI_MODEL}</code>.
-                                No sirven ChatGPT Plus ni Claude.ai (no son API keys). Otros proveedores, más adelante.
+                                {' '}o{' '}
+                                <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" className="underline font-semibold">
+                                    Groq Cloud
+                                </a>. Todo 100% privado en tu navegador.
                             </span>
                         </li>
                         <li className="flex items-start gap-3">
