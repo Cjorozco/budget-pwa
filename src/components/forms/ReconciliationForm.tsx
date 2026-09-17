@@ -137,7 +137,9 @@ export function ReconciliationForm({ account, onSuccess, onCancel }: Reconciliat
                     </span>
                 </div>
                 <div className="flex justify-between items-center">
-                    <span className="text-sm text-slate-600 dark:text-slate-400">Saldo Real (Banco):</span>
+                    <span className="text-sm text-slate-600 dark:text-slate-400">
+                        {account.type === 'cash' ? 'Saldo Real (en efectivo):' : `Saldo Real (${account.name}):`}
+                    </span>
                     <span className="font-bold text-slate-900 dark:text-white">
                         {formatCurrency(declaredBalance)}
                     </span>
@@ -175,7 +177,7 @@ export function ReconciliationForm({ account, onSuccess, onCancel }: Reconciliat
             )}
 
             <Input
-                label="Saldo Real (según banco)"
+                label={account.type === 'cash' ? 'Saldo real actual (en efectivo)' : `Saldo real actual (según ${account.name})`}
                 type="number"
                 step="0.01"
                 placeholder="0"
