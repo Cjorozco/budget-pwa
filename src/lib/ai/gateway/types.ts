@@ -6,6 +6,7 @@ export interface AiGenerateOptions {
     signal?: AbortSignal;
     timeoutMs?: number;
     temperature?: number;
+    maxTokens?: number;
     onProgress?: (attempt: ModelAttempt, friendlyMessage: string) => void;
 }
 

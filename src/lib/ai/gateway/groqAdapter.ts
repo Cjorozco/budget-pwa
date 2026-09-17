@@ -87,6 +87,20 @@ export class GroqProviderClient implements AiProviderClient {
                 }
                 messages.push({ role: 'user', content: options.prompt });
 
+                const isGuardModel = model.includes('prompt-guard') || model.includes('safeguard');
+                const maxTokens = isGuardModel ? 256 : Math.min(options.maxTokens ?? 512, 512);
+
+                const requestBody: Record<string, unknown> = {
+                    model,
+                    messages,
+                    temperature: options.temperature ?? 0.1,
+                    max_tokens: maxTokens,
+                };
+
+                if (!isGuardModel) {
+                    requestBody.response_format = { type: 'json_object' };
+                }
+
                 const response = await fetch(GROQ_API_URL, {
                     method: 'POST',
                     headers: {
@@ -95,13 +109,7 @@ export class GroqProviderClient implements AiProviderClient {
                     },
                     referrerPolicy: 'no-referrer',
                     signal: timeoutController.signal,
-                    body: JSON.stringify({
-                        model,
-                        messages,
-                        temperature: options.temperature ?? 0.1,
-                        max_tokens: 1024,
-                        response_format: { type: 'json_object' },
-                    }),
+                    body: JSON.stringify(requestBody),
                 });
 
                 const json: unknown = await response.json().catch(() => null);
