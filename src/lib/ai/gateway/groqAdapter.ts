@@ -8,6 +8,9 @@ export const GROQ_MODELS = [
     'groq/compound',
     'groq/compound-mini',
     'qwen/qwen3.8-27b',
+    'openai/gpt-oss-safeguard-20b',
+    'meta-llama/llama-prompt-guard-2-86m',
+    'meta-llama/llama-prompt-guard-2-22m',
 ] as const;
 
 export const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';

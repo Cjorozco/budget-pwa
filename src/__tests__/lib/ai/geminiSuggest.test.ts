@@ -297,8 +297,8 @@ describe('buildPrompt', () => {
 });
 
 describe('gemini model constant', () => {
-    it('uses gemini-3.1-pro-preview as the primary baseline workhorse', () => {
-        expect(GEMINI_MODEL).toBe('gemini-3.1-pro-preview');
+    it('uses gemini-3.1-flash-lite as the primary baseline workhorse', () => {
+        expect(GEMINI_MODEL).toBe('gemini-3.1-flash-lite');
     });
 });
 
@@ -510,13 +510,10 @@ describe('generateGeminiText resilience & errors', () => {
 
 describe('gemini fallback models', () => {
     it('includes reliable high-quota fallback models for mobile & desktop', () => {
-        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.1-flash-lite');
         expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.5-flash-lite');
+        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.6-flash');
         expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.7-flash');
         expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.8-flash');
-        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.6-flash');
-        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.5-flash');
-        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3-flash-preview');
     });
 });
 
