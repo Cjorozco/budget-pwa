@@ -90,9 +90,17 @@ export class GroqProviderClient implements AiProviderClient {
                 const isGuardModel = model.includes('prompt-guard') || model.includes('safeguard');
                 const maxTokens = isGuardModel ? 256 : Math.min(options.maxTokens ?? 512, 512);
 
+                const messagesToSend = [...messages];
+                if (!isGuardModel) {
+                    const hasJsonWord = messagesToSend.some((m) => /json/i.test(m.content));
+                    if (!hasJsonWord) {
+                        messagesToSend.push({ role: 'system', content: 'Formato de respuesta requerido: JSON válido.' });
+                    }
+                }
+
                 const requestBody: Record<string, unknown> = {
                     model,
-                    messages,
+                    messages: messagesToSend,
                     temperature: options.temperature ?? 0.1,
                     max_tokens: maxTokens,
                 };
@@ -197,8 +205,8 @@ export class GroqProviderClient implements AiProviderClient {
     async testConnection(): Promise<ConnectionTestResult> {
         try {
             const result = await this.generate({
-                prompt: 'Ping',
-                systemPrompt: 'Responde exclusivamente {"status":"ok"}',
+                prompt: 'Ping. Responde con un objeto JSON.',
+                systemPrompt: 'Responde exclusivamente un objeto JSON válido: {"status":"ok"}',
                 timeoutMs: 8000,
             });
             return {
