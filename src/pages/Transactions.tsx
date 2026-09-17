@@ -11,11 +11,14 @@ import { formatCurrency } from '@/lib/utils';
 import type { Transaction } from '@/lib/types';
 import { useUIStore } from '@/store/ui';
 
+export type TransactionFilter = 'all' | 'income' | 'expense';
+
 export default function TransactionsPage() {
     const { confirm, addToast } = useUIStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [filter, setFilter] = useState<TransactionFilter>('all');
 
     // Fetch transactions with related data
     const transactions = useLiveQuery(async () => {
@@ -116,6 +119,13 @@ export default function TransactionsPage() {
 
     if (!transactions) return null;
 
+    const filteredTransactions = transactions.filter((tx) => {
+        if (filter === 'all') return true;
+        if (filter === 'income') return tx.type === 'income' || (tx.type === 'transfer' && tx.categoryId === 'transfer-in');
+        if (filter === 'expense') return tx.type === 'expense' || (tx.type === 'transfer' && tx.categoryId === 'transfer-out');
+        return true;
+    });
+
     return (
         <div className="p-4 space-y-6">
             <div className="flex justify-between items-center">
@@ -134,15 +144,67 @@ export default function TransactionsPage() {
                 </Button>
             </div>
 
+            {/* Filter Selector */}
+            <div
+                className="flex bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl gap-1"
+                role="tablist"
+                aria-label="Filtrar por tipo de movimiento"
+            >
+                <button
+                    type="button"
+                    role="tab"
+                    aria-selected={filter === 'all'}
+                    data-testid="filter-all"
+                    onClick={() => setFilter('all')}
+                    className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all ${
+                        filter === 'all'
+                            ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                >
+                    Todos
+                </button>
+                <button
+                    type="button"
+                    role="tab"
+                    aria-selected={filter === 'income'}
+                    data-testid="filter-income"
+                    onClick={() => setFilter('income')}
+                    className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all ${
+                        filter === 'income'
+                            ? 'bg-white dark:bg-slate-900 text-green-600 dark:text-green-400 shadow-sm'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-green-600 dark:hover:text-green-400'
+                    }`}
+                >
+                    Ingresos
+                </button>
+                <button
+                    type="button"
+                    role="tab"
+                    aria-selected={filter === 'expense'}
+                    data-testid="filter-expense"
+                    onClick={() => setFilter('expense')}
+                    className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all ${
+                        filter === 'expense'
+                            ? 'bg-white dark:bg-slate-900 text-red-600 dark:text-red-400 shadow-sm'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400'
+                    }`}
+                >
+                    Gastos
+                </button>
+            </div>
+
             <div className="space-y-3">
-                {transactions.length === 0 ? (
-                    <div className="text-center py-10 text-slate-500">
-                        No hay movimientos aún.
-                        <br />
-                        ¡Agrega tu primera transacción!
+                {filteredTransactions.length === 0 ? (
+                    <div className="text-center py-10 text-slate-500 whitespace-pre-line">
+                        {filter === 'income'
+                            ? 'No hay ingresos registrados.'
+                            : filter === 'expense'
+                            ? 'No hay gastos registrados.'
+                            : 'No hay movimientos aún.\n¡Agrega tu primera transacción!'}
                     </div>
                 ) : (
-                    transactions.map((tx) => (
+                    filteredTransactions.map((tx) => (
                         <div
                             key={tx.id}
                             className="flex items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800"
