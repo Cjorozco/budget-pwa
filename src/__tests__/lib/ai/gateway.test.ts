@@ -216,7 +216,7 @@ describe('GroqProviderClient (REST Adapter)', () => {
         const client = new GroqProviderClient(mockGroqKey);
         const result = await client.generate({
             prompt: 'Tanqueo Texaco $100000',
-            systemPrompt: 'System instructions here',
+            systemPrompt: 'System instructions here in JSON format',
             timeoutMs: 5000,
         });
 
@@ -225,7 +225,7 @@ describe('GroqProviderClient (REST Adapter)', () => {
 
         const messages = capturedBody.messages as Array<{ role: string; content: string }>;
         expect(messages).toHaveLength(2);
-        expect(messages[0]).toEqual({ role: 'system', content: 'System instructions here' });
+        expect(messages[0]).toEqual({ role: 'system', content: 'System instructions here in JSON format' });
         expect(messages[1]).toEqual({ role: 'user', content: 'Tanqueo Texaco $100000' });
 
         expect(result.provider).toBe('groq');
