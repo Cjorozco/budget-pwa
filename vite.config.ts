@@ -48,7 +48,7 @@ export default defineConfig({
       workbox: {
         runtimeCaching: [
           {
-            urlPattern: ({ url }) => url.hostname === 'generativelanguage.googleapis.com',
+            urlPattern: ({ url }) => url.hostname === 'generativelanguage.googleapis.com' || url.hostname === 'api.groq.com',
             handler: 'NetworkOnly',
           },
           // Navegación: intenta red y cae a cache si estamos offline o la red falla.
