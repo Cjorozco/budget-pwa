@@ -52,6 +52,16 @@ export function AccountCard({ account, onEdit, onReconcile, onViewHistory, onAdd
     // Tolerance for floating point precision in currency calculations
     const isMatched = difference !== null && Math.abs(difference) < 0.01;
 
+    const getRealBalanceLabel = (acc: Account) => {
+        if (acc.type === 'cash') {
+            return 'Saldo real en efectivo';
+        }
+        if (acc.type === 'credit') {
+            return `Saldo / Deuda en ${acc.name}`;
+        }
+        return `Saldo real en ${acc.name}`;
+    };
+
     return (
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden flex flex-col h-full" data-testid="account-card" data-account-name={account.name}>
             <div className={cn(
@@ -115,7 +125,9 @@ export function AccountCard({ account, onEdit, onReconcile, onViewHistory, onAdd
                 <div className="space-y-4 mt-auto">
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight block mb-1">Saldo REAL en banco</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight block mb-1 truncate" title={getRealBalanceLabel(account)}>
+                                {getRealBalanceLabel(account)}
+                            </span>
                             <div className="text-sm font-bold text-slate-900 dark:text-white truncate">
                                 {account.actualBalance !== undefined ? formatCurrency(account.actualBalance) : formatCurrency(account.calculatedBalance)}
                             </div>

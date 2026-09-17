@@ -41,7 +41,7 @@ describe('ReconciliationForm', () => {
         );
 
         expect(screen.getByText('Saldo Calculado:')).toBeInTheDocument();
-        expect(screen.getByText('Saldo Real (Banco):')).toBeInTheDocument();
+        expect(screen.getByText(`Saldo Real (${mockAccount.name}):`)).toBeInTheDocument();
         expect(screen.getByTestId('declared-balance-input')).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /^Reconciliar$/i })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /Cancelar/i })).toBeInTheDocument();
