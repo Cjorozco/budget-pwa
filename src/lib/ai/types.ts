@@ -26,7 +26,7 @@ export type ResolverResult =
   | {
       status: 'success';
       suggestion: CategorySuggestion;
-      source: 'gemini' | 'openai' | 'anthropic' | 'groq' | 'local';
+      source: 'local' | AiProviderType;
       geminiDiagnosis?: GeminiResult;
       aiDiagnosis?: LlmResult;
     }
