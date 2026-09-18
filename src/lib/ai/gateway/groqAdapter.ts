@@ -6,7 +6,6 @@ export const GROQ_MODELS = [
     'openai/gpt-oss-120b',
     'openai/gpt-oss-20b',
     'groq/compound',
-    'groq/compound-mini',
     'qwen/qwen3.8-27b',
     'openai/gpt-oss-safeguard-20b',
     'meta-llama/llama-prompt-guard-2-86m',
