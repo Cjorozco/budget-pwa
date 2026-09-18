@@ -27,8 +27,8 @@ export interface CategorySuggestion {
     };
     /** Otras categorías del usuario con puntaje similar */
     alternatives?: Array<{ categoryId: string; categoryPath: string }>;
-    /** local = reglas/historial; gemini = Google Gemini (PRO + API key) */
-    source?: 'local' | 'gemini';
+    /** local = reglas/historial; o proveedor de IA (gemini, groq, etc.) */
+    source?: 'local' | 'gemini' | 'openai' | 'anthropic' | 'groq' | 'ollama' | 'deepseek' | 'custom';
 }
 
 const KNOWN_ESTABLISHMENTS = [

@@ -17,9 +17,11 @@ import {
     getGeminiGenerateUrl,
 } from './geminiConfig';
 import { getGeminiApiKey } from './geminiKey';
-import type { GeminiResult, ModelAttempt } from './types';
+import { getAiApiKey, getSelectedAiProvider } from './gateway/config';
+import { createAiClient } from './gateway/factory';
+import type { GeminiResult, LlmResult, ModelAttempt } from './types';
 
-export type { GeminiResult, ModelAttempt };
+export type { GeminiResult, LlmResult, ModelAttempt };
 export type SuggestionResult = GeminiResult;
 
 import {
@@ -511,6 +513,95 @@ export async function mapLlmPayloadToSuggestion(
             source: 'gemini',
         },
     };
+}
+
+export async function suggestWithAiProvider(
+    description: string,
+    type: 'income' | 'expense',
+    signal?: AbortSignal,
+    onProgress?: (attempt: ModelAttempt, friendlyMessage: string) => void
+): Promise<LlmResult> {
+    const provider = getSelectedAiProvider();
+    const apiKey = getAiApiKey(provider);
+    if (!apiKey) {
+        if (import.meta.env?.DEV) {
+            console.debug(`[suggestWithAiProvider] Unavailable: no-api-key for ${provider}`);
+        }
+        return { status: 'unavailable', reason: 'no-api-key' };
+    }
+
+    const [catalog, recentExamples, rootCategories] = await Promise.all([
+        loadCategoryCatalog(type),
+        loadRecentTransactionExamples(type, 10),
+        db.categories.filter((c) => c.isActive && c.type === type && !c.parentId).toArray(),
+    ]);
+
+    const client = createAiClient(provider, apiKey);
+    let genResult: { ok: true; text: string; modelUsed: string; attempts?: ModelAttempt[]; provider: typeof provider } | { ok: false; result: LlmResult };
+
+    try {
+        const response = await client.generate({
+            prompt: buildPrompt(description, type, catalog, recentExamples),
+            signal,
+            onProgress,
+        });
+        genResult = {
+            ok: true,
+            text: response.text,
+            modelUsed: response.modelUsed,
+            attempts: response.attempts,
+            provider: response.provider,
+        };
+    } catch (err: unknown) {
+        if (signal?.aborted) {
+            return { status: 'error', reason: 'network-error' };
+        }
+        const errorReason = err instanceof Error && err.message.includes('401')
+            ? 'http-401'
+            : err instanceof Error && err.message.includes('429')
+            ? 'http-429'
+            : err instanceof Error && err.message.includes('timeout')
+            ? 'timeout'
+            : 'network-error';
+        return { status: 'error', reason: errorReason };
+    }
+
+    const parseResult = parseLlmSuggestion(genResult.text);
+    if (!parseResult.ok) {
+        if (import.meta.env?.DEV) {
+            console.debug(`[suggestWithAiProvider] Parsing failed on ${provider}:`, parseResult.result);
+        }
+        const res = parseResult.result;
+        if (res.status === 'rejected' || res.status === 'no-match' || res.status === 'success') {
+            res.modelUsed = genResult.modelUsed;
+            res.providerUsed = genResult.provider;
+            res.attempts = genResult.attempts;
+        }
+        return res;
+    }
+
+    const rootParentNames = new Set(rootCategories.map((c) => normalizeForMatch(c.name)));
+
+    const mapped = await mapLlmPayloadToSuggestion(
+        parseResult.payload,
+        type,
+        new Set(catalog.map((row) => row.id)),
+        rootParentNames
+    );
+
+    if (mapped.status === 'success' || mapped.status === 'no-match' || mapped.status === 'rejected') {
+        mapped.modelUsed = genResult.modelUsed;
+        mapped.providerUsed = genResult.provider;
+        mapped.attempts = genResult.attempts;
+        if (mapped.status === 'success') {
+            mapped.suggestion.source = genResult.provider;
+        }
+    }
+
+    if (import.meta.env?.DEV) {
+        console.debug(`[suggestWithAiProvider] Final mapped result for ${provider}:`, mapped);
+    }
+    return mapped;
 }
 
 export async function suggestWithGemini(

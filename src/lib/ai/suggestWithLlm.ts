@@ -1,9 +1,9 @@
 import { suggestCategory, type CategorySuggestion } from './categorizer';
-import { hasGeminiApiKey } from './geminiKey';
-import { sanitizePii, suggestWithGemini } from './geminiSuggest';
-import type { GeminiResult, ResolverResult } from './types';
+import { getSelectedAiProvider, hasAiApiKey } from './gateway/config';
+import { sanitizePii, suggestWithAiProvider } from './geminiSuggest';
+import type { GeminiResult, LlmResult, ResolverResult } from './types';
 
-export type { GeminiResult, ResolverResult };
+export type { GeminiResult, LlmResult, ResolverResult };
 
 export function shouldCallGemini(local: CategorySuggestion | null): boolean {
     if (!local) return true;
@@ -24,21 +24,21 @@ export interface SuggestWithLlmOptions {
 async function compareWithLocalForDiagnostics(
     description: string,
     type: 'income' | 'expense',
-    geminiResult: { status: 'success'; suggestion: CategorySuggestion }
+    aiResult: { status: 'success'; suggestion: CategorySuggestion }
 ): Promise<void> {
     if (!import.meta.env?.DEV) return;
     try {
         const localCandidate = await suggestCategory(description, type);
-        const geminiConfidence = geminiResult.suggestion.confidence;
+        const aiConfidence = aiResult.suggestion.confidence;
         const localConfidence = localCandidate?.confidence ?? 0;
-        const winnerByConfidence = localCandidate && localConfidence > geminiConfidence ? 'local' : 'gemini';
+        const winnerByConfidence = localCandidate && localConfidence > aiConfidence ? 'local' : 'ai';
 
-        console.debug('[suggestCategoryWithLlm:diagnostics] Gemini vs Local priority comparison:', {
+        console.debug('[suggestCategoryWithLlm:diagnostics] AI vs Local priority comparison:', {
             description: sanitizePii(description),
-            geminiConfidence,
+            aiConfidence,
             localConfidence: localCandidate ? localConfidence : null,
             winnerByConfidence,
-            geminiPath: geminiResult.suggestion.categoryPath,
+            aiPath: aiResult.suggestion.categoryPath,
             localPath: localCandidate?.categoryPath ?? null,
         });
     } catch (err) {
@@ -48,7 +48,8 @@ async function compareWithLocalForDiagnostics(
 
 /**
  * AI Suggestions:
- * When PRO + API key + online, Gemini takes top priority as the primary intelligent engine.
+ * When PRO + API key + online, the active AI provider (Groq, Gemini, OpenAI, etc.)
+ * takes top priority as the primary intelligent engine.
  * Local rules and heuristics act as safety fallback when offline, no key, or on AI error/timeout/rejection.
  */
 export async function suggestCategoryWithLlm(
@@ -59,49 +60,51 @@ export async function suggestCategoryWithLlm(
     if (options.signal?.aborted) return { status: 'no-match' };
 
     const online = options.online ?? (typeof navigator !== 'undefined' ? navigator.onLine : false);
+    const activeProvider = getSelectedAiProvider();
+    const hasKey = hasAiApiKey(activeProvider);
 
-    let geminiUnavailableReason: 'not-pro' | 'no-api-key' | 'offline' | null = null;
+    let aiUnavailableReason: 'not-pro' | 'no-api-key' | 'offline' | null = null;
     if (!options.isPro) {
-        geminiUnavailableReason = 'not-pro';
-    } else if (!hasGeminiApiKey()) {
-        geminiUnavailableReason = 'no-api-key';
+        aiUnavailableReason = 'not-pro';
+    } else if (!hasKey) {
+        aiUnavailableReason = 'no-api-key';
     } else if (!online) {
-        geminiUnavailableReason = 'offline';
+        aiUnavailableReason = 'offline';
     }
 
-    const canUseGemini = geminiUnavailableReason === null;
-    let geminiDiagnosis: GeminiResult | undefined = undefined;
+    const canUseAi = aiUnavailableReason === null;
+    let aiDiagnosis: LlmResult | undefined = undefined;
 
-    if (canUseGemini) {
+    if (canUseAi) {
         try {
-            const geminiResult = await suggestWithGemini(description, type, options.signal, options.onProgress);
+            const aiResult = await suggestWithAiProvider(description, type, options.signal, options.onProgress);
 
-            if (geminiResult.status === 'success') {
-                // PASO 2: Instrumentación diagnóstica no bloqueante
-                void compareWithLocalForDiagnostics(description, type, geminiResult);
+            if (aiResult.status === 'success') {
+                void compareWithLocalForDiagnostics(description, type, aiResult);
                 return {
                     status: 'success',
-                    suggestion: geminiResult.suggestion,
-                    source: 'gemini',
-                    geminiDiagnosis: geminiResult,
+                    suggestion: aiResult.suggestion,
+                    source: aiResult.providerUsed ?? activeProvider,
+                    aiDiagnosis: aiResult,
+                    geminiDiagnosis: aiResult,
                 };
             }
 
-            geminiDiagnosis = geminiResult;
+            aiDiagnosis = aiResult;
 
             if (import.meta.env?.DEV) {
-                console.debug('[suggestCategoryWithLlm] Gemini did not produce a valid suggestion, falling back to local engine. Diagnosis:', geminiResult);
+                console.debug(`[suggestCategoryWithLlm] ${activeProvider} did not produce a valid suggestion, falling back to local engine. Diagnosis:`, aiResult);
             }
         } catch (err) {
-            geminiDiagnosis = { status: 'error', reason: 'network-error' };
+            aiDiagnosis = { status: 'error', reason: 'network-error' };
             if (import.meta.env?.DEV) {
-                console.debug('[suggestCategoryWithLlm] Unexpected error in suggestWithGemini, falling back to local:', err);
+                console.debug(`[suggestCategoryWithLlm] Unexpected error in suggestWithAiProvider (${activeProvider}), falling back to local:`, err);
             }
         }
     } else {
-        geminiDiagnosis = { status: 'unavailable', reason: geminiUnavailableReason! };
+        aiDiagnosis = { status: 'unavailable', reason: aiUnavailableReason! };
         if (import.meta.env?.DEV) {
-            console.debug(`[suggestCategoryWithLlm] Gemini unavailable (${geminiUnavailableReason}), using local engine.`);
+            console.debug(`[suggestCategoryWithLlm] AI unavailable (${aiUnavailableReason}) for provider ${activeProvider}, using local engine.`);
         }
     }
 
@@ -117,16 +120,18 @@ export async function suggestCategoryWithLlm(
             status: 'success',
             suggestion: { ...local, source: local.source ?? 'local' },
             source: 'local',
-            geminiDiagnosis,
+            aiDiagnosis,
+            geminiDiagnosis: aiDiagnosis,
         };
     }
 
     if (import.meta.env?.DEV) {
-        console.debug('[suggestCategoryWithLlm] Neither Gemini nor Local found a suggestion.');
+        console.debug('[suggestCategoryWithLlm] Neither AI nor Local found a suggestion.');
     }
 
     return {
         status: 'no-match',
-        geminiDiagnosis,
+        aiDiagnosis,
+        geminiDiagnosis: aiDiagnosis,
     };
 }

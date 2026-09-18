@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { type CategorySuggestion } from '@/lib/ai/categorizer';
 import { findOrCreateCategory } from '@/lib/ai/categoryResolver';
 import { suggestCategoryWithLlm } from '@/lib/ai/suggestWithLlm';
-import { hasGeminiApiKey } from '@/lib/ai/geminiKey';
+import { getSelectedAiProvider, hasAiApiKey } from '@/lib/ai/gateway/config';
 import { useUIStore } from '@/store/ui';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
@@ -36,8 +36,8 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
     const [aiSuggestion, setAiSuggestion] = useState<CategorySuggestion | null>(null);
     const [showAiSuggestion, setShowAiSuggestion] = useState(false);
     const [aiDiagnosticNotice, setAiDiagnosticNotice] = useState<string | null>(null);
-    const [geminiPending, setGeminiPending] = useState(false);
-    const [geminiProgressMessage, setGeminiProgressMessage] = useState<string | null>(null);
+    const [aiPending, setAiPending] = useState(false);
+    const [aiProgressMessage, setAiProgressMessage] = useState<string | null>(null);
     const [createdCategories, setCreatedCategories] = useState<Category[]>([]);
     const categoryTouchedRef = useRef(false);
 
@@ -85,8 +85,8 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
             setAiSuggestion(null);
             setShowAiSuggestion(false);
             setAiDiagnosticNotice(null);
-            setGeminiPending(false);
-            setGeminiProgressMessage(null);
+            setAiPending(false);
+            setAiProgressMessage(null);
             return;
         }
 
@@ -94,15 +94,17 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
 
         const controller = new AbortController();
         const timer = setTimeout(async () => {
-            const mayCallGemini = isPro && hasGeminiApiKey();
-            setGeminiPending(mayCallGemini);
-            setGeminiProgressMessage(mayCallGemini ? 'Consultando IA…' : null);
+            const activeProvider = getSelectedAiProvider();
+            const mayCallAi = isPro && hasAiApiKey(activeProvider);
+            const providerName = activeProvider === 'groq' ? 'Groq' : activeProvider === 'gemini' ? 'Gemini' : 'IA';
+            setAiPending(mayCallAi);
+            setAiProgressMessage(mayCallAi ? `Consultando ${providerName}…` : null);
             try {
                 const result = await suggestCategoryWithLlm(description, type, {
                     isPro,
                     signal: controller.signal,
                     onProgress: (_attempt, msg) => {
-                        setGeminiProgressMessage(msg);
+                        setAiProgressMessage(msg);
                     },
                 });
                 if (controller.signal.aborted) return;
@@ -113,9 +115,9 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                     setShowAiSuggestion(true);
 
                     // Si se usó un modelo de respaldo tras fallo de otros
-                    const attempts: ModelAttempt[] = result.geminiDiagnosis?.attempts || [];
+                    const attempts: ModelAttempt[] = result.aiDiagnosis?.attempts || result.geminiDiagnosis?.attempts || [];
                     const failedAttempts = attempts.filter((a: ModelAttempt) => a.status === 'failed');
-                    if (result.source === 'gemini' && failedAttempts.length > 0) {
+                    if (result.source !== 'local' && failedAttempts.length > 0) {
                         const failedNames = failedAttempts.map((a: ModelAttempt) => `${a.modelLabel} (${a.httpStatus ?? a.errorReason})`).join(', ');
                         const successAttempt = attempts.find((a: ModelAttempt) => a.status === 'success');
                         const usedLabel = successAttempt?.modelLabel || 'modelo de respaldo';
@@ -123,8 +125,8 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                     } else if (result.source === 'local' && failedAttempts.length > 0) {
                         const failedNames = failedAttempts.map((a: ModelAttempt) => `${a.modelLabel} (${a.httpStatus ?? a.errorReason})`).join(', ');
                         setAiDiagnosticNotice(`Modelos de IA no disponibles (${failedNames}). Se usó categorización local.`);
-                    } else if (result.geminiDiagnosis?.status === 'error' && result.geminiDiagnosis.reason === 'http-429') {
-                        setAiDiagnosticNotice('Límite de cuota diaria de Gemini alcanzado (Free tier: 20 req/día). Se usó categorización local.');
+                    } else if (result.aiDiagnosis?.status === 'error' && result.aiDiagnosis.reason === 'http-429') {
+                        setAiDiagnosticNotice(`Límite de cuota diaria de ${providerName} alcanzado. Se usó categorización local.`);
                     } else {
                         setAiDiagnosticNotice(null);
                     }
@@ -141,24 +143,12 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                 } else {
                     setAiSuggestion(null);
                     setShowAiSuggestion(false);
-
-                    const attempts: ModelAttempt[] = result.geminiDiagnosis?.attempts || [];
-                    const failedAttempts = attempts.filter((a: ModelAttempt) => a.status === 'failed');
-                    if (failedAttempts.length > 0) {
-                        const failedNames = failedAttempts.map((a: ModelAttempt) => `${a.modelLabel} (${a.httpStatus ?? a.errorReason})`).join(', ');
-                        setAiDiagnosticNotice(`Todos los modelos de IA fallaron (${failedNames}). No se encontró coincidencia local.`);
-                    } else if (result.geminiDiagnosis?.status === 'error' && result.geminiDiagnosis.reason === 'http-429') {
-                        setAiDiagnosticNotice('Límite de cuota diaria alcanzado en Google AI Studio (Free tier: 20 req/día). No se encontró coincidencia local.');
-                    } else if (result.geminiDiagnosis?.status === 'error' && result.geminiDiagnosis.reason === 'http-401') {
-                        setAiDiagnosticNotice('API key de Gemini no válida. Revisa la clave en Ajustes.');
-                    } else {
-                        setAiDiagnosticNotice(null);
-                    }
+                    setAiDiagnosticNotice(null);
                 }
             } finally {
                 if (!controller.signal.aborted) {
-                    setGeminiPending(false);
-                    setGeminiProgressMessage(null);
+                    setAiPending(false);
+                    setAiProgressMessage(null);
                 }
             }
         }, 500);
@@ -414,9 +404,9 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                 data-testid="description-input"
             />
 
-            {geminiPending && (
-                <p className="text-[11px] text-indigo-600 dark:text-indigo-400 font-medium animate-pulse" data-testid="gemini-pending">
-                    {geminiProgressMessage || 'Consultando Gemini…'}
+            {aiPending && (
+                <p className="text-[11px] text-indigo-600 dark:text-indigo-400 font-medium animate-pulse" data-testid="ai-pending">
+                    {aiProgressMessage || 'Consultando IA…'}
                 </p>
             )}
 
