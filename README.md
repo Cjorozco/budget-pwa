@@ -52,6 +52,22 @@ La key se guarda en `localStorage` de **este** dispositivo. No entra al backup J
 - El **Saldo Real en banco/efectivo** no se modifica al crear o editar una reserva.
 - Desde el detalle de reservas puedes **editar** (monto y descripción) o **eliminar** una reserva activa.
 
+## 📊 Métricas del Dashboard y Conceptos Financieros
+
+La app separa intencionalmente la **liquidez patrimonial acumulada** del **flujo de caja mensual**:
+
+1. **Total Disponible (Saldo Acumulado Real):**
+   - Mide el dinero líquido real que posees hoy en todas tus cuentas bancarias y efectivo, deduciendo las reservas activas:
+     $$\text{Total disponible} = \text{Saldo en todas las cuentas} - \text{Reservas activas}$$
+   - **Nota:** Puede ser **positivo** incluso si en el mes actual los gastos superan a los ingresos, ya que se apoya en los fondos/ahorros remanentes acumulados de meses anteriores.
+
+2. **Ingresos (mes) y Gastos (mes) (Flujo del Período):**
+   - Miden exclusivamente las entradas y salidas registradas entre el primer y último día del mes en curso.
+   - El indicador de **Flujo neto mensual** ($\text{Ingresos} - \text{Gastos}$) aclara si durante el mes puntual hubo superávit o déficit.
+
+3. **Transferencias entre Cuentas:**
+   - Mover dinero entre tus propias cuentas (ej. *Bancolombia ➔ Lulo*) **no** se considera ingreso ni gasto; por diseño se excluyen de las tarjetas mensuales para evitar duplicidades y no alteran el saldo patrimonial global.
+
 ## Lo que esta App NO hace (Por diseño)
 - **No sincroniza con APIs bancarias**: Mantiene el control absoluto en el usuario.
 - **No edita reconciliaciones pasadas**: Lo que se cerró, queda como registro histórico para auditoría.

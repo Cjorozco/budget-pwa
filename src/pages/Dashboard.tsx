@@ -3,7 +3,7 @@ import { db } from '@/lib/db';
 import { cn, formatCurrency } from '@/lib/utils';
 import { startOfMonth, endOfMonth, format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { ArrowDownCircle, ArrowUpCircle, Wallet, AlertTriangle, ArrowRightLeft } from 'lucide-react';
+import { ArrowDownCircle, ArrowUpCircle, Wallet, AlertTriangle, ArrowRightLeft, Info } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useMemo, useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
@@ -13,6 +13,7 @@ import { TransferForm } from '@/components/forms/TransferForm';
 export default function Dashboard() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [templateData, setTemplateData] = useState<any>(null);
+    const [showBalanceExplanation, setShowBalanceExplanation] = useState(false);
 
     const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
 
@@ -172,20 +173,50 @@ export default function Dashboard() {
 
             {/* Total Balance Card */}
             <div className={cn(
-                "p-6 rounded-3xl shadow-lg transition-colors border-2",
+                "p-6 rounded-3xl shadow-lg transition-colors border-2 relative",
                 isLoading ? "opacity-50 grayscale transition-all duration-500" : "",
                 totalAvailable < 0
                     ? "bg-gradient-to-br from-red-600 to-red-700 text-white shadow-red-200 border-red-500 animate-pulse"
                     : "bg-gradient-to-br from-indigo-600 to-indigo-700 text-white shadow-indigo-200 border-indigo-500"
             )}>
-                <p className={cn(
-                    "text-sm font-medium mb-1",
-                    totalAvailable < 0 ? "text-red-100" : "text-indigo-100"
-                )}>Total disponible</p>
+                <div className="flex items-center justify-between mb-1">
+                    <p className={cn(
+                        "text-sm font-medium",
+                        totalAvailable < 0 ? "text-red-100" : "text-indigo-100"
+                    )}>Total disponible</p>
+                    <button
+                        type="button"
+                        onClick={() => setShowBalanceExplanation(!showBalanceExplanation)}
+                        className={cn(
+                            "p-1 rounded-full transition-colors",
+                            totalAvailable < 0
+                                ? "hover:bg-red-500/40 text-red-200"
+                                : "hover:bg-indigo-500/40 text-indigo-200"
+                        )}
+                        aria-label="Información sobre Total Disponible"
+                        title="¿Cómo se calcula el total disponible?"
+                    >
+                        <Info size={16} />
+                    </button>
+                </div>
+
                 <div className="text-4xl font-bold tracking-tight">
                     {isLoading ? "..." : formatCurrency(totalAvailable)}
                 </div>
-                {totalReserved > 0 && (
+
+                {showBalanceExplanation && (
+                    <div className="mt-3 p-3 bg-black/20 backdrop-blur-sm rounded-2xl text-xs space-y-1 border border-white/10 animate-in fade-in zoom-in-95 duration-200">
+                        <p className="font-semibold text-white/90">¿Cómo se calcula?</p>
+                        <p className="text-white/80 leading-relaxed">
+                            Es el <strong>saldo real acumulado</strong> en todas tus cuentas ({formatCurrency(totalRealBalance)}) menos tus <strong>reservas activas</strong> ({formatCurrency(totalReserved)}).
+                        </p>
+                        <p className="text-[11px] text-white/70 italic">
+                            Incluye el dinero que traías de meses anteriores, por lo que puede ser positivo aunque en este mes puntual hayas gastado más de lo ingresado.
+                        </p>
+                    </div>
+                )}
+
+                {!showBalanceExplanation && totalReserved > 0 && (
                     <div className={cn(
                         "mt-2 text-[10px] font-medium",
                         totalAvailable < 0 ? "text-red-200" : "text-indigo-100/80"
@@ -196,25 +227,44 @@ export default function Dashboard() {
             </div>
 
             {/* Monthly Stats */}
-            <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
-                    <div className="flex items-center gap-2 mb-2">
-                        <ArrowUpCircle className="text-green-500" size={20} />
-                        <span className="text-sm text-slate-500 font-medium">Ingresos (mes)</span>
+            <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
+                        <div className="flex items-center gap-2 mb-2">
+                            <ArrowUpCircle className="text-green-500" size={20} />
+                            <span className="text-sm text-slate-500 font-medium">Ingresos (mes)</span>
+                        </div>
+                        <p className="text-lg font-bold text-slate-900 dark:text-white">
+                            {stats ? formatCurrency(stats.income) : '-'}
+                        </p>
                     </div>
-                    <p className="text-lg font-bold text-slate-900 dark:text-white">
-                        {stats ? formatCurrency(stats.income) : '-'}
-                    </p>
-                </div>
-                <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
-                    <div className="flex items-center gap-2 mb-2">
-                        <ArrowDownCircle className="text-red-500" size={20} />
-                        <span className="text-sm text-slate-500 font-medium">Gastos (mes)</span>
+                    <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
+                        <div className="flex items-center gap-2 mb-2">
+                            <ArrowDownCircle className="text-red-500" size={20} />
+                            <span className="text-sm text-slate-500 font-medium">Gastos (mes)</span>
+                        </div>
+                        <p className="text-lg font-bold text-slate-900 dark:text-white">
+                            {stats ? formatCurrency(stats.expense) : '-'}
+                        </p>
                     </div>
-                    <p className="text-lg font-bold text-slate-900 dark:text-white">
-                        {stats ? formatCurrency(stats.expense) : '-'}
-                    </p>
                 </div>
+
+                {stats && (
+                    <div className="flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200/60 dark:border-slate-800/60 text-xs">
+                        <span className="text-slate-500 dark:text-slate-400 font-medium">Flujo neto del mes:</span>
+                        <span className={cn(
+                            "font-bold",
+                            stats.income - stats.expense >= 0
+                                ? "text-emerald-600 dark:text-emerald-400"
+                                : "text-amber-600 dark:text-amber-400"
+                        )}>
+                            {stats.income - stats.expense >= 0 ? "+" : ""}{formatCurrency(stats.income - stats.expense)}
+                            <span className="ml-1 text-[10px] font-normal text-slate-500 dark:text-slate-400">
+                                ({stats.income - stats.expense >= 0 ? "Superávit" : "Déficit mensual"})
+                            </span>
+                        </span>
+                    </div>
+                )}
             </div>
 
             {/* Quick Templates */}
