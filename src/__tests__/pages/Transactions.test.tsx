@@ -121,7 +121,52 @@ describe('TransactionsPage Filter', () => {
         fireEvent.click(incomeBtn);
 
         await waitFor(() => {
-            expect(screen.getByText('No hay ingresos registrados.')).toBeInTheDocument();
+            expect(screen.getByText(/No hay ingresos registrados en/i)).toBeInTheDocument();
+        });
+    });
+
+    it('navigates across months and filters transactions accordingly', async () => {
+        const prevMonthDate = new Date();
+        prevMonthDate.setMonth(prevMonthDate.getMonth() - 1);
+
+        await db.transactions.add({
+            id: 'tx-old',
+            amount: 80000,
+            type: 'expense',
+            description: 'Factura gas mes pasado',
+            accountId: 'acc-1',
+            categoryId: 'cat-exp',
+            date: prevMonthDate.getTime(),
+            tagIds: [],
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+        });
+
+        render(<TransactionsPage />);
+
+        // In current month, only current month txs appear
+        await waitFor(() => {
+            expect(screen.getByText('Almuerzo en Crepes')).toBeInTheDocument();
+            expect(screen.queryByText('Factura gas mes pasado')).not.toBeInTheDocument();
+        });
+
+        // Navigate to previous month
+        const prevBtn = screen.getByTestId('prev-month-button');
+        fireEvent.click(prevBtn);
+
+        await waitFor(() => {
+            expect(screen.getByText('Factura gas mes pasado')).toBeInTheDocument();
+            expect(screen.queryByText('Almuerzo en Crepes')).not.toBeInTheDocument();
+            expect(screen.getByTestId('go-current-month-button')).toBeInTheDocument();
+        });
+
+        // Click "Ir al actual"
+        fireEvent.click(screen.getByTestId('go-current-month-button'));
+
+        await waitFor(() => {
+            expect(screen.getByText('Almuerzo en Crepes')).toBeInTheDocument();
+            expect(screen.queryByText('Factura gas mes pasado')).not.toBeInTheDocument();
         });
     });
 });
+
