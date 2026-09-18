@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Plus, Pencil, Trash2, AlertTriangle, ArrowRightLeft } from 'lucide-react';
-import { format } from 'date-fns';
+import { Plus, Pencil, Trash2, AlertTriangle, ArrowRightLeft, ChevronLeft, ChevronRight } from 'lucide-react';
+import { format, startOfMonth, endOfMonth, subMonths, addMonths, isSameMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { db } from '@/lib/db';
 import { Button } from '@/components/ui/Button';
@@ -19,10 +19,24 @@ export default function TransactionsPage() {
     const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [filter, setFilter] = useState<TransactionFilter>('all');
+    const [currentDate, setCurrentDate] = useState<Date>(new Date());
+    const [showAllHistory, setShowAllHistory] = useState<boolean>(false);
 
-    // Fetch transactions with related data
+    // Fetch transactions with related data filtered by selected month
     const transactions = useLiveQuery(async () => {
-        const txs = await db.transactions.orderBy('date').reverse().toArray();
+        let txs: Transaction[];
+        if (showAllHistory) {
+            txs = await db.transactions.orderBy('date').reverse().toArray();
+        } else {
+            const start = startOfMonth(currentDate).getTime();
+            const end = endOfMonth(currentDate).getTime();
+            txs = await db.transactions
+                .where('date')
+                .between(start, end, true, true)
+                .toArray();
+            txs.sort((a, b) => b.date - a.date);
+        }
+
         const cats = await db.categories.toArray();
         const accts = await db.accounts.toArray();
 
@@ -43,7 +57,7 @@ export default function TransactionsPage() {
                 accountName: acctMap.get(tx.accountId)?.name || 'Cuenta Eliminada',
             };
         });
-    });
+    }, [currentDate, showAllHistory]);
 
     const handleDelete = async (transaction: any) => {
         const ok = await confirm({
@@ -126,6 +140,20 @@ export default function TransactionsPage() {
         return true;
     });
 
+    const navigateMonth = (direction: 'prev' | 'next') => {
+        setShowAllHistory(false);
+        setCurrentDate((prev) => (direction === 'prev' ? subMonths(prev, 1) : addMonths(prev, 1)));
+    };
+
+    const goToCurrentMonth = () => {
+        setShowAllHistory(false);
+        setCurrentDate(new Date());
+    };
+
+    const monthLabel = showAllHistory
+        ? 'Todo el historial'
+        : format(currentDate, "MMMM yyyy", { locale: es });
+
     return (
         <div className="p-4 space-y-6">
             <div className="flex justify-between items-center">
@@ -142,6 +170,45 @@ export default function TransactionsPage() {
                 >
                     <Plus size={24} />
                 </Button>
+            </div>
+
+            {/* Month Navigator */}
+            <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-2 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
+                <button
+                    type="button"
+                    aria-label="Mes anterior"
+                    data-testid="prev-month-button"
+                    onClick={() => navigateMonth('prev')}
+                    className="p-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
+                >
+                    <ChevronLeft size={20} />
+                </button>
+
+                <div className="flex items-center gap-2">
+                    <span data-testid="current-month-display" className="font-semibold text-slate-800 dark:text-slate-100 capitalize text-sm sm:text-base">
+                        {monthLabel}
+                    </span>
+                    {!showAllHistory && !isSameMonth(currentDate, new Date()) && (
+                        <button
+                            type="button"
+                            data-testid="go-current-month-button"
+                            onClick={goToCurrentMonth}
+                            className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 px-2 py-0.5 rounded-full border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 transition-colors"
+                        >
+                            Ir al actual
+                        </button>
+                    )}
+                </div>
+
+                <button
+                    type="button"
+                    aria-label="Mes siguiente"
+                    data-testid="next-month-button"
+                    onClick={() => navigateMonth('next')}
+                    className="p-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
+                >
+                    <ChevronRight size={20} />
+                </button>
             </div>
 
             {/* Filter Selector */}
@@ -196,12 +263,12 @@ export default function TransactionsPage() {
 
             <div className="space-y-3">
                 {filteredTransactions.length === 0 ? (
-                    <div className="text-center py-10 text-slate-500 whitespace-pre-line">
+                    <div className="text-center py-10 text-slate-500 whitespace-pre-line text-sm">
                         {filter === 'income'
-                            ? 'No hay ingresos registrados.'
+                            ? `No hay ingresos registrados en ${monthLabel}.`
                             : filter === 'expense'
-                            ? 'No hay gastos registrados.'
-                            : 'No hay movimientos aún.\n¡Agrega tu primera transacción!'}
+                            ? `No hay gastos registrados en ${monthLabel}.`
+                            : `No hay movimientos en ${monthLabel}.\n¡Agrega una transacción para este mes!`}
                     </div>
                 ) : (
                     filteredTransactions.map((tx) => (
