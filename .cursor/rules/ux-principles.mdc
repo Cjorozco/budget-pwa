@@ -1,51 +1,52 @@
 ---
-description: Principios universales de UX y diseno frontend adaptados a personal-buget-pwa
+description: Principios de UX y frontend (capa com�n). Detalle de producto en architecture.
 alwaysApply: true
 ---
 
-# SKILL: Universal UX & Frontend Design Principles
+# Principios de UX y frontend
 
-## Descripción
-Este skill define las heurísticas universales de diseño y experiencia de usuario (UX) que debes seguir al generar, refactorizar o sugerir código para componentes frontend en React y TypeScript. El objetivo es crear interfaces escalables, consistentes y con baja carga cognitiva.
+> Capa común. Carpetas, persistencia y copy específico: `architecture` de este repo.
 
-## Principios y Reglas de Implementación
+Objetivo: interfaces consistentes, baja carga cognitiva, usables con el pulgar.
 
-### 1. Gestión de Complejidad y Claridad (Ley de Tesler & Ley de Hick)
-- **Abstracción Técnica:** Asume la complejidad (estado, transformaciones de datos) en el código para que la interfaz se mantenga limpia.
-- **Límites de Decisión:** Limita las opciones presentadas al usuario simultáneamente (máximo 3 a 5).
-- **Flujos Progresivos:** Prefiere flujos paso a paso (`multi-step`) usando estado local sobre formularios largos.
-- **Lenguaje UI:** Genera copys (labels, tooltips) directos y accionables. Cero jerga técnica en la UI (en español `es-CO`).
+## 1. Claridad (Tesler, Hick)
 
-### 2. Consistencia y Patrones (Ley de Jakob)
-- **Reutilización Estricta:** Construye ensamblando componentes base, *design tokens* y patrones ya existentes en el repositorio (`src/components/ui/`). No inventes elementos de UI si ya existe un equivalente.
-- **Familiaridad:** Utiliza patrones de navegación e interacción estándar (barra de navegación inferior fija para mobile, diálogos modales accesibles). Evita animaciones que sacrifiquen usabilidad o fluidez.
+- La complejidad (estado, transformaciones) vive en código; la UI se mantiene limpia.
+- Máximo 3–5 opciones a la vez. Flujos paso a paso antes que formularios largos.
+- Copy directo y accionable. Cero jerga técnica en la UI.
 
-### 3. Flexibilidad de Entradas y Prevención de Errores (Ley de Postel)
-- **Inputs Resilientes:** Sé estricto en lo que envías a la persistencia (IndexedDB / Dexie), pero flexible en lo que recibes del usuario. Formatea y sanitiza valores (montos en COP, fechas, textos) automáticamente mediante esquemas Zod.
-- **Tolerancia a Fallos:** Usa `ErrorBoundary` (implementado en `src/components/ui/ErrorBoundary.tsx`) y maneja estados `null` o `undefined` sin romper la app.
-- **Acciones Destructivas:** Exige siempre un paso de confirmación explícito con semántica de advertencia antes de borrar o alterar datos sensibles (usando `ConfirmDialog` de UI state, nunca `window.confirm` ni alertas nativas).
+## 2. Consistencia (Jakob)
 
-### 4. Sistemas de Feedback (Peak-End Rule)
-- **Visibilidad del Estado:** Provee feedback visual inmediato (ej. `disabled` al hacer submit, spinners, loaders, skeletons).
-- **Notificaciones Claras:** Usa `toasts` informativos y no invasivos (a través de `useUIStore`) para confirmar el éxito o fracaso de acciones importantes.
+- Ensancha lo que ya existe: componentes, tokens, patrones del repo. No inventes un equivalente.
+- Navegación e interacción estándar. Animación solo si no resta usabilidad.
+- Respeta la estructura de carpetas de **este** producto (`architecture`).
 
-### 5. Arquitectura de UI y Jerarquía (Ley de Miller & Efecto von Restorff)
-- **Agrupación Visual (Chunking):** Agrupa la información en bloques lógicos cortos (máximo 7±2 elementos) tanto en resúmenes de transacciones como en tarjetas de presupuestos.
-- **Jerarquía de Acción:** Destaca el *Call to Action* (CTA) principal de la vista visualmente (ej. botón flotante/fijo de registrar transacción o conciliar).
+## 3. Entradas y errores (Postel)
 
-### 6. Accesibilidad (Ley de Fitts & Estándares Web)
-- **Mobile-first:** Define estilos base para móvil y escala con media queries (Tailwind CSS 4).
-- **Áreas de Interacción:** Botones y enlaces deben tener un tamaño táctil adecuado (mínimo 44x44px recomendado para dedos) y espacio seguro entre ellos.
-- **Semántica y A11y:** Usa HTML semántico, `aria-labels` donde no haya texto visible (como botones de solo ícono de Lucide), roles de diálogo accesibles y respeta el contraste de colores WCAG tanto en modo claro como oscuro.
+- Flexible con lo que escribe el usuario (trim, comas → puntos en números); estricto al persistir.
+- Normaliza texto libre de forma consistente (nombres vs. notas) si el repo ya tiene helpers para eso.
+- UI que consume IA: DTOs validados, estados explícitos (`success` / `needs_review` / `error`), sin asumir forma profunda.
+- `ErrorBoundary` y `null`/`undefined` sin tumbar la app.
+- Destructivo: confirmación explícita con semántica de advertencia.
 
----
+## 4. Feedback (Peak-End)
 
-## 📌 Contexto de Aplicación Específico en este Repositorio (`personal-buget-pwa`)
+- Estado visible al instante: submit deshabilitado, loaders, skeletons.
+- Toasts informativos, no invasivos, para éxito o fallo de acciones importantes.
 
-1. **Stack de Ejecución:** SPA offline-first con **React 19 + Vite 7 + Tailwind CSS 4 + TypeScript** (sin SSR ni Next.js).
-2. **Capa de Datos ("Backend Local"):** La persistencia estricta es **IndexedDB vía Dexie.js**. La sanitización y validación con Zod opera en las fronteras de formularios y de importación/exportación de backups.
-3. **Moneda y Formato:** Todos los valores monetarios se gestionan en **COP (Pesos Colombianos)** mediante `formatCurrency()` y formateadores locales resilientes al typing del usuario.
-4. **Integración con Componentes Reales:**
-   - Confirmaciones destructivas: `useConfirmDialog` (`src/components/ui/ConfirmDialog.tsx`).
-   - Toasts y alertas no invasivas: `useUIStore.getState().addToast(...)` (`src/components/ui/ToastContainer.tsx`).
-   - Captura de excepciones: `ErrorBoundary` (`src/components/ui/ErrorBoundary.tsx`).
+## 5. Jerarquía (Miller, von Restorff)
+
+- Bloques lógicos cortos (máx. 7±2).
+- Un CTA principal por vista, destacado.
+
+## 6. Accesibilidad y táctil (Fitts)
+
+- Mobile-first: usable en pantalla chica sin depender de `md:`/`lg:` para “funcionar”.
+- Targets táctiles ≥ 44×44 px.
+- `inputMode="decimal"` o `"numeric"` en campos numéricos.
+- HTML semántico, `aria-label` si no hay texto visible, contraste legible.
+
+## 7. Alineación
+
+- UI tonta: captura y refleja estado. Autorización y cálculos de negocio no se inventan en el cliente.
+- Librerías nuevas: solo si `AGENTS.md` / `package.json` no cubren el problema.
