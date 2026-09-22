@@ -1,3 +1,7 @@
+# personal-buget-pwa — Arquitectura
+
+> Este repo es **offline-first (Dexie / IndexedDB)**. No uses Convex, Next.js ni reglas de Ecosistemas Platform.
+
 # Reglas de Arquitectura, Diseño y Mobile-First
 
 ## Stack y Convenciones del Proyecto
@@ -67,3 +71,34 @@ Esta app es una **vitrina pública** de capacidades como desarrollador **Senior 
 - **Offline UX**: toda acción de persistencia debe funcionar sin conexión a red; mostrar feedback claro y no invasivo.
 - **Seguridad y Privacidad**: sin telemetría ni tracking; validación con Zod en fronteras de persistencia y backups.
 - **Calidad de Código**: suite de pruebas unitarias/integración con Vitest para lógica pura, validaciones y acceso a DB.
+
+---
+
+## PWA, Dexie y estado
+
+- Persistencia: IndexedDB vía Dexie. `useLiveQuery` en componentes; nunca async crudo en render.
+- Escrituras multi-tabla: `db.transaction()`. IDs: `uuid`. Índices en campos de `.where()`.
+- Totales: derivar de la historia; no guardar saldos stale.
+- Zustand solo para UI (toasts, modales, flags). No duplicar la DB en Zustand.
+- Formularios: React Hook Form + Zod.
+- Service Worker: `vite-plugin-pwa`, `registerType: 'autoUpdate'`. Core sin red.
+- Gemini BYOK: key NUNCA en `VITE_*`, Dexie ni backups. Workbox `NetworkOnly` para `generativelanguage.googleapis.com`.
+- UI: español `es-CO`. Moneda COP con `formatCurrency()`. Iconos Lucide. Confirmaciones con `ConfirmDialog` del UI store.
+- LLM: no escribe a IndexedDB ni a UI sin Zod + grounding.
+
+## Versión de la app
+
+Al shippear cambios con significado (no typos/comentarios), bumpear `package.json` `"version"`:
+
+- **PATCH**: bugs, copy, tests, refactors sin cambio de comportamiento
+- **MINOR**: features, pantallas, PWA/offline, reglas del categorizador
+- **MAJOR**: Dexie schema que pierde datos, backup incompatible, rutas rotas
+
+Dexie `version(n)` ≠ semver de la app. Si la UI/manifest muestran versión, alinear con `package.json`.
+Mencionar: `📦 VERSION: x.y.z → x.y.w (PATCH|MINOR|MAJOR — razón)`.
+
+## Fuera de alcance (sin aprobación)
+
+- Sync remoto / cuentas / backend
+- Telemetría
+- Reemplazar Dexie por Convex u otra DB

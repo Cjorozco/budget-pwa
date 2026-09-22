@@ -198,7 +198,7 @@ export default function Budget() {
             <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/40 flex items-center justify-center text-red-600">
               <TrendingDown size={16} />
             </div>
-            Gastos Obligatorios
+            Gastos Fijos
           </h2>
           <div className="flex items-center gap-2 self-start sm:self-auto w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
             <select
