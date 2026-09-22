@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
 import { cn, formatCurrency } from '@/lib/utils';
-import { Trash2, TrendingUp, TrendingDown, Info, Calculator } from 'lucide-react';
+import { Trash2, Pencil, TrendingUp, TrendingDown, Info, Calculator } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import type { BudgetItem } from '@/lib/types';
 import { useUIStore } from '@/store/ui';
 
 export default function Budget() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<BudgetItem | null>(null);
   const [newItemType, setNewItemType] = useState<'income' | 'expense'>('income');
   const [newItemName, setNewItemName] = useState('');
   const [newItemAmount, setNewItemAmount] = useState('');
@@ -40,13 +41,22 @@ export default function Budget() {
   const plannedAvailable = totalFixedIncome - totalFixedExpense;
 
   const handleOpenAddModal = (type: 'income' | 'expense') => {
+    setEditingItem(null);
     setNewItemType(type);
     setNewItemName('');
     setNewItemAmount('');
     setIsAddModalOpen(true);
   };
 
-  const handleAddItem = async (e: React.FormEvent) => {
+  const handleOpenEditModal = (item: BudgetItem) => {
+    setEditingItem(item);
+    setNewItemType(item.type);
+    setNewItemName(item.name);
+    setNewItemAmount(item.amount.toString());
+    setIsAddModalOpen(true);
+  };
+
+  const handleSaveItem = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!newItemName.trim() || !newItemAmount || Number(newItemAmount) <= 0) {
@@ -55,19 +65,28 @@ export default function Budget() {
     }
 
     try {
-      const newItem: BudgetItem = {
-        id: crypto.randomUUID(),
-        name: newItemName.trim(),
-        amount: Number(newItemAmount),
-        type: newItemType,
-        createdAt: Date.now()
-      };
-
-      await db.budgetItems.add(newItem);
-      addToast("Añadido exitosamente", "success");
+      if (editingItem) {
+        await db.budgetItems.update(editingItem.id, {
+          name: newItemName.trim(),
+          amount: Number(newItemAmount),
+          type: newItemType,
+        });
+        addToast("Rubro actualizado exitosamente", "success");
+      } else {
+        const newItem: BudgetItem = {
+          id: crypto.randomUUID(),
+          name: newItemName.trim(),
+          amount: Number(newItemAmount),
+          type: newItemType,
+          createdAt: Date.now()
+        };
+        await db.budgetItems.add(newItem);
+        addToast("Añadido exitosamente", "success");
+      }
       setIsAddModalOpen(false);
+      setEditingItem(null);
     } catch (error) {
-      console.error("Error adding budget item:", error);
+      console.error("Error saving budget item:", error);
       addToast("Error al guardar", "error");
     }
   };
@@ -172,15 +191,25 @@ export default function Budget() {
             </p>
           ) : (
             fixedIncomes.map(item => (
-              <div key={item.id} className="flex justify-between items-center p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 group">
+              <div key={item.id} className="flex justify-between items-center p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50">
                 <span className="font-medium text-slate-700 dark:text-slate-300 text-sm">
                   {item.name}
                 </span>
-                <div className="flex items-center gap-3">
-                  <span className="font-bold text-green-600 text-sm">+{formatCurrency(item.amount)}</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-green-600 text-sm mr-1">+{formatCurrency(item.amount)}</span>
+                  <button
+                    onClick={() => handleOpenEditModal(item)}
+                    aria-label={`Editar ${item.name}`}
+                    className="text-slate-400 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                    title="Editar"
+                  >
+                    <Pencil size={16} />
+                  </button>
                   <button
                     onClick={() => handleDeleteItem(item.id)}
-                    className="text-red-400 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20"
+                    aria-label={`Eliminar ${item.name}`}
+                    className="text-slate-400 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                    title="Eliminar"
                   >
                     <Trash2 size={16} />
                   </button>
@@ -227,15 +256,25 @@ export default function Budget() {
             </p>
           ) : (
             sortedFixedExpenses.map(item => (
-              <div key={item.id} className="flex justify-between items-center p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 group">
+              <div key={item.id} className="flex justify-between items-center p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50">
                 <span className="font-medium text-slate-700 dark:text-slate-300 text-sm">
                   {item.name}
                 </span>
-                <div className="flex items-center gap-3">
-                  <span className="font-bold text-red-600 text-sm">-{formatCurrency(item.amount)}</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-red-600 text-sm mr-1">-{formatCurrency(item.amount)}</span>
+                  <button
+                    onClick={() => handleOpenEditModal(item)}
+                    aria-label={`Editar ${item.name}`}
+                    className="text-slate-400 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                    title="Editar"
+                  >
+                    <Pencil size={16} />
+                  </button>
                   <button
                     onClick={() => handleDeleteItem(item.id)}
-                    className="text-red-400 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20"
+                    aria-label={`Eliminar ${item.name}`}
+                    className="text-slate-400 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                    title="Eliminar"
                   >
                     <Trash2 size={16} />
                   </button>
@@ -255,10 +294,17 @@ export default function Budget() {
 
       <Modal
         isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        title={newItemType === 'income' ? 'Nuevo Ingreso Fijo' : 'Nuevo Gasto Fijo'}
+        onClose={() => {
+          setIsAddModalOpen(false);
+          setEditingItem(null);
+        }}
+        title={
+          editingItem
+            ? (editingItem.type === 'income' ? 'Editar Ingreso Fijo' : 'Editar Gasto Fijo')
+            : (newItemType === 'income' ? 'Nuevo Ingreso Fijo' : 'Nuevo Gasto Fijo')
+        }
       >
-        <form onSubmit={handleAddItem} className="space-y-4">
+        <form onSubmit={handleSaveItem} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Nombre del rubro
@@ -295,11 +341,14 @@ export default function Budget() {
               newItemType === 'income' ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"
             )}
           >
-            Guardar {newItemType === 'income' ? 'Ingreso' : 'Gasto'}
+            {editingItem ? 'Actualizar' : 'Guardar'} {newItemType === 'income' ? 'Ingreso' : 'Gasto'}
           </button>
           <button
             type="button"
-            onClick={() => setIsAddModalOpen(false)}
+            onClick={() => {
+              setIsAddModalOpen(false);
+              setEditingItem(null);
+            }}
             className="w-full h-12 rounded-xl font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
           >
             Cancelar

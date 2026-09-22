@@ -240,7 +240,7 @@ describe('Reports Page', () => {
   });
 });
 
-describe('Budget Page terminology', () => {
+describe('Budget Page functionality', () => {
   it('displays Gastos Fijos instead of Gastos Obligatorios', async () => {
     render(
       <MemoryRouter>
@@ -252,6 +252,41 @@ describe('Budget Page terminology', () => {
       const gastosFijosMatches = screen.getAllByText('Gastos Fijos');
       expect(gastosFijosMatches.length).toBeGreaterThan(0);
       expect(screen.queryByText('Gastos Obligatorios')).not.toBeInTheDocument();
+    });
+  });
+
+  it('allows editing an existing budget item', async () => {
+    render(
+      <MemoryRouter>
+        <Budget />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Arriendo')).toBeInTheDocument();
+    });
+
+    // Find edit button for Arriendo
+    const editBtn = screen.getByLabelText('Editar Arriendo');
+    expect(editBtn).toBeInTheDocument();
+    fireEvent.click(editBtn);
+
+    // Modal opens with editing title and values
+    await waitFor(() => {
+      expect(screen.getByText('Editar Gasto Fijo')).toBeInTheDocument();
+    });
+
+    const nameInput = screen.getByDisplayValue('Arriendo');
+    const amountInput = screen.getByDisplayValue('1200000');
+
+    fireEvent.change(nameInput, { target: { value: 'Arriendo Apartamento' } });
+    fireEvent.change(amountInput, { target: { value: '1350000' } });
+
+    const submitBtn = screen.getByRole('button', { name: /Actualizar Gasto/i });
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText('Arriendo Apartamento')).toBeInTheDocument();
     });
   });
 });
