@@ -18,10 +18,22 @@ describe('GeminiKeyCard / Multi-Provider AI Settings', () => {
 
         expect(screen.getByText('Motor de Inteligencia Artificial')).toBeInTheDocument();
         expect(screen.getByTestId('ai-provider-select-gemini')).toBeInTheDocument();
+        expect(screen.getByTestId('ai-provider-select-anthropic')).toBeInTheDocument();
         expect(screen.getByTestId('ai-provider-select-groq')).toBeInTheDocument();
 
         expect(screen.getAllByText('Google Gemini').length).toBeGreaterThanOrEqual(1);
         expect(screen.getByTestId('gemini-api-key-input')).toBeInTheDocument();
+    });
+
+    it('switches provider to Anthropic when clicked', async () => {
+        render(<GeminiKeyCard />);
+
+        const anthropicTab = screen.getByTestId('ai-provider-select-anthropic');
+        fireEvent.click(anthropicTab);
+
+        expect(getSelectedAiProvider()).toBe('anthropic');
+        expect(screen.getAllByText('Anthropic Claude').length).toBeGreaterThanOrEqual(1);
+        expect(screen.getByPlaceholderText(/sk-ant-/i)).toBeInTheDocument();
     });
 
     it('switches provider to Groq when clicked', async () => {
