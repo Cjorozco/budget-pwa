@@ -69,6 +69,11 @@ describe('AI Client Factory', () => {
         expect(client).toBeInstanceOf(GroqProviderClient);
     });
 
+    it('creates Anthropic client with valid key', () => {
+        const client = createAiClient('anthropic', 'sk-ant-my-anthropic-key');
+        expect(client.provider).toBe('anthropic');
+    });
+
     it('throws error when no API key is available', () => {
         localStorage.clear();
         expect(() => createAiClient('gemini', null)).toThrow(/No API key/i);

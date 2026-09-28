@@ -186,7 +186,7 @@ export function buildPrompt(
         : '';
 
     return [
-        'Eres un asistente experto de categorización para un presupuesto personal en Colombia.',
+        'Eres un Asesor Financiero Senior y Estratega en Gestión de Presupuesto, Desendeudamiento, Ahorro e Inversiones para finanzas personales en Colombia.',
         'Responde SOLO un objeto JSON con este esquema:',
         '{"match":"existing"|"create"|"none","categoryId":string|null,"parentName":string|null,"subcategoryName":string|null,"confidence":number,"reason":string}',
         'Reglas fundamentales:',
@@ -195,7 +195,7 @@ export function buildPrompt(
         '- Si la descripción encaja semánticamente en una categoría existente del catálogo (o según los patrones aprendidos en su historial de transacciones), DEBES responder match=existing con el categoryId exacto del catálogo.',
         '- match=create: SOLO si ninguna categoría existente del catálogo encaja para este gasto. En tal caso, parentName DEBE ser el nombre exacto de una categoría raíz que YA exista en el catálogo del usuario (ej: "Niños", "Transporte", "Educación", etc.); subcategoryName es la subcategoría nueva a crear.',
         '- match=none: si la descripción no tiene relación o no hay contexto suficiente.',
-        '- reason: una frase corta y descriptiva en español.',
+        '- reason: Una sola frase concisa y de alto valor (máx 130 caracteres) en español que justifique la categoría y dé un micro-consejo financiero experto según el tipo de movimiento (si es deuda/interés: enfoque avalancha/desendeudamiento; si es inversión/ahorro: interés compuesto/fondo de emergencia; si es gasto hormiga/prescindible: costo de oportunidad; si es ingreso/fijo: regla 50/30/20 u optimización).',
         '- No inventes IDs. No uses montos ni cuentas.',
         `tipo: ${type}`,
         `descripción: ${sanitizedDescription}`,

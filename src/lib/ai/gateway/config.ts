@@ -3,6 +3,7 @@ import type { AiProviderType } from '../types';
 
 export const AI_SELECTED_PROVIDER_STORAGE_KEY = 'budget_ai_provider';
 export const GROQ_KEY_STORAGE_KEY = 'budget_groq_api_key';
+export const ANTHROPIC_KEY_STORAGE_KEY = 'budget_anthropic_api_key';
 
 const memoryStore = new Map<string, string>();
 
@@ -40,6 +41,8 @@ export function getProviderStorageKey(provider: AiProviderType): string {
             return GEMINI_KEY_STORAGE_KEY;
         case 'groq':
             return GROQ_KEY_STORAGE_KEY;
+        case 'anthropic':
+            return ANTHROPIC_KEY_STORAGE_KEY;
         default:
             return `budget_${provider}_api_key`;
     }
@@ -109,6 +112,15 @@ export const SUPPORTED_AI_PROVIDERS: ProviderMeta[] = [
         placeholder: 'Pega tu key de Google AI Studio (AIzaSy...)',
     },
     {
+        id: 'anthropic',
+        label: 'Anthropic Claude',
+        keyUrl: 'https://console.anthropic.com/settings/keys',
+        keyUrlLabel: 'Crear API key en Anthropic Console',
+        modelDescription: 'Modelo: Claude 3.5 Haiku (con respaldo en Claude 3 Haiku y 3.5 Sonnet)',
+        helpText: 'API key de Anthropic Console (sk-ant-api03-...). Inteligencia analítica y asesoría financiera precisa.',
+        placeholder: 'Pega tu key de Anthropic (sk-ant-...)',
+    },
+    {
         id: 'groq',
         label: 'Groq Cloud',
         keyUrl: 'https://console.groq.com/keys',
@@ -130,6 +142,11 @@ export function validateProviderKey(provider: AiProviderType, value: string): st
         if (trimmed.startsWith('sk-ant')) return 'Eso parece una key de Anthropic (Claude). Gemini usa keys de Google AI Studio.';
         if (trimmed.startsWith('sk-')) return 'Eso parece una key de OpenAI. Gemini usa keys de Google AI Studio.';
         if (trimmed.length < 16) return 'La key parece incompleta. Pégala completa desde Google AI Studio.';
+    } else if (provider === 'anthropic') {
+        if (trimmed.startsWith('AIzaSy')) return 'Eso parece una key de Google Gemini. Anthropic usa keys de console.anthropic.com (sk-ant-...).';
+        if (trimmed.startsWith('gsk_')) return 'Eso parece una key de Groq. Anthropic usa keys de console.anthropic.com (sk-ant-...).';
+        if (!trimmed.startsWith('sk-ant')) return 'La key de Anthropic debe empezar por sk-ant-... (de console.anthropic.com).';
+        if (trimmed.length < 20) return 'La key parece incompleta. Pégala completa desde Anthropic Console.';
     } else if (provider === 'groq') {
         if (trimmed.startsWith('sk-ant')) return 'Eso parece una key de Anthropic. Groq usa keys de console.groq.com (gsk_...).';
         if (trimmed.length < 10) return 'La key parece incompleta. Pégala completa desde Groq Console.';

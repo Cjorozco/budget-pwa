@@ -96,7 +96,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
         const timer = setTimeout(async () => {
             const activeProvider = getSelectedAiProvider();
             const mayCallAi = isPro && hasAiApiKey(activeProvider);
-            const providerName = activeProvider === 'groq' ? 'Groq' : activeProvider === 'gemini' ? 'Gemini' : 'IA';
+            const providerName = activeProvider === 'groq' ? 'Groq' : activeProvider === 'anthropic' ? 'Claude' : activeProvider === 'gemini' ? 'Gemini' : 'IA';
             setAiPending(mayCallAi);
             setAiProgressMessage(mayCallAi ? `Consultando ${providerName}…` : null);
             try {
@@ -442,6 +442,10 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                                 <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
                                     {aiSuggestion.source === 'gemini'
                                         ? 'Sugerencia Gemini'
+                                        : aiSuggestion.source === 'anthropic'
+                                        ? 'Sugerencia Claude'
+                                        : aiSuggestion.source === 'groq'
+                                        ? 'Sugerencia Groq'
                                         : aiSuggestion.confidence >= 0.7
                                             ? 'Sugerencia local'
                                             : 'Revisión necesaria'}
