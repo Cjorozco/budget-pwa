@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { validateLicenseKey } from '../lib/license/licenseValidator';
+import { validateLicenseKeyAsync } from '../lib/license/licenseValidator';
 
 export type Tier = 'free' | 'pro' | 'god';
 export type PlanType = 'monthly' | 'annual' | 'lifetime';
@@ -26,7 +26,7 @@ interface LicenseState extends StoredLicense {
     upgradeModalReason?: string;
     
     // Actions
-    activateLicense: (key: string) => { success: boolean; message: string; tier?: Tier };
+    activateLicense: (key: string) => Promise<{ success: boolean; message: string; tier?: Tier; planType?: PlanType }>;
     deactivateLicense: () => void;
     openUpgradeModal: (reason?: string) => void;
     closeUpgradeModal: () => void;
@@ -111,8 +111,8 @@ export const useLicenseStore = create<LicenseState>((set, get) => {
         isUpgradeModalOpen: false,
         upgradeModalReason: undefined,
 
-        activateLicense: (rawKey: string) => {
-            const validation = validateLicenseKey(rawKey);
+        activateLicense: async (rawKey: string) => {
+            const validation = await validateLicenseKeyAsync(rawKey);
 
             if (!validation.valid || !validation.tier) {
                 return {
@@ -123,6 +123,9 @@ export const useLicenseStore = create<LicenseState>((set, get) => {
 
             const tier = validation.tier;
             const planType = validation.planType || 'lifetime';
+            const expiresAt = validation.expiresAt !== undefined 
+                ? validation.expiresAt 
+                : (planType === 'monthly' ? Date.now() + 30 * 24 * 60 * 60 * 1000 : planType === 'annual' ? Date.now() + 365 * 24 * 60 * 60 * 1000 : null);
             const key = rawKey.trim().toUpperCase();
 
             const updated: StoredLicense = {
@@ -130,7 +133,7 @@ export const useLicenseStore = create<LicenseState>((set, get) => {
                 planType,
                 licenseKey: key,
                 activatedAt: Date.now(),
-                expiresAt: planType === 'monthly' ? Date.now() + 30 * 24 * 60 * 60 * 1000 : planType === 'annual' ? Date.now() + 365 * 24 * 60 * 60 * 1000 : null,
+                expiresAt,
             };
 
             saveState(updated);
@@ -143,10 +146,13 @@ export const useLicenseStore = create<LicenseState>((set, get) => {
                 upgradeModalReason: undefined,
             });
 
+            const planLabel = planType === 'monthly' ? ' (Suscripción Mensual)' : planType === 'annual' ? ' (Suscripción Anual)' : ' (Vitalicio / Lifetime)';
+
             return {
                 success: true,
-                message: `¡Licencia activada con éxito! Nivel: ${getTierDisplayName(tier)}`,
+                message: `¡Licencia activada con éxito! Nivel: ${getTierDisplayName(tier)}${tier !== 'god' ? planLabel : ''}`,
                 tier,
+                planType,
             };
         },
 
