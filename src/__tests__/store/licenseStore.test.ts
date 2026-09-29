@@ -21,8 +21,8 @@ describe('licenseStore', () => {
         expect(state.canExportCsv()).toBe(false);
     });
 
-    it('activates PRO tier with a valid PRO license key', () => {
-        const result = useLicenseStore.getState().activateLicense('PRO-ABCD-1234');
+    it('activates PRO tier with a valid Lemon Squeezy UUID license key', () => {
+        const result = useLicenseStore.getState().activateLicense('c45c6116-d975-43d9-9995-cc8811d926f7');
         expect(result.success).toBe(true);
 
         const state = useLicenseStore.getState();
@@ -35,8 +35,8 @@ describe('licenseStore', () => {
         expect(state.canExportCsv()).toBe(true);
     });
 
-    it('activates GOD tier with a GOD license key', () => {
-        const result = useLicenseStore.getState().activateLicense('GOD-ULTIMATE-KEY');
+    it('activates GOD tier with an authentic founder GOD license key', () => {
+        const result = useLicenseStore.getState().activateLicense('VIP-GOD-ORZIX');
         expect(result.success).toBe(true);
 
         const state = useLicenseStore.getState();
@@ -51,8 +51,14 @@ describe('licenseStore', () => {
         expect(useLicenseStore.getState().isPro).toBe(false);
     });
 
+    it('rejects guessable random words', () => {
+        const result = useLicenseStore.getState().activateLicense('MY-GOD-KEY');
+        expect(result.success).toBe(false);
+        expect(useLicenseStore.getState().isPro).toBe(false);
+    });
+
     it('deactivates license back to free', () => {
-        useLicenseStore.getState().activateLicense('PRO-TEST-KEY-12345');
+        useLicenseStore.getState().activateLicense('c45c6116-d975-43d9-9995-cc8811d926f7');
         expect(useLicenseStore.getState().isPro).toBe(true);
 
         useLicenseStore.getState().deactivateLicense();
