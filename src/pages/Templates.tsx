@@ -8,12 +8,33 @@ import { useUIStore } from '@/store/ui';
 import { Save, Plus, Trash2, Edit2 } from 'lucide-react';
 import type { QuickTemplate } from '@/lib/types';
 import { v4 as uuidv4 } from 'uuid';
+import { useLicenseStore } from '@/store/licenseStore';
+import { ProBadge } from '@/components/ui/ProBadge';
 
 export default function TemplatesPage() {
     const templates = useLiveQuery(() => db.quickTemplates.toArray()) || [];
     const [editingTemplate, setEditingTemplate] = useState<QuickTemplate | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const { addToast, confirm } = useUIStore();
+    const { canCreateTemplate, openUpgradeModal, isPro } = useLicenseStore();
+
+    const handleOpenNewTemplate = () => {
+        if (!canCreateTemplate(templates.length)) {
+            openUpgradeModal('El plan básico permite hasta 2 plantillas rápidas. Pasa a PRO para tener plantillas 1-tap ilimitadas.');
+            return;
+        }
+        setEditingTemplate({
+            id: 'new-' + Date.now(),
+            name: '',
+            icon: '💰',
+            description: '',
+            amount: 0,
+            type: 'expense',
+            createdAt: Date.now(),
+            updatedAt: Date.now()
+        });
+        setIsModalOpen(true);
+    };
 
     const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -62,26 +83,19 @@ export default function TemplatesPage() {
     return (
         <div className="p-4 safe-bottom space-y-6">
             <header className="flex justify-between items-center">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Plantillas</h1>
-                    <p className="text-sm text-slate-500">Configura tus accesos rápidos</p>
+                <div className="flex items-center gap-2">
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Plantillas</h1>
+                            {!isPro && <ProBadge showUnlockAction size="sm" />}
+                        </div>
+                        <p className="text-sm text-slate-500">Configura tus accesos rápidos</p>
+                    </div>
                 </div>
                 <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                        setEditingTemplate({
-                            id: 'new-' + Date.now(),
-                            name: '',
-                            icon: '💰',
-                            description: '',
-                            amount: 0,
-                            type: 'expense',
-                            createdAt: Date.now(),
-                            updatedAt: Date.now()
-                        });
-                        setIsModalOpen(true);
-                    }}
+                    onClick={handleOpenNewTemplate}
                 >
                     <Plus size={18} className="mr-1" /> Nueva
                 </Button>

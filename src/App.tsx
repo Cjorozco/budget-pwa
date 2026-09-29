@@ -15,6 +15,7 @@ import { InstallPWA } from '@/components/InstallPWA';
 import { Toaster } from '@/components/Toaster';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { UpgradeModal } from '@/components/ui/UpgradeModal';
 
 
 function App() {
@@ -43,6 +44,7 @@ function App() {
       <InstallPWA />
       <Toaster />
       <ConfirmDialog />
+      <UpgradeModal />
     </BrowserRouter>
   );
 }
