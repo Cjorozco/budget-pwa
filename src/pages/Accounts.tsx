@@ -11,6 +11,8 @@ import { ReconciliationHistory } from '@/components/accounts/ReconciliationHisto
 import { ReserveForm } from '@/components/forms/ReserveForm';
 import { ReservesList } from '@/components/accounts/ReservesList';
 import type { Account, Reserve } from '@/lib/types';
+import { useLicenseStore } from '@/store/licenseStore';
+import { ProBadge } from '@/components/ui/ProBadge';
 
 export default function AccountsPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -24,19 +26,42 @@ export default function AccountsPage() {
     const [reserveAccount, setReserveAccount] = useState<Account | null>(null);
     const [editingReserve, setEditingReserve] = useState<Reserve | null>(null);
     const accounts = useLiveQuery(() => db.accounts.orderBy('name').toArray());
+    const activeReservesCount = useLiveQuery(() => db.reserves.filter(r => r.isActive).count()) || 0;
 
+    const { canCreateAccount, canCreateReserve, openUpgradeModal, isPro } = useLicenseStore();
+
+    const handleOpenNewAccount = () => {
+        if (!canCreateAccount(accounts?.length || 0)) {
+            openUpgradeModal('El plan básico incluye hasta 2 cuentas. Pasa a PRO para tener cuentas y tarjetas ilimitadas.');
+            return;
+        }
+        setEditingAccount(null);
+        setIsModalOpen(true);
+    };
+
+    const handleOpenAddReserve = (acc: Account) => {
+        if (!canCreateReserve(activeReservesCount)) {
+            openUpgradeModal('El plan básico permite hasta 1 fondo de reserva activo. Pasa a PRO para fondos de ahorro ilimitados.');
+            return;
+        }
+        setReserveAccount(acc);
+        setEditingReserve(null);
+        setIsReserveModalOpen(true);
+    };
 
     return (
         <div className="p-4 safe-bottom space-y-6">
             <div className="flex justify-between items-center">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Cuentas</h1>
-                    <p className="text-sm text-slate-500">Administra tus fuentes de dinero</p>
+                <div className="flex items-center gap-2">
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Cuentas</h1>
+                            {!isPro && <ProBadge showUnlockAction size="sm" />}
+                        </div>
+                        <p className="text-sm text-slate-500">Administra tus fuentes de dinero</p>
+                    </div>
                 </div>
-                <Button size="sm" onClick={() => {
-                    setEditingAccount(null);
-                    setIsModalOpen(true);
-                }}>
+                <Button size="sm" onClick={handleOpenNewAccount}>
                     <Plus className="mr-2 h-4 w-4" /> Nueva
                 </Button>
             </div>
@@ -58,11 +83,7 @@ export default function AccountsPage() {
                             setHistoryAccount(acc);
                             setIsHistoryModalOpen(true);
                         }}
-                        onAddReserve={(acc) => {
-                            setReserveAccount(acc);
-                            setEditingReserve(null);
-                            setIsReserveModalOpen(true);
-                        }}
+                        onAddReserve={handleOpenAddReserve}
                         onViewReserves={(acc) => {
                             setReserveAccount(acc);
                             setIsReservesListModalOpen(true);
