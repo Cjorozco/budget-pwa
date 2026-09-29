@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { validateLicenseKey } from '../lib/license/licenseValidator';
 
 export type Tier = 'free' | 'pro' | 'god';
 export type PlanType = 'monthly' | 'annual' | 'lifetime';
@@ -111,21 +112,18 @@ export const useLicenseStore = create<LicenseState>((set, get) => {
         upgradeModalReason: undefined,
 
         activateLicense: (rawKey: string) => {
+            const validation = validateLicenseKey(rawKey);
+
+            if (!validation.valid || !validation.tier) {
+                return {
+                    success: false,
+                    message: validation.error || 'Clave de licencia inválida o no reconocida.',
+                };
+            }
+
+            const tier = validation.tier;
+            const planType = validation.planType || 'lifetime';
             const key = rawKey.trim().toUpperCase();
-            if (!key || key.length < 8) {
-                return { success: false, message: 'La clave de licencia no es válida. Revisa el código recibido por correo.' };
-            }
-
-            let tier: Tier = 'pro';
-            let planType: PlanType = 'lifetime';
-
-            if (key.includes('GOD') || key.startsWith('GOD-')) {
-                tier = 'god';
-            } else if (key.includes('MONTH') || key.startsWith('M-')) {
-                planType = 'monthly';
-            } else if (key.includes('YEAR') || key.startsWith('Y-') || key.includes('ANNUAL')) {
-                planType = 'annual';
-            }
 
             const updated: StoredLicense = {
                 tier,

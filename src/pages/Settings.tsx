@@ -18,7 +18,7 @@ export default function SettingsPage() {
     const [importJson, setImportJson] = useState<string | null>(null);
     const [isGuideOpen, setIsGuideOpen] = useState(false);
     const { addToast, confirm } = useUIStore();
-    const { tier, isPro, openUpgradeModal } = useLicenseStore();
+    const { tier, isPro, isGod, openUpgradeModal } = useLicenseStore();
 
     const handleExportJSON = async () => {
         try {
@@ -238,7 +238,11 @@ export default function SettingsPage() {
 
             <section className="space-y-4">
                 <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Suscripción y Licencia</h2>
-                <div className="p-5 bg-gradient-to-br from-amber-500 via-orange-500 to-rose-600 rounded-2xl text-white shadow-lg relative overflow-hidden">
+                <div className={`p-5 rounded-2xl text-white shadow-lg relative overflow-hidden ${
+                    isGod
+                        ? 'bg-gradient-to-br from-rose-600 via-purple-600 to-amber-600'
+                        : 'bg-gradient-to-br from-amber-500 via-orange-500 to-rose-600'
+                }`}>
                     <div className="relative z-10 space-y-3">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
@@ -251,17 +255,23 @@ export default function SettingsPage() {
                         </div>
 
                         <p className="text-xs text-amber-50 leading-relaxed opacity-95">
-                            {isPro
-                                ? `¡Tienes activas todas las funciones de Personal Budget PRO! Cuentas ilimitadas, categorización con IA (BYOK), plantillas 1-tap y exportación.`
+                            {isGod
+                                ? "¡Tienes activo el nivel más alto: Personal Budget GOD! Todas las funcionalidades actuales y sus actualizaciones incluidas de por vida."
+                                : isPro
+                                ? "¡Tienes activas todas las funciones de Personal Budget PRO! Cuentas ilimitadas, categorización con IA (BYOK), plantillas 1-tap y exportación."
                                 : "Desbloquea categorización automática con IA (usando tu API key de Gemini, Groq o Claude), cuentas y reservas ilimitadas y exportación a CSV/Excel."}
                         </p>
 
                         <div className="pt-1">
                             <Button
                                 onClick={() => openUpgradeModal()}
-                                className="bg-white text-orange-600 hover:bg-amber-50 font-bold border-none shadow-sm text-xs py-2 px-3.5"
+                                className={`font-bold border-none shadow-sm text-xs py-2 px-3.5 ${
+                                    isGod
+                                        ? 'bg-white text-purple-700 hover:bg-purple-50'
+                                        : 'bg-white text-orange-600 hover:bg-amber-50'
+                                }`}
                             >
-                                {isPro ? "Ver Estado / Gestionar Licencia" : "Ver Planes y Precios ($0.99 / mes)"}
+                                {isGod ? "Ver Estado y Beneficios GOD" : isPro ? "Ver Estado / Gestionar Licencia" : "Ver Planes y Precios ($0.99 / mes)"}
                             </Button>
                         </div>
                     </div>
