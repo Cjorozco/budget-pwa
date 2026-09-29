@@ -216,7 +216,7 @@ export const UpgradeModal: React.FC = () => {
                                             </li>
                                             <li className="flex items-center gap-2">
                                                 <Bot className="w-4 h-4 text-purple-500 shrink-0" />
-                                                <span><strong>Categorización con IA (BYOK):</strong> Soporte para API keys gratuitas y de pago de Gemini, Groq y Claude.</span>
+                                                <span><strong>Categorización con IA (BYOK):</strong> Soporte para API keys de Gemini, OpenAI, Groq y Claude.</span>
                                             </li>
                                             <li className="flex items-center gap-2">
                                                 <Check className="w-4 h-4 text-emerald-500 shrink-0" />
@@ -253,7 +253,7 @@ export const UpgradeModal: React.FC = () => {
                                             </li>
                                             <li className="flex items-center gap-2">
                                                 <Bot className="w-4 h-4 text-blue-500 shrink-0" />
-                                                <span><strong>Categorización con IA (BYOK):</strong> Usa tus API Keys gratuitas o de pago de Gemini, Groq o Claude con privacidad total.</span>
+                                                <span><strong>Categorización con IA (BYOK):</strong> Usa tus API Keys de Gemini, OpenAI, Groq o Claude con privacidad total.</span>
                                             </li>
                                             <li className="flex items-center gap-2">
                                                 <Check className="w-4 h-4 text-emerald-500 shrink-0" />
@@ -388,9 +388,7 @@ export const UpgradeModal: React.FC = () => {
                                             </li>
                                             <li className="flex items-start gap-2">
                                                 <Bot className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
-                                                <span>
-                                                    <strong>Categorización con IA (BYOK):</strong> Conecta tu API key (gratuita o de pago) de Google AI Studio, Groq o Claude para categorizar tus gastos automáticamente con total privacidad en tu navegador.
-                                                </span>
+                                                <span><strong>Categorización con IA (BYOK):</strong> Conecta tu API key (gratuita o de pago) de Google AI Studio, OpenAI, Groq o Claude para categorizar tus gastos automáticamente con total privacidad en tu navegador.</span>
                                             </li>
                                             <li className="flex items-start gap-2">
                                                 <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />

@@ -3,6 +3,7 @@ import { getAiApiKey } from './config';
 import { AnthropicProviderClient } from './anthropicAdapter';
 import { GeminiProviderClient } from './geminiAdapter';
 import { GroqProviderClient } from './groqAdapter';
+import { OpenAiProviderClient } from './openaiAdapter';
 import type { AiProviderClient } from './types';
 
 export function createAiClient(provider: AiProviderType, apiKey?: string | null): AiProviderClient {
@@ -18,6 +19,8 @@ export function createAiClient(provider: AiProviderType, apiKey?: string | null)
             return new GroqProviderClient(key);
         case 'anthropic':
             return new AnthropicProviderClient(key);
+        case 'openai':
+            return new OpenAiProviderClient(key);
         default:
             throw new Error(`Unsupported AI provider: ${provider}`);
     }

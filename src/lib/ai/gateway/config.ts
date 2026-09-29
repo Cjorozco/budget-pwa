@@ -4,6 +4,7 @@ import type { AiProviderType } from '../types';
 export const AI_SELECTED_PROVIDER_STORAGE_KEY = 'budget_ai_provider';
 export const GROQ_KEY_STORAGE_KEY = 'budget_groq_api_key';
 export const ANTHROPIC_KEY_STORAGE_KEY = 'budget_anthropic_api_key';
+export const OPENAI_KEY_STORAGE_KEY = 'budget_openai_api_key';
 
 const memoryStore = new Map<string, string>();
 
@@ -43,6 +44,8 @@ export function getProviderStorageKey(provider: AiProviderType): string {
             return GROQ_KEY_STORAGE_KEY;
         case 'anthropic':
             return ANTHROPIC_KEY_STORAGE_KEY;
+        case 'openai':
+            return OPENAI_KEY_STORAGE_KEY;
         default:
             return `budget_${provider}_api_key`;
     }
@@ -112,6 +115,15 @@ export const SUPPORTED_AI_PROVIDERS: ProviderMeta[] = [
         placeholder: 'Pega tu key de Google AI Studio (AIzaSy...)',
     },
     {
+        id: 'openai',
+        label: 'OpenAI (ChatGPT)',
+        keyUrl: 'https://platform.openai.com/api-keys',
+        keyUrlLabel: 'Crear API key en OpenAI Platform',
+        modelDescription: 'Modelo: GPT-4o Mini (con respaldo en GPT-4o y GPT-3.5 Turbo)',
+        helpText: 'API key de OpenAI Platform (sk-proj-... o sk-...). Respuestas precisas e inferencia económica.',
+        placeholder: 'Pega tu key de OpenAI (sk-...)',
+    },
+    {
         id: 'anthropic',
         label: 'Anthropic Claude',
         keyUrl: 'https://console.anthropic.com/settings/keys',
@@ -142,6 +154,12 @@ export function validateProviderKey(provider: AiProviderType, value: string): st
         if (trimmed.startsWith('sk-ant')) return 'Eso parece una key de Anthropic (Claude). Gemini usa keys de Google AI Studio.';
         if (trimmed.startsWith('sk-')) return 'Eso parece una key de OpenAI. Gemini usa keys de Google AI Studio.';
         if (trimmed.length < 16) return 'La key parece incompleta. Pégala completa desde Google AI Studio.';
+    } else if (provider === 'openai') {
+        if (trimmed.startsWith('AIzaSy')) return 'Eso parece una key de Google Gemini. OpenAI usa keys de platform.openai.com (sk-...).';
+        if (trimmed.startsWith('sk-ant')) return 'Eso parece una key de Anthropic. OpenAI usa keys de platform.openai.com (sk-...).';
+        if (trimmed.startsWith('gsk_')) return 'Eso parece una key de Groq. OpenAI usa keys de platform.openai.com (sk-...).';
+        if (!trimmed.startsWith('sk-')) return 'La key de OpenAI debe empezar por sk-... (de platform.openai.com).';
+        if (trimmed.length < 20) return 'La key parece incompleta. Pégala completa desde OpenAI Platform.';
     } else if (provider === 'anthropic') {
         if (trimmed.startsWith('AIzaSy')) return 'Eso parece una key de Google Gemini. Anthropic usa keys de console.anthropic.com (sk-ant-...).';
         if (trimmed.startsWith('gsk_')) return 'Eso parece una key de Groq. Anthropic usa keys de console.anthropic.com (sk-ant-...).';

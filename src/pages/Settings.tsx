@@ -292,7 +292,7 @@ export default function SettingsPage() {
                                 </div>
                                 <div>
                                     <h3 className="font-bold text-slate-900 dark:text-white text-sm">Categorización Inteligente con IA</h3>
-                                    <p className="text-[11px] text-slate-500">Google Gemini · Groq · Anthropic Claude</p>
+                                    <p className="text-[11px] text-slate-500">Google Gemini · OpenAI · Anthropic Claude · Groq</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-1 text-xs font-semibold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-1 rounded-full border border-amber-200 dark:border-amber-800">
