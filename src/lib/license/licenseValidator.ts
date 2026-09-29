@@ -75,7 +75,7 @@ export interface LicenseValidationResult {
 }
 
 /**
- * Synchronous offline license key validator
+ * Synchronous offline license key validator (Master and Signed Cryptographic Keys)
  */
 export function validateLicenseKey(rawKey: string): LicenseValidationResult {
     if (!rawKey || typeof rawKey !== 'string') {
@@ -121,7 +121,7 @@ export function validateLicenseKey(rawKey: string): LicenseValidationResult {
         }
     }
 
-    // 3. Lemon Squeezy Standard UUID v4 format (offline fallback)
+    // 3. Lemon Squeezy Standard UUID v4 format pattern
     const uuidRegex = /^[0-9A-F]{8}-[0-9A-F]{4}-[1-5][0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i;
     if (uuidRegex.test(key)) {
         return {
@@ -142,82 +142,100 @@ export function validateLicenseKey(rawKey: string): LicenseValidationResult {
  * Validates a license key with Lemon Squeezy API if online, falling back to offline validation
  */
 export async function validateLicenseKeyAsync(rawKey: string): Promise<LicenseValidationResult> {
-    const offlineResult = validateLicenseKey(rawKey);
     const key = (rawKey || '').trim();
-
-    // If it's a master key or signed custom key, we don't need Lemon Squeezy API
-    if (offlineResult.valid && (MASTER_GOD_KEYS.has(key.toUpperCase()) || key.startsWith('PB'))) {
-        return offlineResult;
+    if (!key) {
+        return { valid: false, error: 'Por favor ingresa una clave de licencia válida.' };
     }
 
-    // If it is a UUID format, verify with Lemon Squeezy's activation endpoint
+    // 1. Check Master Founder Keys
+    if (MASTER_GOD_KEYS.has(key.toUpperCase())) {
+        return {
+            valid: true,
+            tier: 'god',
+            planType: 'lifetime',
+            expiresAt: null,
+        };
+    }
+
+    // 2. Check Standard Cryptographic Signed Keys (PBGOD-..., PBMON-..., etc.)
+    const signedKeyRegex = /^(PBGOD|PBPRO|PBMON|PBYEA|PBLIF)-([A-Z0-9]{3,12})-([A-F0-9]{8})$/i;
+    if (signedKeyRegex.test(key)) {
+        return validateLicenseKey(key);
+    }
+
+    // 3. Lemon Squeezy UUID Verification via official Lemon Squeezy Activation API
     const uuidRegex = /^[0-9A-F]{8}-[0-9A-F]{4}-[1-5][0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i;
     if (uuidRegex.test(key)) {
         try {
-            const formData = new FormData();
-            formData.append('license_key', key);
-            formData.append('instance_name', 'Personal Budget PWA');
-
             const res = await fetch('https://api.lemonsqueezy.com/v1/licenses/activate', {
                 method: 'POST',
-                body: formData,
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    license_key: key,
+                    instance_name: 'Personal Budget Device',
+                }),
             });
 
-            if (res.ok) {
-                const data = await res.json();
-                if (data.activated && data.license_key) {
-                    const variantName = (data.meta?.variant_name || '').toLowerCase();
-                    const productName = (data.meta?.product_name || '').toLowerCase();
-                    let tier: Tier = 'pro';
-                    let planType: PlanType = 'lifetime';
-                    let expiresAt: number | null = null;
+            const data = await res.json().catch(() => null);
 
-                    if (data.license_key.expires_at) {
-                        expiresAt = new Date(data.license_key.expires_at).getTime();
+            if (data && data.activated && data.license_key) {
+                const variantName = (data.meta?.variant_name || '').toLowerCase();
+                const productName = (data.meta?.product_name || '').toLowerCase();
+                let tier: Tier = 'pro';
+                let planType: PlanType = 'lifetime';
+                let expiresAt: number | null = null;
+
+                if (data.license_key.expires_at) {
+                    expiresAt = new Date(data.license_key.expires_at).getTime();
+                }
+
+                if (variantName.includes('month') || variantName.includes('mensual') || variantName.includes('mes')) {
+                    planType = 'monthly';
+                    if (!expiresAt) {
+                        expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
                     }
-
-                    if (variantName.includes('month') || variantName.includes('mensual')) {
+                } else if (variantName.includes('year') || variantName.includes('anual') || variantName.includes('annual') || variantName.includes('año')) {
+                    planType = 'annual';
+                    if (!expiresAt) {
+                        expiresAt = Date.now() + 365 * 24 * 60 * 60 * 1000;
+                    }
+                } else if (expiresAt) {
+                    // Expiration present
+                    const durationDays = (expiresAt - Date.now()) / (1000 * 60 * 60 * 24);
+                    if (durationDays <= 45) {
                         planType = 'monthly';
-                        if (!expiresAt) {
-                            expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
-                        }
-                    } else if (variantName.includes('year') || variantName.includes('anual') || variantName.includes('annual')) {
+                    } else if (durationDays <= 380) {
                         planType = 'annual';
-                        if (!expiresAt) {
-                            expiresAt = Date.now() + 365 * 24 * 60 * 60 * 1000;
-                        }
-                    } else if (expiresAt) {
-                        // Expiration present but no clear variant name
-                        const durationDays = (expiresAt - Date.now()) / (1000 * 60 * 60 * 24);
-                        if (durationDays <= 45) {
-                            planType = 'monthly';
-                        } else if (durationDays <= 380) {
-                            planType = 'annual';
-                        }
                     }
-
-                    if (variantName.includes('god') || productName.includes('god')) {
-                        tier = 'god';
-                    }
-
-                    return {
-                        valid: true,
-                        tier,
-                        planType,
-                        expiresAt,
-                        customerEmail: data.meta?.customer_email,
-                    };
                 }
 
-                if (data.error) {
-                    return { valid: false, error: data.error };
+                if (variantName.includes('god') || productName.includes('god')) {
+                    tier = 'god';
                 }
+
+                return {
+                    valid: true,
+                    tier,
+                    planType,
+                    expiresAt,
+                    customerEmail: data.meta?.customer_email,
+                };
+            }
+
+            if (data && data.error) {
+                const errorMessage = data.error === 'license_key not found.'
+                    ? 'Clave de licencia no encontrada en Lemon Squeezy. Asegúrate de copiar la License Key generada en la orden de compra.'
+                    : data.error;
+                return { valid: false, error: errorMessage };
             }
         } catch {
-            // Network error / offline fallback
-            return offlineResult;
+            // If offline, allow fallback
+            return validateLicenseKey(key);
         }
     }
 
-    return offlineResult;
+    return validateLicenseKey(key);
 }

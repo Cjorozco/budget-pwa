@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useLicenseStore, getTierDisplayName } from '@/store/licenseStore';
+import { generateSignedLicense } from '@/lib/license/licenseValidator';
 
 describe('licenseStore', () => {
     beforeEach(() => {
@@ -21,8 +22,9 @@ describe('licenseStore', () => {
         expect(state.canExportCsv()).toBe(false);
     });
 
-    it('activates PRO tier with a valid Lemon Squeezy UUID license key', async () => {
-        const result = await useLicenseStore.getState().activateLicense('c45c6116-d975-43d9-9995-cc8811d926f7');
+    it('activates PRO tier with a valid signed PRO license key', async () => {
+        const proKey = generateSignedLicense('pro', 'lifetime', 'TESTUSER');
+        const result = await useLicenseStore.getState().activateLicense(proKey);
         expect(result.success).toBe(true);
 
         const state = useLicenseStore.getState();
@@ -58,7 +60,8 @@ describe('licenseStore', () => {
     });
 
     it('deactivates license back to free', async () => {
-        await useLicenseStore.getState().activateLicense('c45c6116-d975-43d9-9995-cc8811d926f7');
+        const proKey = generateSignedLicense('pro', 'lifetime', 'TESTUSER');
+        await useLicenseStore.getState().activateLicense(proKey);
         expect(useLicenseStore.getState().isPro).toBe(true);
 
         useLicenseStore.getState().deactivateLicense();
