@@ -21,6 +21,7 @@ export const UpgradeModal: React.FC = () => {
     const {
         tier,
         isPro,
+        isGod,
         planType,
         isUpgradeModalOpen,
         upgradeModalReason,
@@ -39,7 +40,7 @@ export const UpgradeModal: React.FC = () => {
 
     if (!isUpgradeModalOpen) return null;
 
-    const isLifetimePro = isPro && planType === 'lifetime';
+    const isLifetimePro = isPro && planType === 'lifetime' && !isGod;
 
     const handleActivate = (e: React.FormEvent) => {
         e.preventDefault();
@@ -62,15 +63,26 @@ export const UpgradeModal: React.FC = () => {
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:p-6 sm:pb-6 animate-in fade-in duration-200">
+            {/* Backdrop */}
             <div
-                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col shadow-2xl overflow-hidden"
+                className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
+                onClick={closeUpgradeModal}
+                aria-hidden="true"
+            />
+
+            <div
+                className="relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-lg max-h-[min(90dvh,calc(100dvh-2rem))] flex flex-col shadow-2xl overflow-hidden"
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="upgrade-modal-title"
             >
                 {/* Header */}
-                <div className="relative p-5 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white flex-shrink-0">
+                <div className={`relative p-5 text-white flex-shrink-0 ${
+                    isGod 
+                        ? 'bg-gradient-to-r from-rose-600 via-purple-600 to-amber-600' 
+                        : 'bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500'
+                }`}>
                     <button
                         type="button"
                         onClick={closeUpgradeModal}
@@ -81,27 +93,31 @@ export const UpgradeModal: React.FC = () => {
                     </button>
 
                     <div className="flex items-center gap-2 mb-1">
-                        <Sparkles className="w-5 h-5 text-yellow-200" />
+                        {isGod ? <Flame className="w-5 h-5 text-yellow-200" /> : <Sparkles className="w-5 h-5 text-yellow-200" />}
                         <span className="text-xs font-bold uppercase tracking-wider bg-white/20 px-2.5 py-0.5 rounded-full">
-                            {isLifetimePro ? 'Membresía Activa' : isPro ? 'Plan Activo' : 'Desbloquea el Potencial'}
+                            {isGod ? 'Nivel Máximo Activo' : isLifetimePro ? 'Membresía Activa' : isPro ? 'Plan Activo' : 'Desbloquea el Potencial'}
                         </span>
                     </div>
 
                     <h2 id="upgrade-modal-title" className="text-xl sm:text-2xl font-black text-white">
-                        {isLifetimePro
+                        {isGod
+                            ? 'Personal Budget GOD'
+                            : isLifetimePro
                             ? '¡Eres Miembro PRO Lifetime!'
                             : isPro
                             ? 'Personal Budget PRO'
                             : 'Personal Budget PRO'}
                     </h2>
                     <p className="text-amber-100 text-xs sm:text-sm mt-1">
-                        {isLifetimePro
+                        {isGod
+                            ? 'Tienes activo el nivel más alto. Incluye todas las funcionalidades de Personal Budget y mejoras continuas.'
+                            : isLifetimePro
                             ? 'Tienes acceso permanente a todas las características profesionales.'
                             : upgradeModalReason || 'Automatiza tus finanzas con IA, cuentas ilimitadas y análisis profesional.'}
                     </p>
                 </div>
 
-                {/* Sub-header Tabs (Only show if not lifetime or if they want to manage key) */}
+                {/* Sub-header Tabs */}
                 <div className="flex border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex-shrink-0">
                     <button
                         type="button"
@@ -113,7 +129,7 @@ export const UpgradeModal: React.FC = () => {
                         }`}
                     >
                         <CreditCard className="w-4 h-4" />
-                        {isLifetimePro ? 'Mis Beneficios y Estado' : 'Planes y Precios'}
+                        {isGod || isLifetimePro ? 'Mis Beneficios y Estado' : 'Planes y Precios'}
                     </button>
                     <button
                         type="button"
@@ -133,18 +149,25 @@ export const UpgradeModal: React.FC = () => {
                 <div className="p-5 overflow-y-auto flex-1 space-y-4">
                     {/* Status Badge */}
                     {isPro && (
-                        <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl flex items-center justify-between">
+                        <div className={`p-3.5 rounded-xl border flex items-center justify-between ${
+                            isGod
+                                ? 'bg-purple-50 dark:bg-purple-950/40 border-purple-200 dark:border-purple-800'
+                                : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800'
+                        }`}>
                             <div className="flex items-center gap-2.5">
-                                <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                <ShieldCheck className={`w-5 h-5 shrink-0 ${isGod ? 'text-purple-600 dark:text-purple-400' : 'text-emerald-600 dark:text-emerald-400'}`} />
                                 <div>
-                                    <p className="text-xs font-bold text-emerald-900 dark:text-emerald-200">
+                                    <p className={`text-xs font-bold ${isGod ? 'text-purple-900 dark:text-purple-200' : 'text-emerald-900 dark:text-emerald-200'}`}>
                                         Nivel Activo: {getTierDisplayName(tier)}
-                                        {planType === 'lifetime' && ' (Vitalicio / Lifetime)'}
-                                        {planType === 'annual' && ' (Suscripción Anual)'}
-                                        {planType === 'monthly' && ' (Suscripción Mensual)'}
+                                        {isGod && ' (Nivel Máximo)'}
+                                        {!isGod && planType === 'lifetime' && ' (Vitalicio / Lifetime)'}
+                                        {!isGod && planType === 'annual' && ' (Suscripción Anual)'}
+                                        {!isGod && planType === 'monthly' && ' (Suscripción Mensual)'}
                                     </p>
-                                    <p className="text-[11px] text-emerald-700 dark:text-emerald-400">
-                                        {planType === 'lifetime'
+                                    <p className={`text-[11px] ${isGod ? 'text-purple-700 dark:text-purple-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
+                                        {isGod
+                                            ? 'Todas las características actuales y sus actualizaciones incluidas.'
+                                            : planType === 'lifetime'
                                             ? 'Licencia permanente sin fecha de expiración.'
                                             : 'Todas las características PRO desbloqueadas.'}
                                     </p>
@@ -155,8 +178,45 @@ export const UpgradeModal: React.FC = () => {
 
                     {activeTab === 'plans' ? (
                         <>
-                            {/* CASE 1: USER IS LIFETIME PRO -> NO REPURCHASE BUTTONS */}
-                            {isLifetimePro ? (
+                            {/* CASE 1: USER IS GOD */}
+                            {isGod ? (
+                                <div className="space-y-4">
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 space-y-3 border border-slate-200 dark:border-slate-800">
+                                        <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 font-bold text-xs uppercase tracking-wider">
+                                            <Flame className="w-4 h-4 text-purple-500" />
+                                            <span>Poderes Desbloqueados en Nivel GOD:</span>
+                                        </div>
+                                        <ul className="space-y-2 text-xs text-slate-700 dark:text-slate-300">
+                                            <li className="flex items-center gap-2">
+                                                <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                                                <span><strong>Cuentas y Reservas Ilimitadas:</strong> Múltiples bancos, tarjetas y fondos.</span>
+                                            </li>
+                                            <li className="flex items-center gap-2">
+                                                <Bot className="w-4 h-4 text-purple-500 shrink-0" />
+                                                <span><strong>Categorización con IA (BYOK):</strong> Soporte para API keys gratuitas y de pago de Gemini, Groq y Claude.</span>
+                                            </li>
+                                            <li className="flex items-center gap-2">
+                                                <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                                                <span><strong>Revisión de Transacciones Ambiguas</strong> y detección de movimientos dudosos.</span>
+                                            </li>
+                                            <li className="flex items-center gap-2">
+                                                <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                                                <span><strong>Plantillas Rápidas (1-Tap)</strong> y Tags ilimitados.</span>
+                                            </li>
+                                            <li className="flex items-center gap-2">
+                                                <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                                                <span><strong>Reportes Avanzados y Exportación CSV/Excel</strong> para tu contabilidad.</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+
+                                    <div className="p-3.5 bg-purple-50/80 dark:bg-purple-950/30 rounded-xl border border-purple-200 dark:border-purple-800/60 text-xs text-purple-900 dark:text-purple-200 flex items-center gap-2">
+                                        <Award className="w-4 h-4 text-purple-600 shrink-0" />
+                                        <span>Tienes el nivel máximo. Todas las mejoras y actualizaciones de las características existentes están incluidas.</span>
+                                    </div>
+                                </div>
+                            ) : isLifetimePro ? (
+                                /* CASE 2: USER IS LIFETIME PRO */
                                 <div className="space-y-4">
                                     <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 space-y-3 border border-slate-200 dark:border-slate-800">
                                         <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-bold text-xs uppercase tracking-wider">
@@ -170,7 +230,7 @@ export const UpgradeModal: React.FC = () => {
                                             </li>
                                             <li className="flex items-center gap-2">
                                                 <Bot className="w-4 h-4 text-blue-500 shrink-0" />
-                                                <span><strong>Categorización con IA (BYOK):</strong> Usa tus API Keys gratuitas de Gemini, Groq o Claude con privacidad total.</span>
+                                                <span><strong>Categorización con IA (BYOK):</strong> Usa tus API Keys gratuitas o de pago de Gemini, Groq o Claude con privacidad total.</span>
                                             </li>
                                             <li className="flex items-center gap-2">
                                                 <Check className="w-4 h-4 text-emerald-500 shrink-0" />
@@ -198,12 +258,12 @@ export const UpgradeModal: React.FC = () => {
                                         </p>
                                         <div className="p-2.5 bg-white/80 dark:bg-slate-900/80 rounded-lg text-[11px] text-amber-800 dark:text-amber-300 font-semibold border border-amber-200 dark:border-amber-800 flex items-center gap-2">
                                             <Star className="w-4 h-4 text-amber-500 fill-amber-500 shrink-0" />
-                                            <span>🎁 Por ser usuario Lifetime PRO, tendrás acceso a un descuento especial exclusivo para actualizar a GOD.</span>
+                                            <span>🎁 Por ser usuario Lifetime PRO, tendrás acceso a un descuento preferencial para actualizar a GOD.</span>
                                         </div>
                                     </div>
                                 </div>
                             ) : (
-                                /* CASE 2: USER IS FREE OR MONTHLY/ANNUAL UPGRADE */
+                                /* CASE 3: USER IS FREE OR MONTHLY/ANNUAL UPGRADE */
                                 <>
                                     {/* Pricing Options */}
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
@@ -301,12 +361,12 @@ export const UpgradeModal: React.FC = () => {
                                         <ul className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
                                             <li className="flex items-start gap-2">
                                                 <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                                                <span><strong>Cuentas y Reservas Ilimitadas:</strong> Administra todas tus cuentas bancarias, tarjetas y alcancías.</span>
+                                                <span><strong>Cuentas y Reservas Ilimitadas:</strong> Administra todas tus fuentes de dinero y fondos de ahorro.</span>
                                             </li>
                                             <li className="flex items-start gap-2">
                                                 <Bot className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
                                                 <span>
-                                                    <strong>Categorización con IA (BYOK):</strong> Conecta tu API key gratuita de Google AI Studio, Groq o Claude para categorizar tus gastos automáticamente con total privacidad en tu navegador.
+                                                    <strong>Categorización con IA (BYOK):</strong> Conecta tu API key (gratuita o de pago) de Google AI Studio, Groq o Claude para categorizar tus gastos automáticamente con total privacidad en tu navegador.
                                                 </span>
                                             </li>
                                             <li className="flex items-start gap-2">
