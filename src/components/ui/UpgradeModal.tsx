@@ -62,6 +62,21 @@ export const UpgradeModal: React.FC = () => {
         addToast('Redirigiendo a la pasarela segura de Lemon Squeezy...', 'info');
     };
 
+    const handleDeactivate = async () => {
+        const confirmed = await useUIStore.getState().confirm({
+            title: '¿Desvincular Licencia?',
+            message: '¿Estás seguro de desactivar tu licencia en este dispositivo? Volverás al plan básico. Podrás volver a vincular tu clave en cualquier momento sin costo adicional.',
+            confirmLabel: 'Desvincular Licencia',
+            cancelLabel: 'Cancelar',
+            variant: 'danger',
+        });
+
+        if (confirmed) {
+            deactivateLicense();
+            addToast('Licencia desactivada. Has vuelto al plan básico.', 'info');
+        }
+    };
+
     return (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:p-6 sm:pb-6 animate-in fade-in duration-200">
             {/* Backdrop */}
@@ -450,10 +465,7 @@ export const UpgradeModal: React.FC = () => {
                                 {isPro && (
                                     <button
                                         type="button"
-                                        onClick={() => {
-                                            deactivateLicense();
-                                            addToast('Licencia desactivada. Has vuelto al plan básico.', 'info');
-                                        }}
+                                        onClick={handleDeactivate}
                                         className="py-2.5 px-3 bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-600 dark:text-slate-300 hover:text-rose-600 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 transition-colors"
                                     >
                                         Desactivar
