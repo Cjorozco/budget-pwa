@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { db } from '@/lib/db';
 import { Button } from '@/components/ui/Button';
-import { Trash2, AlertTriangle, RefreshCw, FolderTree, Download, FileJson, FileSpreadsheet, Upload, Crown, Lock } from 'lucide-react';
+import { Trash2, AlertTriangle, RefreshCw, FolderTree, Download, FileJson, FileSpreadsheet, Upload, Crown, Lock, BookOpen, Bot, Sparkles } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { exportDatabase, downloadBackup, importDatabase, exportToCSV, downloadCSV } from '@/lib/db/backup';
 import { GeminiKeyCard } from '@/components/settings/GeminiKeyCard';
+import { UserGuideModal } from '@/components/settings/UserGuideModal';
 import { useLicenseStore, getTierDisplayName } from '@/store/licenseStore';
 import { useUIStore } from '@/store/ui';
 import { ProBadge } from '@/components/ui/ProBadge';
@@ -15,8 +16,9 @@ export default function SettingsPage() {
     const [actionType, setActionType] = useState<'transactions' | 'full' | 'import' | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [importJson, setImportJson] = useState<string | null>(null);
+    const [isGuideOpen, setIsGuideOpen] = useState(false);
     const { addToast, confirm } = useUIStore();
-    const { tier, isPro, openUpgradeModal, themeMode, setThemeMode } = useLicenseStore();
+    const { tier, isPro, openUpgradeModal } = useLicenseStore();
 
     const handleExportJSON = async () => {
         try {
@@ -176,8 +178,28 @@ export default function SettingsPage() {
             )}
 
             <section className="space-y-4">
-                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Gestión</h2>
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Ayuda y Gestión</h2>
                 <div className="grid grid-cols-1 gap-3">
+                    {/* Interactive User Guide */}
+                    <button
+                        type="button"
+                        onClick={() => setIsGuideOpen(true)}
+                        className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200 dark:border-blue-900/60 rounded-2xl hover:border-blue-300 dark:hover:border-blue-700 transition-all text-left w-full shadow-xs"
+                    >
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-blue-600 text-white rounded-xl shadow-xs">
+                                    <BookOpen size={20} />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-slate-900 dark:text-white text-sm">Manual de Usuario y Guía</h3>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">Aprende a usar saldos atómicos, conciliación y categorización</p>
+                                </div>
+                            </div>
+                            <span className="text-blue-600 dark:text-blue-400 font-semibold text-xs">Abrir →</span>
+                        </div>
+                    </button>
+
                     <Link to="/categories" className="block">
                         <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer text-left w-full">
                             <div className="flex items-center justify-between">
@@ -222,7 +244,7 @@ export default function SettingsPage() {
                             <div className="flex items-center gap-2">
                                 <Crown size={22} className="text-yellow-200" />
                                 <h3 className="font-bold text-lg text-white">
-                                    {getTierDisplayName(tier, themeMode)}
+                                    {getTierDisplayName(tier)}
                                 </h3>
                             </div>
                             <ProBadge size="md" />
@@ -230,32 +252,57 @@ export default function SettingsPage() {
 
                         <p className="text-xs text-amber-50 leading-relaxed opacity-95">
                             {isPro
-                                ? `¡Tienes activas todas las funciones de ${getTierDisplayName(tier, themeMode)}! Cuentas ilimitadas, IA, plantillas y exportación completa.`
-                                : "Desbloquea categorización automática con IA, cuentas y reservas ilimitadas, plantillas rápidas y exportación a CSV/Excel desde solo $0.99 USD."}
+                                ? `¡Tienes activas todas las funciones de Personal Budget PRO! Cuentas ilimitadas, categorización con IA (BYOK), plantillas 1-tap y exportación.`
+                                : "Desbloquea categorización automática con IA (usando tu API key de Gemini, Groq o Claude), cuentas y reservas ilimitadas y exportación a CSV/Excel."}
                         </p>
 
-                        <div className="flex flex-wrap items-center gap-2 pt-1">
+                        <div className="pt-1">
                             <Button
                                 onClick={() => openUpgradeModal()}
                                 className="bg-white text-orange-600 hover:bg-amber-50 font-bold border-none shadow-sm text-xs py-2 px-3.5"
                             >
-                                {isPro ? "Gestionar Licencia / Planes" : "Ver Planes ($0.99 / mes)"}
+                                {isPro ? "Ver Estado / Gestionar Licencia" : "Ver Planes y Precios ($0.99 / mes)"}
                             </Button>
-
-                            <button
-                                type="button"
-                                onClick={() => setThemeMode(themeMode === 'dbz' ? 'classic' : 'dbz')}
-                                className="text-[11px] px-2.5 py-1.5 rounded-lg bg-black/20 hover:bg-black/30 text-white font-medium transition-colors"
-                            >
-                                {themeMode === 'dbz' ? '⚡ Modo Saiyajin Activo' : '✨ Activar Modo Saiyajin'}
-                            </button>
                         </div>
                     </div>
                     {/* Decorative background elements */}
                     <div className="absolute -right-6 -top-6 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
                     <div className="absolute -left-6 -bottom-6 w-24 h-24 bg-black/10 rounded-full blur-xl" />
                 </div>
-                {isPro && <GeminiKeyCard />}
+
+                {/* AI Configuration: Show GeminiKeyCard if PRO, or PRO Locked Teaser if FREE */}
+                {isPro ? (
+                    <GeminiKeyCard />
+                ) : (
+                    <div className="p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-3">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2.5">
+                                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                                    <Bot className="text-blue-600 dark:text-blue-400" size={20} />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-slate-900 dark:text-white text-sm">Categorización Inteligente con IA</h3>
+                                    <p className="text-[11px] text-slate-500">Google Gemini · Groq · Anthropic Claude</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-1 text-xs font-semibold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-1 rounded-full border border-amber-200 dark:border-amber-800">
+                                <Lock size={12} />
+                                <span>PRO</span>
+                            </div>
+                        </div>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                            Al actualizar a <strong>Personal Budget PRO</strong>, podrás ingresar tu clave de API gratuita (BYOK) para que la inteligencia artificial sugiera categorías automáticamente mientras escribes tus gastos, con 100% de privacidad en tu navegador.
+                        </p>
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => openUpgradeModal('Desbloquea categorización automática con IA')}
+                            className="w-full text-xs"
+                        >
+                            <Sparkles className="w-3.5 h-3.5 mr-1.5 text-amber-500" /> Desbloquear Categorización con IA
+                        </Button>
+                    </div>
+                )}
             </section>
 
             <section className="space-y-4">
@@ -392,6 +439,11 @@ export default function SettingsPage() {
                     </div>
                 </div>
             </Modal>
+
+            <UserGuideModal
+                isOpen={isGuideOpen}
+                onClose={() => setIsGuideOpen(false)}
+            />
         </div>
     );
 }
