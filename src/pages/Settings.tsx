@@ -423,7 +423,9 @@ export default function SettingsPage() {
                         <p className="text-sm">
                             {actionType === 'import'
                                 ? "Se sobrescribirán todos los datos actuales con el contenido del archivo de respaldo."
-                                : "Esta acción no se puede deshacer. Los datos se borrarán permanentemente."}
+                                : actionType === 'full'
+                                ? "Esta acción no se puede deshacer. Se borrarán tus movimientos, cuentas y categorías. Tu licencia PRO / GOD permanecerá activa en este dispositivo."
+                                : "Esta acción borrará todos los movimientos y reiniciará los balances a cero."}
                         </p>
                     </div>
 
