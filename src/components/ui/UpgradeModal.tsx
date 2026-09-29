@@ -23,6 +23,7 @@ export const UpgradeModal: React.FC = () => {
         isPro,
         isGod,
         planType,
+        expiresAt,
         isUpgradeModalOpen,
         upgradeModalReason,
         closeUpgradeModal,
@@ -42,18 +43,23 @@ export const UpgradeModal: React.FC = () => {
 
     const isLifetimePro = isPro && planType === 'lifetime' && !isGod;
 
-    const handleActivate = (e: React.FormEvent) => {
+    const handleActivate = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsActivating(true);
 
-        const result = activateLicense(licenseInput);
-        setIsActivating(false);
+        try {
+            const result = await activateLicense(licenseInput);
+            setIsActivating(false);
 
-        if (result.success) {
-            addToast(result.message, 'success');
-            setLicenseInput('');
-        } else {
-            addToast(result.message, 'error');
+            if (result.success) {
+                addToast(result.message, 'success');
+                setLicenseInput('');
+            } else {
+                addToast(result.message, 'error');
+            }
+        } catch (error) {
+            setIsActivating(false);
+            addToast('Ocurrió un error al verificar la licencia.', 'error');
         }
     };
 
@@ -184,6 +190,8 @@ export const UpgradeModal: React.FC = () => {
                                             ? 'Todas las características actuales y sus actualizaciones incluidas.'
                                             : planType === 'lifetime'
                                             ? 'Licencia permanente sin fecha de expiración.'
+                                            : expiresAt
+                                            ? `Suscripción activa hasta el ${new Date(expiresAt).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}.`
                                             : 'Todas las características PRO desbloqueadas.'}
                                     </p>
                                 </div>

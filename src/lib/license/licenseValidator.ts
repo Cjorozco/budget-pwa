@@ -1,6 +1,6 @@
 /**
- * Secure offline license verification with cryptographic HMAC-like checksums
- * and Lemon Squeezy license key verification support.
+ * Secure offline and online license verification with cryptographic HMAC-like checksums
+ * and Lemon Squeezy license activation API integration.
  */
 
 import { type Tier, type PlanType } from '../../store/licenseStore';
@@ -65,15 +65,19 @@ export function generateSignedLicense(
     return `${payload}-${checksum}`;
 }
 
-/**
- * Validates a license key string
- */
-export function validateLicenseKey(rawKey: string): {
+export interface LicenseValidationResult {
     valid: boolean;
     tier?: Tier;
     planType?: PlanType;
+    expiresAt?: number | null;
     error?: string;
-} {
+    customerEmail?: string;
+}
+
+/**
+ * Synchronous offline license key validator
+ */
+export function validateLicenseKey(rawKey: string): LicenseValidationResult {
     if (!rawKey || typeof rawKey !== 'string') {
         return { valid: false, error: 'Por favor ingresa una clave de licencia válida.' };
     }
@@ -86,6 +90,7 @@ export function validateLicenseKey(rawKey: string): {
             valid: true,
             tier: 'god',
             planType: 'lifetime',
+            expiresAt: null,
         };
     }
 
@@ -106,23 +111,24 @@ export function validateLicenseKey(rawKey: string): {
         }
 
         if (prefix === 'PBGOD') {
-            return { valid: true, tier: 'god', planType: 'lifetime' };
+            return { valid: true, tier: 'god', planType: 'lifetime', expiresAt: null };
         } else if (prefix === 'PBMON') {
-            return { valid: true, tier: 'pro', planType: 'monthly' };
+            return { valid: true, tier: 'pro', planType: 'monthly', expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000 };
         } else if (prefix === 'PBYEA') {
-            return { valid: true, tier: 'pro', planType: 'annual' };
+            return { valid: true, tier: 'pro', planType: 'annual', expiresAt: Date.now() + 365 * 24 * 60 * 60 * 1000 };
         } else {
-            return { valid: true, tier: 'pro', planType: 'lifetime' };
+            return { valid: true, tier: 'pro', planType: 'lifetime', expiresAt: null };
         }
     }
 
-    // 3. Lemon Squeezy Standard UUID v4 format (e.g. c45c6116-d975-43d9-9995-cc8811d926f7)
+    // 3. Lemon Squeezy Standard UUID v4 format (offline fallback)
     const uuidRegex = /^[0-9A-F]{8}-[0-9A-F]{4}-[1-5][0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i;
     if (uuidRegex.test(key)) {
         return {
             valid: true,
             tier: 'pro',
             planType: 'lifetime',
+            expiresAt: null,
         };
     }
 
@@ -130,4 +136,88 @@ export function validateLicenseKey(rawKey: string): {
         valid: false,
         error: 'Formato de clave no reconocido. Introduce el código recibido en tu compra de Lemon Squeezy o una clave autorizada.',
     };
+}
+
+/**
+ * Validates a license key with Lemon Squeezy API if online, falling back to offline validation
+ */
+export async function validateLicenseKeyAsync(rawKey: string): Promise<LicenseValidationResult> {
+    const offlineResult = validateLicenseKey(rawKey);
+    const key = (rawKey || '').trim();
+
+    // If it's a master key or signed custom key, we don't need Lemon Squeezy API
+    if (offlineResult.valid && (MASTER_GOD_KEYS.has(key.toUpperCase()) || key.startsWith('PB'))) {
+        return offlineResult;
+    }
+
+    // If it is a UUID format, verify with Lemon Squeezy's activation endpoint
+    const uuidRegex = /^[0-9A-F]{8}-[0-9A-F]{4}-[1-5][0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i;
+    if (uuidRegex.test(key)) {
+        try {
+            const formData = new FormData();
+            formData.append('license_key', key);
+            formData.append('instance_name', 'Personal Budget PWA');
+
+            const res = await fetch('https://api.lemonsqueezy.com/v1/licenses/activate', {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                if (data.activated && data.license_key) {
+                    const variantName = (data.meta?.variant_name || '').toLowerCase();
+                    const productName = (data.meta?.product_name || '').toLowerCase();
+                    let tier: Tier = 'pro';
+                    let planType: PlanType = 'lifetime';
+                    let expiresAt: number | null = null;
+
+                    if (data.license_key.expires_at) {
+                        expiresAt = new Date(data.license_key.expires_at).getTime();
+                    }
+
+                    if (variantName.includes('month') || variantName.includes('mensual')) {
+                        planType = 'monthly';
+                        if (!expiresAt) {
+                            expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
+                        }
+                    } else if (variantName.includes('year') || variantName.includes('anual') || variantName.includes('annual')) {
+                        planType = 'annual';
+                        if (!expiresAt) {
+                            expiresAt = Date.now() + 365 * 24 * 60 * 60 * 1000;
+                        }
+                    } else if (expiresAt) {
+                        // Expiration present but no clear variant name
+                        const durationDays = (expiresAt - Date.now()) / (1000 * 60 * 60 * 24);
+                        if (durationDays <= 45) {
+                            planType = 'monthly';
+                        } else if (durationDays <= 380) {
+                            planType = 'annual';
+                        }
+                    }
+
+                    if (variantName.includes('god') || productName.includes('god')) {
+                        tier = 'god';
+                    }
+
+                    return {
+                        valid: true,
+                        tier,
+                        planType,
+                        expiresAt,
+                        customerEmail: data.meta?.customer_email,
+                    };
+                }
+
+                if (data.error) {
+                    return { valid: false, error: data.error };
+                }
+            }
+        } catch {
+            // Network error / offline fallback
+            return offlineResult;
+        }
+    }
+
+    return offlineResult;
 }

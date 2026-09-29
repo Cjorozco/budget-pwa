@@ -21,8 +21,8 @@ describe('licenseStore', () => {
         expect(state.canExportCsv()).toBe(false);
     });
 
-    it('activates PRO tier with a valid Lemon Squeezy UUID license key', () => {
-        const result = useLicenseStore.getState().activateLicense('c45c6116-d975-43d9-9995-cc8811d926f7');
+    it('activates PRO tier with a valid Lemon Squeezy UUID license key', async () => {
+        const result = await useLicenseStore.getState().activateLicense('c45c6116-d975-43d9-9995-cc8811d926f7');
         expect(result.success).toBe(true);
 
         const state = useLicenseStore.getState();
@@ -35,8 +35,8 @@ describe('licenseStore', () => {
         expect(state.canExportCsv()).toBe(true);
     });
 
-    it('activates GOD tier with an authentic founder GOD license key', () => {
-        const result = useLicenseStore.getState().activateLicense('VIP-GOD-ORZIX');
+    it('activates GOD tier with an authentic founder GOD license key', async () => {
+        const result = await useLicenseStore.getState().activateLicense('VIP-GOD-ORZIX');
         expect(result.success).toBe(true);
 
         const state = useLicenseStore.getState();
@@ -45,20 +45,20 @@ describe('licenseStore', () => {
         expect(state.isGod).toBe(true);
     });
 
-    it('rejects invalid or too short license keys', () => {
-        const result = useLicenseStore.getState().activateLicense('1234');
+    it('rejects invalid or too short license keys', async () => {
+        const result = await useLicenseStore.getState().activateLicense('1234');
         expect(result.success).toBe(false);
         expect(useLicenseStore.getState().isPro).toBe(false);
     });
 
-    it('rejects guessable random words', () => {
-        const result = useLicenseStore.getState().activateLicense('MY-GOD-KEY');
+    it('rejects guessable random words', async () => {
+        const result = await useLicenseStore.getState().activateLicense('MY-GOD-KEY');
         expect(result.success).toBe(false);
         expect(useLicenseStore.getState().isPro).toBe(false);
     });
 
-    it('deactivates license back to free', () => {
-        useLicenseStore.getState().activateLicense('c45c6116-d975-43d9-9995-cc8811d926f7');
+    it('deactivates license back to free', async () => {
+        await useLicenseStore.getState().activateLicense('c45c6116-d975-43d9-9995-cc8811d926f7');
         expect(useLicenseStore.getState().isPro).toBe(true);
 
         useLicenseStore.getState().deactivateLicense();
