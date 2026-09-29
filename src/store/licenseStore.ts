@@ -2,7 +2,6 @@ import { create } from 'zustand';
 
 export type Tier = 'free' | 'pro' | 'god';
 export type PlanType = 'monthly' | 'annual' | 'lifetime';
-export type ThemeMode = 'classic' | 'dbz';
 
 export interface StoredLicense {
     tier: Tier;
@@ -10,7 +9,6 @@ export interface StoredLicense {
     licenseKey: string | null;
     activatedAt: number | null;
     expiresAt: number | null;
-    themeMode: ThemeMode;
 }
 
 export const FREE_LIMITS = {
@@ -29,7 +27,6 @@ interface LicenseState extends StoredLicense {
     // Actions
     activateLicense: (key: string) => { success: boolean; message: string; tier?: Tier };
     deactivateLicense: () => void;
-    setThemeMode: (mode: ThemeMode) => void;
     openUpgradeModal: (reason?: string) => void;
     closeUpgradeModal: () => void;
     
@@ -55,7 +52,6 @@ const getInitialState = (): StoredLicense => {
                 licenseKey: parsed.licenseKey || null,
                 activatedAt: parsed.activatedAt || null,
                 expiresAt: parsed.expiresAt || null,
-                themeMode: parsed.themeMode || 'classic',
             };
         }
         
@@ -68,7 +64,6 @@ const getInitialState = (): StoredLicense => {
                 licenseKey: 'LEGACY-PRO',
                 activatedAt: Date.now(),
                 expiresAt: null,
-                themeMode: 'classic',
             };
         }
     } catch {
@@ -81,7 +76,6 @@ const getInitialState = (): StoredLicense => {
         licenseKey: null,
         activatedAt: null,
         expiresAt: null,
-        themeMode: 'classic',
     };
 };
 
@@ -94,19 +88,7 @@ const saveState = (license: StoredLicense) => {
     }
 };
 
-export const getTierDisplayName = (tier: Tier, mode: ThemeMode): string => {
-    if (mode === 'dbz') {
-        switch (tier) {
-            case 'god':
-                return 'Super Saiyajin God (GOD)';
-            case 'pro':
-                return 'Super Saiyajin (PRO)';
-            case 'free':
-            default:
-                return 'Guerrero Z (Base)';
-        }
-    }
-
+export const getTierDisplayName = (tier: Tier): string => {
     switch (tier) {
         case 'god':
             return 'Personal Budget GOD';
@@ -130,14 +112,14 @@ export const useLicenseStore = create<LicenseState>((set, get) => {
 
         activateLicense: (rawKey: string) => {
             const key = rawKey.trim().toUpperCase();
-            if (!key || key.length < 4) {
-                return { success: false, message: 'La clave de licencia es demasiado corta o inválida.' };
+            if (!key || key.length < 8) {
+                return { success: false, message: 'La clave de licencia no es válida. Revisa el código recibido por correo.' };
             }
 
             let tier: Tier = 'pro';
             let planType: PlanType = 'lifetime';
 
-            if (key.includes('GOD') || key.startsWith('GOD-') || key.includes('ULTRA')) {
+            if (key.includes('GOD') || key.startsWith('GOD-')) {
                 tier = 'god';
             } else if (key.includes('MONTH') || key.startsWith('M-')) {
                 planType = 'monthly';
@@ -151,7 +133,6 @@ export const useLicenseStore = create<LicenseState>((set, get) => {
                 licenseKey: key,
                 activatedAt: Date.now(),
                 expiresAt: planType === 'monthly' ? Date.now() + 30 * 24 * 60 * 60 * 1000 : planType === 'annual' ? Date.now() + 365 * 24 * 60 * 60 * 1000 : null,
-                themeMode: get().themeMode,
             };
 
             saveState(updated);
@@ -166,7 +147,7 @@ export const useLicenseStore = create<LicenseState>((set, get) => {
 
             return {
                 success: true,
-                message: `¡Licencia activada con éxito! Nivel: ${getTierDisplayName(tier, get().themeMode)}`,
+                message: `¡Licencia activada con éxito! Nivel: ${getTierDisplayName(tier)}`,
                 tier,
             };
         },
@@ -178,7 +159,6 @@ export const useLicenseStore = create<LicenseState>((set, get) => {
                 licenseKey: null,
                 activatedAt: null,
                 expiresAt: null,
-                themeMode: get().themeMode,
             };
             saveState(reset);
             set({
@@ -186,12 +166,6 @@ export const useLicenseStore = create<LicenseState>((set, get) => {
                 isPro: false,
                 isGod: false,
             });
-        },
-
-        setThemeMode: (mode: ThemeMode) => {
-            const updated = { ...get(), themeMode: mode };
-            saveState(updated);
-            set({ themeMode: mode });
         },
 
         openUpgradeModal: (reason?: string) => {
