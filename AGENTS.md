@@ -9,15 +9,16 @@ Lee esto **antes** de explorar el repo.
 
 **Este producto:** `.agents/rules/architecture.md` (Cursor: `.cursor/rules/architecture.mdc`)
 
-PWA offline-first. No Convex. No Next.js.
+PWA offline-first (`v1.1.0`). No Convex. No Next.js.
 
 ## Stack
 
-React 19 · TypeScript · Vite 7 · Tailwind 4 · Dexie (IndexedDB) · Zustand (solo UI) · React Router · RHF + Zod · Recharts · Vitest
+React 19 · TypeScript · Vite 7 · Tailwind 4 · Dexie (IndexedDB) · Zustand (UI y Licencias) · React Router · RHF + Zod · Recharts · Vitest
 
 ## No negociable (resumen)
 
-- Saldos = historia de transacciones. Ajustes = transacción explícita (`isAdjustment: true`).
-- Reconciliación no reescribe el pasado.
-- Datos en el dispositivo. Gemini BYOK opcional; key solo en UI.
-- Bumpear semver en `package.json` cuando el cambio se “shippea”.
+- **Saldos Atómicos:** Historia de transacciones. Ajustes = transacción explícita (`isAdjustment: true`).
+- **Reconciliación Auditable:** No reescribe el pasado.
+- **Soberanía de Datos:** Datos en el dispositivo (IndexedDB). IA Multi-proveedor BYOK opcional (Gemini, Claude, OpenAI, Groq) con claves exclusivamente en `localStorage`.
+- **Licenciamiento:** Activación en vivo vía Lemon Squeezy + validador criptográfico de checksums offline.
+- **SemVer:** Bumpear semver en `package.json` cuando el cambio se “shippea”.

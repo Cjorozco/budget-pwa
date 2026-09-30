@@ -13,44 +13,57 @@ El desarrollo del proyecto se ejecutó mediante un flujo de **co-creación y orq
 1. **Definición de Dominio & Arquitectura**: Modelado de entidades, invariantes financieras y fronteras de datos con tipado estricto (`TypeScript` + `Zod`) antes de la implementación de interfaces.
 2. **"UI Tonta, Dominio Fuerte"**: Separación radical de responsabilidades. La lógica de negocio, cálculos de saldos atómicos, reconciliaciones y persistencia residen en capas desacopladas de la UI, asegurando componentes de vista puramente presentacionales, testeables y predecibles.
 3. **Aislamiento e Invariantes de IA (Boundary Protection)**: Las respuestas de modelos de IA (LLMs) se tratan como entradas de red no confiables. Se interceptan y validan estrictamente con esquemas `Zod` (envoltorio HTTP, extracción resiliente de JSON, normalización y límites de longitud) y pasan por una capa de *grounding* (validación contra el catálogo en IndexedDB) antes de tocar la UI o la base de datos.
-4. **Iteración Guiada & Estándares Rigurosos**: El orquestador humano define directrices arquitectónicas, valida decisiones técnicas y supervisa la entrega de código asegurando altos estándares de resiliencia y suites de pruebas automatizadas (**Vitest** para lógica pura y persistencia IndexedDB mockeada, junto con pruebas de integración y E2E como **Cypress**).
+4. **Iteración Guiada & Estándares Rigurosos**: El orquestador humano define directrices arquitectónicas, valida decisiones técnicas y supervisa la entrega de código asegurando altos estándares de resiliencia y suites de pruebas automatizadas (**Vitest** para lógica pura y persistencia IndexedDB mockeada con más de 270 tests automatizados).
 5. **Resiliencia & FinOps**: Priorización de arquitecturas costo-cero (modelo BYOK para LLMs sin intermediarios, sin dependencias de backend centralizado ni costos fijos de servidor) y tolerancia total a fallos en entornos offline con fallback automático a motores heurísticos locales.
 
 ---
 
-## Principios del Proyecto
-- **La Reconciliación no corrige el pasado**: No borramos ni editamos transacciones antiguas. Solo dejamos evidencia y fotos (snapshots) del estado financiero.
+## 💎 Principios del Proyecto
+- **La Reconciliación no corrige el pasado**: No borramos ni editamos transacciones antiguas. Solo dejamos evidencia y fotos (*snapshots*) del estado financiero.
 - **Trazabilidad Total**: Cualquier ajuste al saldo debe ser una transacción explícita (`isAdjustment: true`).
-- **Offline-First**: Tus datos de presupuesto viven en el dispositivo (IndexedDB). El núcleo funciona sin red.
-- **Saldos Atómicos**: El saldo calculado es la verdad absoluta derivada de la historia de transacciones.
+- **Offline-First**: Tus datos de presupuesto viven en el dispositivo (`IndexedDB`). El núcleo funciona 100% sin red.
+- **Saldos Atómicos Derivados**: El saldo calculado es la verdad absoluta derivada de la historia de transacciones.
 - **Inviolabilidad de Datos ante IA**: Ninguna salida de IA puede escribir directamente en la base de datos ni asumir identificadores inventados; todo pasa por validación Zod, confirmación explícita o grounding contra el catálogo local existente.
 
-## PRO: Gemini (BYOK)
+---
 
-La app **no** trae una API key en el servidor. PRO desbloquea pegar **tu** key:
+## 🤖 PRO & GOD: Gateway de IA Multi-Proveedor (BYOK)
 
-| Qué | Valor |
-|---|---|
-| Proveedor (hoy) | Google Gemini — el que funciona sin backend (CORS en el navegador) |
-| Dónde crear la key | [Google AI Studio](https://aistudio.google.com/apikey) — tier gratis o de pago |
-| Modelo que usa la app | `gemini-flash-latest` (alias Flash; no se elige otro en la UI) |
-| Qué **no** sirve aún | ChatGPT Plus, Claude.ai, keys `sk-` de OpenAI o Anthropic (hace falta un servidor). Más adelante se pueden sumar Groq, OpenRouter u otros con CORS. |
+La app **no** requiere ni incluye API keys centralizadas en el servidor. El plan PRO desbloquea ingresar **tu propia API key (Bring Your Own Key)** para máxima privacidad y costo cero de infraestructura:
 
-La key se guarda en `localStorage` de **este** dispositivo. No entra al backup JSON. Sin red o sin key, se usan solo las reglas locales. Al consultar Gemini se envían la descripción del movimiento y los nombres de tus categorías (no montos ni cuentas).
+| Proveedor | Modelos Soportados | Endpoint / CORS |
+|---|---|---|
+| **Google Gemini** | `gemini-flash-latest`, `gemini-1.5-pro` | Directo en navegador vía Google AI Studio |
+| **Anthropic Claude** | `claude-3-5-haiku-latest`, `claude-3-5-sonnet-latest` | Directo en navegador con rol de Asesor Financiero |
+| **OpenAI** | `gpt-4o-mini`, `gpt-4o` | Directo en navegador vía OpenAI API |
+| **Groq** | `llama-3.3-70b-versatile` | Inferencia de ultra-baja latencia |
 
-## Características Clave
-- ✅ **Gestión Multi-cuenta**: Bancos, Efectivo y Crédito.
-- ✅ **Reconciliación Auditable**: Historial de snapshots con diferencias y notas.
+*Las API keys se almacenan exclusivamente en el `localStorage` del dispositivo y **nunca** se incluyen en los backups JSON ni viajan a servidores de terceros.*
+
+---
+
+## 💳 Sistema de Licenciamiento (Lemon Squeezy)
+
+La aplicación integra monetización y activación de licencias sin necesidad de backend propio:
+- **Activación en vivo:** Conexión con `api.lemonsqueezy.com` para activar claves y calcular dinámicamente vigencias mensuales, anuales o perpetuas.
+- **Validación Criptográfica Local:** Validador de checksums integrado (`licenseValidator.ts`) con tolerancia y soporte offline.
+- **Planes:**
+  - **Free (Local Core):** Categorizador por reglas locales, presupuesto, cuentas, reportes y reconciliación ilimitada sin costo.
+  - **PRO:** Activación de IA Multi-proveedor (BYOK) y soporte extendido.
+  - **GOD Tier:** Experiencia integral con asesor financiero inteligente y herramientas avanzadas.
+
+---
+
+## ✨ Características Clave
+- ✅ **Gestión Multi-cuenta**: Bancos, Efectivo y Tarjetas de Crédito.
+- ✅ **Reconciliación Auditable**: Historial de snapshots con diferencias calculadas y notas de auditoría.
 - ✅ **Ajustes Explícitos**: Cierre de brechas mediante transacciones automáticas marcadas.
-- ✅ **Reservas por Cuenta**: Crea, edita y elimina montos reservados sin alterar el saldo real.
-- ✅ **Categorización Inteligente**: reglas e historial locales; en PRO, Gemini (`gemini-flash-latest`) con **tu** API key de [Google AI Studio](https://aistudio.google.com/apikey).
-- ✅ **UI Mobile-First**: Diseñada para una entrada de datos rápida y sin fricción.
+- ✅ **Reservas por Cuenta**: Crea, edita y elimina montos apartados sin alterar el saldo real bancario.
+- ✅ **Reportes Avanzados**: Desglose jerárquico por categorías padre y subcategorías, comparativa de ingresos y cumplimiento del presupuesto fijo.
+- ✅ **Categorización Inteligente**: Motor local instantáneo con reglas colombianas (Rappi, D1, Éxito, PSE, etc.) + IA Multi-proveedor (Gemini, Claude, OpenAI, Groq).
+- ✅ **UI Mobile-First Accesible**: Diseñada para entrada rápida con touch bar inferior, modales seguros y dark mode.
 
-## Gestión de Reservas
-- Puedes registrar reservas por cuenta para separar dinero destinado a gastos puntuales.
-- Las reservas afectan únicamente el **Saldo Disponible**.
-- El **Saldo Real en banco/efectivo** no se modifica al crear o editar una reserva.
-- Desde el detalle de reservas puedes **editar** (monto y descripción) o **eliminar** una reserva activa.
+---
 
 ## 📊 Métricas del Dashboard y Conceptos Financieros
 
@@ -59,35 +72,48 @@ La app separa intencionalmente la **liquidez patrimonial acumulada** del **flujo
 1. **Total Disponible (Saldo Acumulado Real):**
    - Mide el dinero líquido real que posees hoy en todas tus cuentas bancarias y efectivo, deduciendo las reservas activas:
      $$\text{Total disponible} = \text{Saldo en todas las cuentas} - \text{Reservas activas}$$
-   - **Nota:** Puede ser **positivo** incluso si en el mes actual los gastos superan a los ingresos, ya que se apoya en los fondos/ahorros remanentes acumulados de meses anteriores.
 
 2. **Ingresos (mes) y Gastos (mes) (Flujo del Período):**
    - Miden exclusivamente las entradas y salidas registradas entre el primer y último día del mes en curso.
    - El indicador de **Flujo neto mensual** ($\text{Ingresos} - \text{Gastos}$) aclara si durante el mes puntual hubo superávit o déficit.
 
 3. **Transferencias entre Cuentas:**
-   - Mover dinero entre tus propias cuentas (ej. *Bancolombia ➔ Lulo*) **no** se considera ingreso ni gasto; por diseño se excluyen de las tarjetas mensuales para evitar duplicidades y no alteran el saldo patrimonial global.
+   - Mover dinero entre tus propias cuentas (ej. *Bancolombia ➔ Lulo*) **no** se considera ingreso ni gasto; por diseño se excluyen de las tarjetas mensuales para evitar duplicidades.
 
-## Lo que esta App NO hace (Por diseño)
-- **No sincroniza con APIs bancarias**: Mantiene el control absoluto en el usuario.
+---
+
+## 🚫 Lo que esta App NO hace (Por diseño)
+- **No sincroniza con APIs bancarias**: Mantiene la privacidad y el control absoluto en el usuario.
 - **No edita reconciliaciones pasadas**: Lo que se cerró, queda como registro histórico para auditoría.
-- **No "maquilla" saldos**: Si falta dinero, el sistema pide una nota y crea un movimiento de ajuste.
+- **No "maquilla" saldos**: Si falta dinero, el sistema pide una nota y crea un movimiento de ajuste explícito.
 
-## Stack Tecnológico
-- React 19 + TypeScript (strict) + Vite 7
-- TailwindCSS 4 (Premium Mobile-First UI)
-- Dexie.js 4 (IndexedDB wrapper, offline-first)
-- Zustand (UI state management)
-- React Hook Form + Zod (forms & validation)
-- Recharts 3 (data visualization)
-- Lucide React (iconography)
-- vite-plugin-pwa (Progressive Web App)
+---
 
-## Historia de origen
+## 🛠️ Stack Tecnológico
+- **React 19** + **TypeScript** (Strict) + **Vite 7**
+- **Tailwind CSS 4** (Mobile-First UI & Utilities)
+- **Dexie.js 4** (IndexedDB wrapper reactivo con `dexie-react-hooks`)
+- **Zustand** (Estado transitorio de UI y licencias)
+- **React Hook Form** + **Zod** (Formularios, validación de schemas y contratos de IA)
+- **Recharts 3** (Visualización interactiva)
+- **Lucide React** (Iconografía)
+- **vite-plugin-pwa** (Progressive Web App con Service Worker de auto-actualización)
+- **Vitest** (270+ pruebas unitarias y de integración)
 
-Tenía un Excel para mi presupuesto que siempre se descuadraba porque no metía los gastos a tiempo. Lo convertí en una PWA offline-first que funciona sin internet y se instala en el celular como una app.
+---
 
-## Cómo empezar
-1. `npm install`
-2. `npm run dev`
-3. Abre `localhost:5173` y empieza a tomar el control de tu dinero.
+## 🚀 Cómo empezar
+
+```bash
+# 1. Instalar dependencias
+npm install
+
+# 2. Iniciar en modo desarrollo
+npm run dev
+
+# 3. Ejecutar pruebas automatizadas
+npm run test:run
+
+# 4. Compilar para producción
+npm run build
+```
