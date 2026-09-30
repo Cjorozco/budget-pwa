@@ -27,4 +27,5 @@ export const useTranslation = () => {
 };
 
 export * from './types';
+export * from './dateLocale';
 export { useI18nStore };

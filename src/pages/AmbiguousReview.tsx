@@ -7,10 +7,12 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { TransactionForm } from '@/components/forms/TransactionForm';
 import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
 import { useUIStore } from '@/store/ui';
+import { useTranslation, getDateFnsLocale } from '@/lib/i18n';
 
 export default function AmbiguousReviewPage() {
+    const { t, language } = useTranslation();
+    const dateLocale = getDateFnsLocale(language);
     const { confirm, addToast } = useUIStore();
     const [editingTx, setEditingTx] = useState<any>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -25,14 +27,14 @@ export default function AmbiguousReviewPage() {
 
     const getCategoryName = (id: string) => {
         const cat = categories.find(c => c.id === id);
-        return cat ? cat.name : 'Sin categoría';
+        return cat ? cat.name : t.transactions.uncategorized;
     };
 
     const handleDelete = async (id: string) => {
         const ok = await confirm({
-            title: '¿Eliminar transacción?',
-            message: '¿Estás seguro de eliminar esta transacción ambigua? Se revertirá su efecto en el saldo.',
-            confirmLabel: 'Eliminar',
+            title: t.ambiguous.deleteAmbiguousTitle,
+            message: t.ambiguous.deleteAmbiguousMsg,
+            confirmLabel: t.common.delete,
             variant: 'danger',
         });
         if (!ok) return;
@@ -51,10 +53,10 @@ export default function AmbiguousReviewPage() {
                     await db.transactions.delete(id);
                 }
             });
-            addToast('Transacción eliminada', 'success');
+            addToast(t.transactions.deleteSuccess, 'success');
         } catch (error) {
             console.error('Error deleting transaction:', error);
-            addToast('Error al eliminar la transacción', 'error');
+            addToast(t.transactions.deleteError, 'error');
         }
     };
 
@@ -73,12 +75,12 @@ export default function AmbiguousReviewPage() {
                 <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center mx-auto mb-6">
                     <Check size={40} />
                 </div>
-                <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">¡Todo en Orden!</h1>
+                <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">{t.ambiguous.allInOrderTitle}</h1>
                 <p className="text-slate-500 max-w-xs mx-auto">
-                    No hay transacciones ambiguas que necesiten revisión. La IA está aprendiendo bien de tus hábitos.
+                    {t.ambiguous.allInOrderSubtitle}
                 </p>
                 <Button className="mt-8" variant="outline" onClick={() => window.history.back()}>
-                    Volver
+                    {t.ambiguous.goBack}
                 </Button>
             </div>
         );
@@ -89,10 +91,10 @@ export default function AmbiguousReviewPage() {
             <header>
                 <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <AlertTriangle className="text-amber-500" />
-                    Revisión de Gastos
+                    {t.ambiguous.reviewTitle}
                 </h1>
                 <p className="text-sm text-slate-500">
-                    Confirma o corrige las {ambiguousTransactions.length} transacciones que la IA marcó como dudosas.
+                    {t.ambiguous.reviewSubtitle.replace('{count}', String(ambiguousTransactions.length))}
                 </p>
             </header>
 
@@ -108,12 +110,12 @@ export default function AmbiguousReviewPage() {
                                     {tx.description}
                                 </h3>
                                 <div className="flex items-center gap-2 mt-1">
-                                    <span className="text-[10px] font-medium text-slate-400">
-                                        {format(tx.date, "eeee d 'de' MMMM", { locale: es })}
+                                    <span className="text-[10px] font-medium text-slate-400 capitalize">
+                                        {format(tx.date, "EEEE, d MMMM", { locale: dateLocale })}
                                     </span>
                                     <span className="w-1 h-1 bg-slate-300 rounded-full" />
                                     <span className="text-[10px] font-bold text-amber-600 uppercase tracking-tighter">
-                                        Confianza: {Math.round((tx.aiConfidence || 0) * 100)}%
+                                        {t.ambiguous.confidenceLabel.replace('{percentage}', String(Math.round((tx.aiConfidence || 0) * 100)))}
                                     </span>
                                 </div>
                             </div>
@@ -136,7 +138,7 @@ export default function AmbiguousReviewPage() {
                                 className="h-9 bg-green-50 hover:bg-green-100 text-green-700 dark:bg-green-900/20 dark:hover:bg-green-900/40"
                                 onClick={() => handleConfirm(tx)}
                             >
-                                <Check size={16} className="mr-1" /> Confirmar
+                                <Check size={16} className="mr-1" /> {t.ambiguous.confirmBtn}
                             </Button>
                             <Button
                                 size="sm"
@@ -147,7 +149,7 @@ export default function AmbiguousReviewPage() {
                                     setIsModalOpen(true);
                                 }}
                             >
-                                <Pencil size={16} className="mr-1" /> Editar
+                                <Pencil size={16} className="mr-1" /> {t.common.edit}
                             </Button>
                             <Button
                                 size="sm"
@@ -155,7 +157,7 @@ export default function AmbiguousReviewPage() {
                                 className="h-9 bg-red-50 hover:bg-red-100 text-red-700 dark:bg-red-900/20 dark:hover:bg-red-900/40"
                                 onClick={() => handleDelete(tx.id)}
                             >
-                                <Trash2 size={16} className="mr-1" /> Borrar
+                                <Trash2 size={16} className="mr-1" /> {t.common.delete}
                             </Button>
                         </div>
                     </div>
@@ -168,7 +170,7 @@ export default function AmbiguousReviewPage() {
                     setIsModalOpen(false);
                     setEditingTx(null);
                 }}
-                title="Corregir Transacción"
+                title={t.ambiguous.correctTransaction}
             >
                 <TransactionForm
                     initialData={editingTx}

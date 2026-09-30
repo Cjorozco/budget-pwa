@@ -2,15 +2,17 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
 import { cn, formatCurrency } from '@/lib/utils';
 import { startOfMonth, endOfMonth, format } from 'date-fns';
-import { es } from 'date-fns/locale';
 import { ArrowDownCircle, ArrowUpCircle, Wallet, AlertTriangle, ArrowRightLeft, Info } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useMemo, useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { TransactionForm } from '@/components/forms/TransactionForm';
 import { TransferForm } from '@/components/forms/TransferForm';
+import { useTranslation, getDateFnsLocale } from '@/lib/i18n';
 
 export default function Dashboard() {
+    const { t, language } = useTranslation();
+    const dateLocale = getDateFnsLocale(language);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [templateData, setTemplateData] = useState<any>(null);
     const [showBalanceExplanation, setShowBalanceExplanation] = useState(false);
@@ -129,16 +131,16 @@ export default function Dashboard() {
         <div className="p-4 space-y-6">
             <header className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Resumen</h1>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                        {format(new Date(), "MMMM yyyy", { locale: es })}
+                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t.nav.dashboard}</h1>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 capitalize">
+                        {format(new Date(), "MMMM yyyy", { locale: dateLocale })}
                     </p>
                 </div>
                 <div className="flex gap-2">
                     <button
                         onClick={() => setIsTransferModalOpen(true)}
                         className="h-10 w-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400 hover:bg-blue-200 transition-colors"
-                        aria-label="Nueva Transferencia"
+                        aria-label={t.transactions.newTransfer}
                     >
                         <ArrowRightLeft size={20} />
                     </button>
@@ -160,10 +162,10 @@ export default function Dashboard() {
                         </div>
                         <div>
                             <p className="text-sm font-bold text-amber-900 dark:text-amber-100">
-                                {ambiguousCount} transacciones por revisar
+                                {ambiguousCount} {t.transactions.ambiguousFilter}
                             </p>
                             <p className="text-xs text-amber-700 dark:text-amber-400">
-                                La IA no está segura de algunas categorías
+                                {t.transactions.ambiguousHelp}
                             </p>
                         </div>
                     </div>
@@ -183,7 +185,7 @@ export default function Dashboard() {
                     <p className={cn(
                         "text-sm font-medium",
                         totalAvailable < 0 ? "text-red-100" : "text-indigo-100"
-                    )}>Total disponible</p>
+                    )}>{t.dashboard.availableBalance}</p>
                     <button
                         type="button"
                         onClick={() => setShowBalanceExplanation(!showBalanceExplanation)}
@@ -193,8 +195,8 @@ export default function Dashboard() {
                                 ? "hover:bg-red-500/40 text-red-200"
                                 : "hover:bg-indigo-500/40 text-indigo-200"
                         )}
-                        aria-label="Información sobre Total Disponible"
-                        title="¿Cómo se calcula el total disponible?"
+                        aria-label="Info"
+                        title={t.dashboard.reservesTooltip}
                     >
                         <Info size={16} />
                     </button>
@@ -206,12 +208,9 @@ export default function Dashboard() {
 
                 {showBalanceExplanation && (
                     <div className="mt-3 p-3 bg-black/20 backdrop-blur-sm rounded-2xl text-xs space-y-1 border border-white/10 animate-in fade-in zoom-in-95 duration-200">
-                        <p className="font-semibold text-white/90">¿Cómo se calcula?</p>
+                        <p className="font-semibold text-white/90">{t.dashboard.totalBalance}</p>
                         <p className="text-white/80 leading-relaxed">
-                            Es el <strong>saldo real acumulado</strong> en todas tus cuentas ({formatCurrency(totalRealBalance)}) menos tus <strong>reservas activas</strong> ({formatCurrency(totalReserved)}).
-                        </p>
-                        <p className="text-[11px] text-white/70 italic">
-                            Incluye el dinero que traías de meses anteriores, por lo que puede ser positivo aunque en este mes puntual hayas gastado más de lo ingresado.
+                            {formatCurrency(totalRealBalance)} - {t.dashboard.savingsReserves} ({formatCurrency(totalReserved)}).
                         </p>
                     </div>
                 )}
@@ -221,7 +220,7 @@ export default function Dashboard() {
                         "mt-2 text-[10px] font-medium",
                         totalAvailable < 0 ? "text-red-200" : "text-indigo-100/80"
                     )}>
-                        Tienes {formatCurrency(totalRealBalance)} en cuentas, pero has apartado {formatCurrency(totalReserved)}.
+                        {formatCurrency(totalRealBalance)} ({formatCurrency(totalReserved)} {t.dashboard.savingsReserves}).
                     </div>
                 )}
             </div>
@@ -232,7 +231,7 @@ export default function Dashboard() {
                     <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
                         <div className="flex items-center gap-2 mb-2">
                             <ArrowUpCircle className="text-green-500" size={20} />
-                            <span className="text-sm text-slate-500 font-medium">Ingresos (mes)</span>
+                            <span className="text-sm text-slate-500 font-medium">{t.dashboard.monthlyIncome}</span>
                         </div>
                         <p className="text-lg font-bold text-slate-900 dark:text-white">
                             {stats ? formatCurrency(stats.income) : '-'}
@@ -241,7 +240,7 @@ export default function Dashboard() {
                     <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
                         <div className="flex items-center gap-2 mb-2">
                             <ArrowDownCircle className="text-red-500" size={20} />
-                            <span className="text-sm text-slate-500 font-medium">Gastos (mes)</span>
+                            <span className="text-sm text-slate-500 font-medium">{t.dashboard.monthlyExpense}</span>
                         </div>
                         <p className="text-lg font-bold text-slate-900 dark:text-white">
                             {stats ? formatCurrency(stats.expense) : '-'}
@@ -251,7 +250,7 @@ export default function Dashboard() {
 
                 {stats && (
                     <div className="flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200/60 dark:border-slate-800/60 text-xs">
-                        <span className="text-slate-500 dark:text-slate-400 font-medium">Flujo neto del mes:</span>
+                        <span className="text-slate-500 dark:text-slate-400 font-medium">{t.dashboard.netSavings}:</span>
                         <span className={cn(
                             "font-bold",
                             stats.income - stats.expense >= 0
@@ -259,9 +258,6 @@ export default function Dashboard() {
                                 : "text-amber-600 dark:text-amber-400"
                         )}>
                             {stats.income - stats.expense >= 0 ? "+" : ""}{formatCurrency(stats.income - stats.expense)}
-                            <span className="ml-1 text-[10px] font-normal text-slate-500 dark:text-slate-400">
-                                ({stats.income - stats.expense >= 0 ? "Superávit" : "Déficit mensual"})
-                            </span>
                         </span>
                     </div>
                 )}
@@ -271,8 +267,8 @@ export default function Dashboard() {
             {quickTemplates.length > 0 && (
                 <section>
                     <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">Plantillas rápidas</h2>
-                        <Link to="/settings" className="text-xs text-blue-600 font-medium">Editar</Link>
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">{t.settings.manageTemplates}</h2>
+                        <Link to="/settings" className="text-xs text-blue-600 font-medium">{t.common.edit}</Link>
                     </div>
                     <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
                         {quickTemplates.map(template => (
@@ -292,8 +288,8 @@ export default function Dashboard() {
             {/* Recent Transactions */}
             <section>
                 <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">Recientes</h2>
-                    <Link to="/transactions" className="text-sm text-blue-600 font-medium">Ver todo</Link>
+                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">{t.dashboard.recentTransactions}</h2>
+                    <Link to="/transactions" className="text-sm text-blue-600 font-medium">{t.dashboard.viewAllTransactions}</Link>
                 </div>
                 <div className="space-y-3">
                     {recentTransactions?.map(tx => (
@@ -309,8 +305,8 @@ export default function Dashboard() {
                                     <p className="font-semibold text-slate-900 dark:text-slate-100 text-sm line-clamp-1">
                                         {tx.description}
                                     </p>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                                        {format(tx.date, "d MMM", { locale: es })}
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 capitalize">
+                                        {format(tx.date, "d MMM", { locale: dateLocale })}
                                     </p>
                                 </div>
                             </div>
@@ -323,7 +319,7 @@ export default function Dashboard() {
                     ))}
                     {(!recentTransactions || recentTransactions.length === 0) && (
                         <div className="text-center py-6 text-slate-400 text-sm bg-slate-50 dark:bg-slate-900 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
-                            Sin movimientos recientes
+                            {t.dashboard.noRecentTransactions}
                         </div>
                     )}
                 </div>
@@ -335,7 +331,7 @@ export default function Dashboard() {
                     setIsModalOpen(false);
                     setTemplateData(null);
                 }}
-                title="Nueva transacción"
+                title={t.transactions.newTransaction}
             >
                 <TransactionForm
                     initialData={templateData}
@@ -349,7 +345,7 @@ export default function Dashboard() {
             <Modal
                 isOpen={isTransferModalOpen}
                 onClose={() => setIsTransferModalOpen(false)}
-                title="Transferir dinero"
+                title={t.transactions.newTransfer}
             >
                 <TransferForm
                     onSuccess={() => setIsTransferModalOpen(false)}

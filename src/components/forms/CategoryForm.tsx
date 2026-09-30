@@ -9,11 +9,12 @@ import { Input } from '@/components/ui/Input';
 import { v4 as uuidv4 } from 'uuid';
 import type { Category } from '@/lib/types';
 import { useUIStore } from '@/store/ui';
+import { useTranslation } from '@/lib/i18n';
 
 const CategoryFormSchema = z.object({
-    name: z.string().min(1, 'El nombre es requerido'),
+    name: z.string().min(1, 'Name is required'),
     type: z.enum(['income', 'expense']),
-    color: z.string().min(1, 'Selecciona un color'),
+    color: z.string().min(1, 'Color is required'),
     parentId: z.string().optional(),
 });
 
@@ -82,6 +83,7 @@ const EXPENSE_COLORS = [
 ];
 
 export function CategoryForm({ onSuccess, onCancel, initialData, defaultType, defaultParentId }: CategoryFormProps) {
+    const { t } = useTranslation();
     const addToast = useUIStore((s) => s.addToast);
     const parentCategories = useLiveQuery(() =>
         db.categories.filter(c => c.isActive && !c.parentId).toArray()
@@ -123,7 +125,6 @@ export function CategoryForm({ onSuccess, onCancel, initialData, defaultType, de
         }
     }, [selectedType, currentColors, selectedColor, setValue]);
 
-
     const onSubmit = async (data: CategoryFormData) => {
         try {
             if (initialData?.id) {
@@ -146,26 +147,26 @@ export function CategoryForm({ onSuccess, onCancel, initialData, defaultType, de
                     isActive: true,
                 });
             }
-            addToast(initialData ? 'Categoría actualizada' : 'Categoría creada', 'success');
+            addToast(initialData ? t.categories.categoryUpdated : t.categories.categoryCreated, 'success');
             onSuccess();
         } catch (error) {
             console.error('Error saving category:', error);
-            addToast('Error al guardar la categoría', 'error');
+            addToast(t.common.error, 'error');
         }
     };
 
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <Input
-                label="Nombre"
-                placeholder="Ej. Comida rápida"
+                label={t.common.description}
+                placeholder="Ex. Fast food"
                 error={errors.name?.message}
                 {...register('name')}
             />
 
             <div className="space-y-2">
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Tipo
+                    {t.forms.accountTypeLabel}
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                     <label className="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800">
@@ -175,7 +176,7 @@ export function CategoryForm({ onSuccess, onCancel, initialData, defaultType, de
                             {...register('type')}
                             className="text-green-600"
                         />
-                        <span className="text-sm">Ingreso</span>
+                        <span className="text-sm">{t.transactions.incomeLabel}</span>
                     </label>
                     <label className="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800">
                         <input
@@ -184,7 +185,7 @@ export function CategoryForm({ onSuccess, onCancel, initialData, defaultType, de
                             {...register('type')}
                             className="text-red-600"
                         />
-                        <span className="text-sm">Gasto</span>
+                        <span className="text-sm">{t.transactions.expenseLabel}</span>
                     </label>
                 </div>
                 {errors.type && (
@@ -194,13 +195,13 @@ export function CategoryForm({ onSuccess, onCancel, initialData, defaultType, de
 
             <div className="space-y-2">
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Categoría padre (opcional)
+                    {t.categories.parentCategoryOptional}
                 </label>
                 <select
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
                     {...register('parentId')}
                 >
-                    <option value="">Ninguna (categoría principal)</option>
+                    <option value="">{t.categories.noneMainCategory}</option>
                     {filteredParents.map((parent) => (
                         <option key={parent.id} value={parent.id}>
                             {parent.name}
@@ -211,7 +212,7 @@ export function CategoryForm({ onSuccess, onCancel, initialData, defaultType, de
 
             <div className="space-y-2">
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Color
+                    {t.categories.colorLabel}
                 </label>
                 <div className="grid grid-cols-6 gap-2">
                     {currentColors.map((color) => (
@@ -240,10 +241,10 @@ export function CategoryForm({ onSuccess, onCancel, initialData, defaultType, de
 
             <div className="flex gap-3 pt-4 justify-end">
                 <Button type="button" variant="ghost" onClick={onCancel}>
-                    Cancelar
+                    {t.common.cancel}
                 </Button>
                 <Button type="submit" isLoading={isSubmitting}>
-                    {initialData ? 'Actualizar' : 'Crear'} categoría
+                    {initialData ? t.categories.editCategory : t.categories.createCategory}
                 </Button>
             </div>
         </form>

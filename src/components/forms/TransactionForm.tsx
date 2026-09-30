@@ -19,6 +19,7 @@ import { PiggyBank, Sparkles, AlertCircle, FolderPlus } from 'lucide-react';
 import { formatCurrency, toSentenceCase } from '@/lib/utils';
 import type { Category, Transaction } from '@/lib/types';
 import type { ModelAttempt } from '@/lib/ai/types';
+import { useTranslation } from '@/lib/i18n';
 
 type TransactionFormData = z.infer<typeof TransactionSchema>;
 
@@ -28,6 +29,7 @@ interface TransactionFormProps {
 }
 
 export function TransactionForm({ onSuccess, initialData }: TransactionFormProps) {
+    const { t } = useTranslation();
     const accounts = useLiveQuery(() => db.accounts.filter(a => a.isActive).toArray()) || [];
     const allCategories = useLiveQuery(() => db.categories.filter(c => c.isActive).toArray()) || [];
 
@@ -96,9 +98,9 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
         const timer = setTimeout(async () => {
             const activeProvider = getSelectedAiProvider();
             const mayCallAi = isPro && hasAiApiKey(activeProvider);
-            const providerName = activeProvider === 'groq' ? 'Groq' : activeProvider === 'anthropic' ? 'Claude' : activeProvider === 'gemini' ? 'Gemini' : 'IA';
+            const providerName = activeProvider === 'groq' ? 'Groq' : activeProvider === 'anthropic' ? 'Claude' : activeProvider === 'gemini' ? 'Gemini' : 'AI';
             setAiPending(mayCallAi);
-            setAiProgressMessage(mayCallAi ? `Consultando ${providerName}…` : null);
+            setAiProgressMessage(mayCallAi ? t.forms.consultingProvider.replace('{provider}', providerName) : null);
             try {
                 const result = await suggestCategoryWithLlm(description, type, {
                     isPro,
@@ -120,13 +122,13 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                     if (result.source !== 'local' && failedAttempts.length > 0) {
                         const failedNames = failedAttempts.map((a: ModelAttempt) => `${a.modelLabel} (${a.httpStatus ?? a.errorReason})`).join(', ');
                         const successAttempt = attempts.find((a: ModelAttempt) => a.status === 'success');
-                        const usedLabel = successAttempt?.modelLabel || 'modelo de respaldo';
-                        setAiDiagnosticNotice(`${failedNames} no disponibles. Obtenido con ${usedLabel}.`);
+                        const usedLabel = successAttempt?.modelLabel || 'backup model';
+                        setAiDiagnosticNotice(`${failedNames} unavailable. Resolved via ${usedLabel}.`);
                     } else if (result.source === 'local' && failedAttempts.length > 0) {
                         const failedNames = failedAttempts.map((a: ModelAttempt) => `${a.modelLabel} (${a.httpStatus ?? a.errorReason})`).join(', ');
-                        setAiDiagnosticNotice(`Modelos de IA no disponibles (${failedNames}). Se usó categorización local.`);
+                        setAiDiagnosticNotice(`AI unavailable (${failedNames}). Local rules used.`);
                     } else if (result.aiDiagnosis?.status === 'error' && result.aiDiagnosis.reason === 'http-429') {
-                        setAiDiagnosticNotice(`Límite de cuota diaria de ${providerName} alcanzado. Se usó categorización local.`);
+                        setAiDiagnosticNotice(`Daily quota reached for ${providerName}. Local rules used.`);
                     } else {
                         setAiDiagnosticNotice(null);
                     }
@@ -157,7 +159,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
             clearTimeout(timer);
             controller.abort();
         };
-    }, [description, type, initialData, setValue, isPro]);
+    }, [description, type, initialData, setValue, isPro, t]);
 
     const handleAcceptSuggestion = async (chosenId?: string) => {
         if (!aiSuggestion) return;
@@ -179,7 +181,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                     }
                 }
 
-                // El <select> nativo descarta valores que aún no están en las opciones.
+                // Native select requires options in DOM before setting value
                 flushSync(() => {
                     setCreatedCategories((prev) => {
                         const byId = new Map(prev.map((c) => [c.id, c]));
@@ -195,7 +197,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
             setShowAiSuggestion(false);
         } catch (error) {
             console.error('Error creating category:', error);
-            addToast('No se pudo crear la categoría sugerida', 'error');
+            addToast(t.common.error, 'error');
         }
     };
 
@@ -223,7 +225,6 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                     const oldTx = initialData;
 
                     // Reverse old transaction effect
-                    // 1. Reverse old transaction effect
                     const account = await db.accounts.get(oldTx.accountId);
                     if (account) {
                         let newCalcBalance = account.calculatedBalance;
@@ -344,11 +345,11 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
             }
 
             reset();
-            addToast(initialData ? 'Transacción actualizada' : 'Transacción guardada', 'success');
+            addToast(t.transactions.transactionSaved, 'success');
             onSuccess();
         } catch (error) {
             console.error('Failed to save transaction:', error);
-            addToast('Error al guardar la transacción', 'error');
+            addToast(t.common.error, 'error');
         }
     };
 
@@ -365,7 +366,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                         categoryTouchedRef.current = false;
                     }}
                 >
-                    Ingreso
+                    {t.transactions.incomeLabel}
                 </Button>
                 <Button
                     type="button"
@@ -377,12 +378,12 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                         categoryTouchedRef.current = false;
                     }}
                 >
-                    Gasto
+                    {t.transactions.expenseLabel}
                 </Button>
             </div>
 
             <Input
-                label="Monto"
+                label={t.forms.amount}
                 type="number"
                 placeholder="0"
                 autoFocus={!initialData}
@@ -392,8 +393,8 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
             />
 
             <Input
-                label="Descripción"
-                placeholder="Ej: supermercado, arriendo, nómina..."
+                label={t.forms.description}
+                placeholder={t.forms.descriptionPlaceholder}
                 error={errors.description?.message}
                 {...register('description', {
                     onBlur: (e) => {
@@ -406,7 +407,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
 
             {aiPending && (
                 <p className="text-[11px] text-indigo-600 dark:text-indigo-400 font-medium animate-pulse" data-testid="ai-pending">
-                    {aiProgressMessage || 'Consultando IA…'}
+                    {aiProgressMessage || t.forms.consultingAi}
                 </p>
             )}
 
@@ -441,14 +442,14 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                             <div className="flex justify-between items-center mb-1">
                                 <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
                                     {aiSuggestion.source === 'gemini'
-                                        ? 'Sugerencia Gemini'
+                                        ? t.forms.geminiSuggestion
                                         : aiSuggestion.source === 'anthropic'
-                                        ? 'Sugerencia Claude'
+                                        ? t.forms.claudeSuggestion
                                         : aiSuggestion.source === 'groq'
-                                        ? 'Sugerencia Groq'
+                                        ? t.forms.groqSuggestion
                                         : aiSuggestion.confidence >= 0.7
-                                            ? 'Sugerencia local'
-                                            : 'Revisión necesaria'}
+                                            ? t.forms.localSuggestion
+                                            : t.forms.reviewNeeded}
                                 </p>
                                 <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${aiSuggestion.confidence >= 0.7 ? 'bg-blue-200 text-blue-700' : 'bg-amber-200 text-amber-700'}`}>
                                     {Math.round(aiSuggestion.confidence * 100)}%
@@ -472,10 +473,10 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                                     {aiSuggestion.needsCategoryCreation ? (
                                         <>
                                             <FolderPlus size={14} className="mr-1" />
-                                            Crear y aplicar
+                                            {t.forms.createAndApply}
                                         </>
                                     ) : (
-                                        'Aplicar categoría'
+                                        t.forms.applyCategory
                                     )}
                                 </Button>
                                 <Button
@@ -485,15 +486,15 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                                     className="h-8 px-4 text-xs"
                                     onClick={() => setShowAiSuggestion(false)}
                                 >
-                                    Ignorar
+                                    {t.forms.ignore}
                                 </Button>
                             </div>
                             {aiSuggestion.alternatives && aiSuggestion.alternatives.length > 0 && (
                                 <div className="mt-2 space-y-1">
                                     <p className="text-[11px] font-medium text-slate-500">
                                         {aiSuggestion.needsCategoryCreation
-                                            ? 'O usa una que ya tienes:'
-                                            : 'O esta otra:'}
+                                            ? t.forms.orUseExisting
+                                            : t.forms.orUseOther}
                                     </p>
                                     {aiSuggestion.alternatives.map((alt) => (
                                         <Button
@@ -516,7 +517,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
 
             <div className="space-y-2">
                 <label htmlFor="category-select" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Categoría
+                    {t.common.category}
                 </label>
                 <select
                     id="category-select"
@@ -529,7 +530,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                     })}
                     value={watch('categoryId') ?? ''}
                 >
-                    <option value="">Selecciona una categoría</option>
+                    <option value="">{t.forms.selectCategory}</option>
                     {parentCategories.map((parent) => {
                         const children = childCategories.filter(c => c.parentId === parent.id);
                         if (children.length > 0) {
@@ -557,7 +558,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
 
             <div className="space-y-2">
                 <label htmlFor="account-select" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Cuenta
+                    {t.common.account}
                 </label>
                 <select
                     id="account-select"
@@ -565,7 +566,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     {...register('accountId')}
                 >
-                    <option value="">Selecciona una cuenta</option>
+                    <option value="">{t.forms.selectAccount}</option>
                     {accounts.map((a) => (
                         <option key={a.id} value={a.id}>{a.name}</option>
                     ))}
@@ -576,7 +577,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
             </div>
 
             <Input
-                label="Fecha"
+                label={t.common.date}
                 type="date"
                 defaultValue={format(watch('date') || Date.now(), 'yyyy-MM-dd')}
                 onChange={(e) => {
@@ -593,13 +594,13 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                 <div className="p-3 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 rounded-xl space-y-2">
                     <label className="flex items-center gap-2 text-xs font-bold text-amber-800 dark:text-amber-400 uppercase tracking-wider">
                         <PiggyBank size={14} />
-                        ¿Cumplir una reserva?
+                        {t.forms.fulfillReserveQuestion}
                     </label>
                     <select
                         className="w-full px-3 py-2 border border-amber-200 dark:border-amber-800 rounded-lg bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                         {...register('fulfilledReserveId')}
                     >
-                        <option value="">No, es un gasto nuevo</option>
+                        <option value="">{t.forms.noNewExpense}</option>
                         {activeReserves.map((r) => (
                             <option key={r.id} value={r.id}>
                                 {r.description} ({formatCurrency(r.amount)})
@@ -607,13 +608,13 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                         ))}
                     </select>
                     <p className="text-[10px] text-amber-700 dark:text-amber-500 italic">
-                        Selecciona si este gasto es el pago de algo que ya habías reservado.
+                        {t.forms.fulfillReserveHint}
                     </p>
                 </div>
             )}
 
             <Button type="submit" className="w-full" isLoading={isSubmitting}>
-                {initialData ? 'Actualizar' : 'Guardar'} transacción
+                {initialData ? t.forms.updateTransaction : t.forms.saveTransaction}
             </Button>
         </form>
     );

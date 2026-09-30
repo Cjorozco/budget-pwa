@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Plus, Pencil, Trash2, AlertTriangle, ArrowRightLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, subMonths, addMonths, isSameMonth } from 'date-fns';
-import { es } from 'date-fns/locale';
 import { db } from '@/lib/db';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -10,11 +9,14 @@ import { TransactionForm } from '@/components/forms/TransactionForm';
 import { formatCurrency } from '@/lib/utils';
 import type { Transaction } from '@/lib/types';
 import { useUIStore } from '@/store/ui';
+import { useTranslation, getDateFnsLocale } from '@/lib/i18n';
 
 export type TransactionFilter = 'all' | 'income' | 'expense';
 
 export default function TransactionsPage() {
     const { confirm, addToast } = useUIStore();
+    const { t, language } = useTranslation();
+    const dateLocale = getDateFnsLocale(language);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -48,22 +50,22 @@ export default function TransactionsPage() {
             const parentCategory = category?.parentId ? catMap.get(category.parentId) : null;
             const categoryDisplay = parentCategory
                 ? `${parentCategory.name} > ${category?.name}`
-                : category?.name || 'Sin Categoría';
+                : category?.name || t.transactions.uncategorized;
 
             return {
                 ...tx,
                 categoryName: categoryDisplay,
                 categoryColor: category?.color || 'gray',
-                accountName: acctMap.get(tx.accountId)?.name || 'Cuenta Eliminada',
+                accountName: acctMap.get(tx.accountId)?.name || t.transactions.deletedAccount,
             };
         });
-    }, [currentDate, showAllHistory]);
+    }, [currentDate, showAllHistory, language]);
 
     const handleDelete = async (transaction: any) => {
         const ok = await confirm({
-            title: '¿Eliminar transacción?',
-            message: 'Esta acción no se puede deshacer y revertirá el efecto sobre el saldo.',
-            confirmLabel: 'Eliminar',
+            title: t.transactions.deleteConfirmTitle,
+            message: t.transactions.deleteConfirmMsg,
+            confirmLabel: t.common.delete,
             variant: 'danger',
         });
         if (!ok) {
@@ -119,13 +121,13 @@ export default function TransactionsPage() {
                     }
                 }
 
-                // 2. Delete the transaction
+                // 3. Delete the transaction
                 await db.transactions.delete(transaction.id);
             });
-            addToast('Transacción eliminada', 'success');
+            addToast(t.transactions.deleteSuccess, 'success');
         } catch (error) {
             console.error('Error deleting transaction:', error);
-            addToast('Error al eliminar la transacción', 'error');
+            addToast(t.transactions.deleteError, 'error');
         } finally {
             setDeletingId(null);
         }
@@ -151,16 +153,16 @@ export default function TransactionsPage() {
     };
 
     const monthLabel = showAllHistory
-        ? 'Todo el historial'
-        : format(currentDate, "MMMM yyyy", { locale: es });
+        ? t.transactions.allHistory
+        : format(currentDate, "MMMM yyyy", { locale: dateLocale });
 
     return (
         <div className="p-4 space-y-6">
             <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Movimientos</h1>
+                <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t.transactions.title}</h1>
                 <Button
                     data-testid="new-transaction-button"
-                    aria-label="Nueva transacción"
+                    aria-label={t.transactions.newTransaction}
                     size="sm"
                     className="rounded-full h-10 w-10 p-0"
                     onClick={() => {
@@ -176,7 +178,7 @@ export default function TransactionsPage() {
             <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-2 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
                 <button
                     type="button"
-                    aria-label="Mes anterior"
+                    aria-label="Previous month"
                     data-testid="prev-month-button"
                     onClick={() => navigateMonth('prev')}
                     className="p-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
@@ -195,14 +197,14 @@ export default function TransactionsPage() {
                             onClick={goToCurrentMonth}
                             className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 px-2 py-0.5 rounded-full border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 transition-colors"
                         >
-                            Ir al actual
+                            {t.transactions.currentMonth}
                         </button>
                     )}
                 </div>
 
                 <button
                     type="button"
-                    aria-label="Mes siguiente"
+                    aria-label="Next month"
                     data-testid="next-month-button"
                     onClick={() => navigateMonth('next')}
                     className="p-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
@@ -215,7 +217,7 @@ export default function TransactionsPage() {
             <div
                 className="flex bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl gap-1"
                 role="tablist"
-                aria-label="Filtrar por tipo de movimiento"
+                aria-label="Filter"
             >
                 <button
                     type="button"
@@ -229,7 +231,7 @@ export default function TransactionsPage() {
                             : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                     }`}
                 >
-                    Todos
+                    {t.transactions.allFilter}
                 </button>
                 <button
                     type="button"
@@ -243,7 +245,7 @@ export default function TransactionsPage() {
                             : 'text-slate-600 dark:text-slate-400 hover:text-green-600 dark:hover:text-green-400'
                     }`}
                 >
-                    Ingresos
+                    {t.transactions.incomesFilter}
                 </button>
                 <button
                     type="button"
@@ -257,7 +259,7 @@ export default function TransactionsPage() {
                             : 'text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400'
                     }`}
                 >
-                    Gastos
+                    {t.transactions.expensesFilter}
                 </button>
             </div>
 
@@ -265,10 +267,10 @@ export default function TransactionsPage() {
                 {filteredTransactions.length === 0 ? (
                     <div className="text-center py-10 text-slate-500 whitespace-pre-line text-sm">
                         {filter === 'income'
-                            ? `No hay ingresos registrados en ${monthLabel}.`
+                            ? t.transactions.noIncomeMonth.replace('{month}', monthLabel)
                             : filter === 'expense'
-                            ? `No hay gastos registrados en ${monthLabel}.`
-                            : `No hay movimientos en ${monthLabel}.\n¡Agrega una transacción para este mes!`}
+                            ? t.transactions.noExpenseMonth.replace('{month}', monthLabel)
+                            : t.transactions.noMovementsMonth.replace('{month}', monthLabel)}
                     </div>
                 ) : (
                     filteredTransactions.map((tx) => (
@@ -288,22 +290,22 @@ export default function TransactionsPage() {
                                         {tx.description}
                                     </p>
                                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                                        {format(tx.date, "d MMM, yyyy", { locale: es })} • {tx.accountName}
+                                        {format(tx.date, "d MMM, yyyy", { locale: dateLocale })} • {tx.accountName}
                                     </p>
                                     <div className="flex flex-wrap gap-1 mt-1.5">
                                         {(tx.isAmbiguous || tx.needsReview) && (
                                             <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 border border-amber-200 dark:border-amber-800 flex items-center gap-0.5">
-                                                <AlertTriangle size={8} /> Revisar
+                                                <AlertTriangle size={8} /> {t.transactions.reviewTag}
                                             </span>
                                         )}
                                         {tx.isAdjustment && (
                                             <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700 flex items-center gap-0.5">
-                                                Ajuste
+                                                {t.transactions.adjustmentTag}
                                             </span>
                                         )}
                                         {tx.type === 'transfer' && (
                                             <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700 flex items-center gap-0.5">
-                                                Transferencia
+                                                {t.transactions.transferTag}
                                             </span>
                                         )}
                                     </div>
@@ -320,7 +322,7 @@ export default function TransactionsPage() {
                                         {tx.type === 'income' || (tx.type === 'transfer' && tx.categoryId === 'transfer-in') ? '+' : '-'}{formatCurrency(tx.amount)}
                                     </p>
                                     <p className="text-xs text-slate-400">
-                                        {tx.type === 'transfer' ? 'Transferencia' : tx.categoryName}
+                                        {tx.type === 'transfer' ? t.transactions.transferTag : tx.categoryName}
                                     </p>
                                 </div>
                                 <div className="flex gap-1 ml-2">
@@ -357,7 +359,7 @@ export default function TransactionsPage() {
                     setIsModalOpen(false);
                     setEditingTransaction(null);
                 }}
-                title={editingTransaction ? "Editar Transacción" : "Nueva Transacción"}
+                title={editingTransaction ? t.transactions.editTransaction : t.transactions.newTransaction}
             >
                 <TransactionForm
                     initialData={editingTransaction}

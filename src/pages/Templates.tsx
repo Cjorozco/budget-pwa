@@ -10,8 +10,10 @@ import type { QuickTemplate } from '@/lib/types';
 import { v4 as uuidv4 } from 'uuid';
 import { useLicenseStore } from '@/store/licenseStore';
 import { ProBadge } from '@/components/ui/ProBadge';
+import { useTranslation } from '@/lib/i18n';
 
 export default function TemplatesPage() {
+    const { t } = useTranslation();
     const templates = useLiveQuery(() => db.quickTemplates.toArray()) || [];
     const [editingTemplate, setEditingTemplate] = useState<QuickTemplate | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -20,7 +22,7 @@ export default function TemplatesPage() {
 
     const handleOpenNewTemplate = () => {
         if (!canCreateTemplate(templates.length)) {
-            openUpgradeModal('El plan básico permite hasta 2 plantillas rápidas. Pasa a PRO para tener plantillas 1-tap ilimitadas.');
+            openUpgradeModal(t.templates.proLimitTemplates);
             return;
         }
         setEditingTemplate({
@@ -49,34 +51,34 @@ export default function TemplatesPage() {
                     createdAt: Date.now(),
                     updatedAt: Date.now()
                 });
-                addToast('Plantilla creada', 'success');
+                addToast(t.templates.templateCreated, 'success');
             } else {
                 await db.quickTemplates.update(editingTemplate.id, {
                     ...editingTemplate,
                     updatedAt: Date.now()
                 });
-                addToast('Plantilla actualizada', 'success');
+                addToast(t.templates.templateUpdated, 'success');
             }
             setIsModalOpen(false);
             setEditingTemplate(null);
         } catch (error) {
-            addToast('Error al guardar plantilla', 'error');
+            addToast(t.common.error, 'error');
         }
     };
 
     const handleDelete = async (id: string) => {
         const ok = await confirm({
-            title: '¿Borrar plantilla?',
-            message: '¿Estás seguro de que deseas eliminar esta plantilla rápida?',
-            confirmLabel: 'Borrar',
+            title: t.templates.deleteTemplateTitle,
+            message: t.templates.deleteTemplateMsg,
+            confirmLabel: t.common.delete,
             variant: 'danger',
         });
         if (!ok) return;
         try {
             await db.quickTemplates.delete(id);
-            addToast('Plantilla eliminada', 'success');
+            addToast(t.templates.templateDeleted, 'success');
         } catch (error) {
-            addToast('Error al eliminar', 'error');
+            addToast(t.common.error, 'error');
         }
     };
 
@@ -86,10 +88,10 @@ export default function TemplatesPage() {
                 <div className="flex items-center gap-2">
                     <div>
                         <div className="flex items-center gap-2">
-                            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Plantillas</h1>
+                            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t.templates.templatesTitle}</h1>
                             {!isPro && <ProBadge showUnlockAction size="sm" />}
                         </div>
-                        <p className="text-sm text-slate-500">Configura tus accesos rápidos</p>
+                        <p className="text-sm text-slate-500">{t.templates.templatesSubtitle}</p>
                     </div>
                 </div>
                 <Button
@@ -97,7 +99,7 @@ export default function TemplatesPage() {
                     size="sm"
                     onClick={handleOpenNewTemplate}
                 >
-                    <Plus size={18} className="mr-1" /> Nueva
+                    <Plus size={18} className="mr-1" /> {t.templates.newTemplate}
                 </Button>
             </header>
 
@@ -108,7 +110,7 @@ export default function TemplatesPage() {
                             <span className="text-3xl bg-slate-100 dark:bg-slate-800 p-2 rounded-xl">{template.icon}</span>
                             <div>
                                 <h3 className="font-bold text-slate-900 dark:text-white">{template.name}</h3>
-                                <p className="text-xs text-slate-500">{template.description || 'Sin descripción'}</p>
+                                <p className="text-xs text-slate-500">{template.description || t.templates.noDescription}</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -129,13 +131,13 @@ export default function TemplatesPage() {
             <Modal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
-                title={editingTemplate?.id.startsWith('new-') ? 'Nueva Plantilla' : 'Editar Plantilla'}
+                title={editingTemplate?.id.startsWith('new-') ? t.templates.newTemplateModal : t.templates.editTemplateModal}
             >
                 {editingTemplate && (
                     <form onSubmit={handleSave} className="space-y-4">
                         <div className="grid grid-cols-4 gap-4">
                             <div className="col-span-1">
-                                <label className="block text-xs font-bold text-slate-500 mb-1">ICONO</label>
+                                <label className="block text-xs font-bold text-slate-500 mb-1">{t.templates.iconLabel}</label>
                                 <Input
                                     value={editingTemplate.icon}
                                     onChange={e => setEditingTemplate({ ...editingTemplate, icon: e.target.value })}
@@ -144,27 +146,27 @@ export default function TemplatesPage() {
                                 />
                             </div>
                             <div className="col-span-3">
-                                <label className="block text-xs font-bold text-slate-500 mb-1">NOMBRE</label>
+                                <label className="block text-xs font-bold text-slate-500 mb-1">{t.templates.nameLabel}</label>
                                 <Input
                                     value={editingTemplate.name}
                                     onChange={e => setEditingTemplate({ ...editingTemplate, name: e.target.value })}
-                                    placeholder="Ej: Oxxo, Metro..."
+                                    placeholder={t.templates.namePlaceholder}
                                     required
                                 />
                             </div>
                         </div>
 
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 mb-1">DESCRIPCIÓN</label>
+                            <label className="block text-xs font-bold text-slate-500 mb-1">{t.templates.descriptionLabel}</label>
                             <Input
                                 value={editingTemplate.description}
                                 onChange={e => setEditingTemplate({ ...editingTemplate, description: e.target.value })}
-                                placeholder="¿De qué trata?"
+                                placeholder={t.templates.descriptionPlaceholder}
                             />
                         </div>
 
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 mb-1">MONTO SUGERIDO</label>
+                            <label className="block text-xs font-bold text-slate-500 mb-1">{t.templates.suggestedAmountLabel}</label>
                             <Input
                                 type="number"
                                 inputMode="decimal"
@@ -180,7 +182,7 @@ export default function TemplatesPage() {
                         <div className="pt-2">
                             <Button type="submit" className="w-full h-14 text-lg" isLoading={false}>
                                 <Save size={20} className="mr-2" />
-                                Guardar Plantilla
+                                {t.templates.saveTemplateBtn}
                             </Button>
                         </div>
                     </form>

@@ -8,10 +8,11 @@ import { v4 as uuidv4 } from 'uuid';
 import type { Account } from '@/lib/types';
 import { PiggyBank } from 'lucide-react';
 import { useUIStore } from '@/store/ui';
+import { useTranslation } from '@/lib/i18n';
 
 const ReserveSchema = z.object({
-    amount: z.number().min(1, 'El monto debe ser mayor a 0'),
-    description: z.string().min(3, 'Descripción requerida (ej: EPM Marzo)'),
+    amount: z.number().min(1, 'Amount must be greater than 0'),
+    description: z.string().min(3, 'Description required'),
 });
 
 type ReserveFormData = z.infer<typeof ReserveSchema>;
@@ -28,6 +29,7 @@ interface ReserveFormProps {
 }
 
 export function ReserveForm({ account, onSuccess, onCancel, initialData }: ReserveFormProps) {
+    const { t } = useTranslation();
     const addToast = useUIStore((s) => s.addToast);
     const {
         register,
@@ -49,7 +51,7 @@ export function ReserveForm({ account, onSuccess, onCancel, initialData }: Reser
                     description: data.description,
                     updatedAt: Date.now(),
                 });
-                addToast('Reserva actualizada', 'success');
+                addToast(t.forms.reserveUpdated, 'success');
             } else {
                 await db.reserves.add({
                     id: uuidv4(),
@@ -60,13 +62,13 @@ export function ReserveForm({ account, onSuccess, onCancel, initialData }: Reser
                     createdAt: Date.now(),
                     updatedAt: Date.now(),
                 });
-                addToast('Reserva creada', 'success');
+                addToast(t.forms.reserveCreated, 'success');
             }
 
             onSuccess();
         } catch (error) {
             console.error('Error saving reserve:', error);
-            addToast(initialData?.id ? 'Error al editar la reserva' : 'Error al crear la reserva', 'error');
+            addToast(t.common.error, 'error');
         }
     };
 
@@ -76,13 +78,13 @@ export function ReserveForm({ account, onSuccess, onCancel, initialData }: Reser
                 <PiggyBank className="text-amber-600 shrink-0 mt-0.5" size={20} />
                 <div>
                     <p className="text-xs font-medium text-amber-900 dark:text-amber-200">
-                        Esta reserva reducirá tu <b>Saldo Disponible</b> pero NO afectará tu saldo real ni tus ahorros.
+                        {t.forms.reserveHint}
                     </p>
                 </div>
             </div>
 
             <Input
-                label="Monto a Reservar"
+                label={t.forms.reserveAmountLabel}
                 type="number"
                 step="0.01"
                 placeholder="0"
@@ -92,18 +94,18 @@ export function ReserveForm({ account, onSuccess, onCancel, initialData }: Reser
             />
 
             <Input
-                label="Descripción / Propósito"
-                placeholder="Ej: Factura EPM Marzo"
+                label={t.forms.reserveDescLabel}
+                placeholder={t.forms.reserveDescPlaceholder}
                 error={errors.description?.message}
                 {...register('description')}
             />
 
             <div className="flex gap-3 pt-4 justify-end">
                 <Button type="button" variant="ghost" onClick={onCancel}>
-                    Cancelar
+                    {t.common.cancel}
                 </Button>
                 <Button type="submit" isLoading={isSubmitting}>
-                    {initialData?.id ? 'Guardar Cambios' : 'Crear Reserva'}
+                    {initialData?.id ? t.forms.updateReserve : t.forms.saveReserve}
                 </Button>
             </div>
         </form>

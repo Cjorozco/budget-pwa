@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 import type { Account } from '@/lib/types';
 import { AlertTriangle, CheckCircle } from 'lucide-react';
 import { useUIStore } from '@/store/ui';
+import { useTranslation } from '@/lib/i18n';
 
 const ReconciliationSchema = z.object({
     declaredBalance: z.number(),
@@ -25,6 +26,7 @@ interface ReconciliationFormProps {
 }
 
 export function ReconciliationForm({ account, onSuccess, onCancel }: ReconciliationFormProps) {
+    const { t } = useTranslation();
     const addToast = useUIStore((s) => s.addToast);
     const {
         register,
@@ -45,8 +47,6 @@ export function ReconciliationForm({ account, onSuccess, onCancel }: Reconciliat
 
     const onSubmit = async (data: ReconciliationFormData) => {
         try {
-            // CRITICAL: Ensure balance calculations and adjustment transactions are tied together
-            // to maintain atomic consistency between snapshots and account balances.
             await db.transaction('rw', db.reconciliations, db.accounts, db.transactions, db.categories, async () => {
                 // 1. Find or create "Ajuste de Reconciliación" category
                 let adjustmentCategory = await db.categories
@@ -75,8 +75,6 @@ export function ReconciliationForm({ account, onSuccess, onCancel }: Reconciliat
                     const txType = difference > 0 ? 'income' : 'expense';
                     const txAmount = Math.abs(difference);
 
-                    // REGRELA DE ORO: El sistema nunca corrige en silencio. 
-                    // Se deja evidencia explícita del ajuste como una transacción real.
                     await db.transactions.add({
                         id: txId,
                         amount: txAmount,
@@ -119,11 +117,11 @@ export function ReconciliationForm({ account, onSuccess, onCancel }: Reconciliat
                 });
             });
 
-            addToast('Cuenta reconciliada exitosamente', 'success');
+            addToast(t.accounts.reconciledSuccess, 'success');
             onSuccess();
         } catch (error) {
             console.error('Error during reconciliation:', error);
-            addToast('Error al reconciliar la cuenta', 'error');
+            addToast(t.common.error, 'error');
         }
     };
 
@@ -131,14 +129,14 @@ export function ReconciliationForm({ account, onSuccess, onCancel }: Reconciliat
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg space-y-3">
                 <div className="flex justify-between items-center">
-                    <span className="text-sm text-slate-600 dark:text-slate-400">Saldo Calculado:</span>
+                    <span className="text-sm text-slate-600 dark:text-slate-400">{t.forms.reconcileCalculated}</span>
                     <span className="font-bold text-slate-900 dark:text-white">
                         {formatCurrency(account.calculatedBalance)}
                     </span>
                 </div>
                 <div className="flex justify-between items-center">
                     <span className="text-sm text-slate-600 dark:text-slate-400">
-                        {account.type === 'cash' ? 'Saldo Real (en efectivo):' : `Saldo Real (${account.name}):`}
+                        {account.type === 'cash' ? t.forms.reconcileRealCash : t.forms.reconcileRealAccount.replace('{name}', account.name)}
                     </span>
                     <span className="font-bold text-slate-900 dark:text-white">
                         {formatCurrency(declaredBalance)}
@@ -146,7 +144,7 @@ export function ReconciliationForm({ account, onSuccess, onCancel }: Reconciliat
                 </div>
                 <div className="h-px bg-slate-200 dark:bg-slate-700" />
                 <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Diferencia:</span>
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t.forms.reconcileDifference}</span>
                     <span
                         data-testid="reconciliation-diff"
                         className={`font-bold text-lg ${Math.abs(difference) < 0.01
@@ -166,18 +164,18 @@ export function ReconciliationForm({ account, onSuccess, onCancel }: Reconciliat
                 <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 rounded-lg">
                     <AlertTriangle size={20} className="shrink-0 mt-0.5" />
                     <p className="text-sm">
-                        Hay una diferencia de <b>{formatCurrency(Math.abs(difference))}</b>. Se creará un movimiento para cuadrar el saldo.
+                        {t.forms.reconcileDiffWarning.replace('{amount}', formatCurrency(Math.abs(difference)))}
                     </p>
                 </div>
             ) : (
                 <div className="flex items-start gap-2 p-3 bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200 rounded-lg">
                     <CheckCircle size={20} className="shrink-0 mt-0.5" />
-                    <p className="text-sm">¡Perfecto! Los saldos coinciden.</p>
+                    <p className="text-sm">{t.forms.reconcileMatch}</p>
                 </div>
             )}
 
             <Input
-                label={account.type === 'cash' ? 'Saldo real actual (en efectivo)' : `Saldo real actual (según ${account.name})`}
+                label={account.type === 'cash' ? t.forms.reconcileRealActualCash : t.forms.reconcileRealActualAccount.replace('{name}', account.name)}
                 type="number"
                 step="0.01"
                 placeholder="0"
@@ -193,23 +191,23 @@ export function ReconciliationForm({ account, onSuccess, onCancel }: Reconciliat
                         {...register('createAdjustment')}
                         className="rounded"
                     />
-                    <span className="text-sm">Crear transacción de ajuste</span>
+                    <span className="text-sm">{t.forms.createAdjustmentTx}</span>
                 </label>
             )}
 
             <Input
-                label="Notas (opcional)"
-                placeholder="Ej: Olvidé registrar un gasto pequeño..."
+                label={t.forms.reconcileNotesOptional}
+                placeholder={t.forms.reconcileNotesPlaceholder}
                 error={errors.notes?.message}
                 {...register('notes')}
             />
 
             <div className="flex gap-3 pt-4 justify-end">
                 <Button type="button" variant="ghost" onClick={onCancel}>
-                    Cancelar
+                    {t.common.cancel}
                 </Button>
                 <Button type="submit" isLoading={isSubmitting}>
-                    Reconciliar
+                    {t.accounts.reconcile}
                 </Button>
             </div>
         </form>
