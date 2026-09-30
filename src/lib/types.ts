@@ -96,9 +96,11 @@ export interface QuickTemplate {
 
 export interface BudgetItem {
     id: string;
+    month?: string; // 'YYYY-MM' (e.g., '2026-09')
     name: string;
     amount: number;
     type: 'income' | 'expense';
     categoryId?: string;
     createdAt: number;
+    updatedAt?: number;
 }

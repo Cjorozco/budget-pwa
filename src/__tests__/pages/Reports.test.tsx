@@ -289,4 +289,49 @@ describe('Budget Page functionality', () => {
       expect(screen.getByText('Arriendo Apartamento')).toBeInTheDocument();
     });
   });
+
+  it('isolates budget items by month and allows copying from previous month', async () => {
+    // b-1 and b-2 are in current month.
+    // Let's open Budget for next month (empty initially)
+    render(
+      <MemoryRouter initialEntries={['/budget?month=2099-10']}>
+        <Budget />
+      </MemoryRouter>
+    );
+
+    // Month header shows Octubre 2099
+    await waitFor(() => {
+      expect(screen.getByText(/2099/i)).toBeInTheDocument();
+    });
+
+    // In 2099-10 there are no items yet
+    expect(screen.queryByText('Arriendo')).not.toBeInTheDocument();
+
+    // Create a new expense specifically for 2099-10
+    const addExpenseBtn = screen.getAllByRole('button', { name: /\+ Añadir/i })[1];
+    fireEvent.click(addExpenseBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText('Nuevo Gasto Fijo')).toBeInTheDocument();
+    });
+
+    const nameInput = screen.getByPlaceholderText(/Ej\. Arriendo/i);
+    const amountInput = screen.getByPlaceholderText('0');
+
+    fireEvent.change(nameInput, { target: { value: 'Seguro Auto Futuro' } });
+    fireEvent.change(amountInput, { target: { value: '300000' } });
+
+    const submitBtn = screen.getByRole('button', { name: /Guardar Gasto/i });
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText('Seguro Auto Futuro')).toBeInTheDocument();
+    });
+
+    // Verify it is saved with month: '2099-10' in Dexie
+    const items = await db.budgetItems.toArray();
+    const futureItem = items.find(i => i.name === 'Seguro Auto Futuro');
+    expect(futureItem).toBeDefined();
+    expect(futureItem?.month).toBe('2099-10');
+  });
 });

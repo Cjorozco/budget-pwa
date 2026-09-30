@@ -212,6 +212,11 @@ export const en: TranslationSchema = {
         expenseWord: 'Expense',
         deleteItemTitle: 'Delete item?',
         deleteItemMsg: 'Are you sure you want to remove this item from the budget?',
+        copyFromPreviousMonth: 'Copy budget from previous month ({month})',
+        copySuccess: 'Budget successfully copied from {month}',
+        noItemsInMonthBanner: 'You have not set up fixed income or expenses for {month}.',
+        budgetForMonth: 'Budget for {month}',
+        copyMonthBtn: 'Copy {count} items from {month}',
     },
     reports: {
         title: 'Reports',

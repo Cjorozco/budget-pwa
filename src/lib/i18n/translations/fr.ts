@@ -212,6 +212,11 @@ export const fr: TranslationSchema = {
         expenseWord: 'Dépense',
         deleteItemTitle: 'Supprimer ce poste ?',
         deleteItemMsg: 'Êtes-vous certain de vouloir retirer ce poste du budget ?',
+        copyFromPreviousMonth: 'Copier le budget du mois précédent ({month})',
+        copySuccess: 'Budget copié avec succès depuis {month}',
+        noItemsInMonthBanner: 'Vous n’avez pas encore configuré de revenus ou dépenses fixes pour {month}.',
+        budgetForMonth: 'Budget pour {month}',
+        copyMonthBtn: 'Copier {count} postes de {month}',
     },
     reports: {
         title: 'Rapports',

@@ -212,6 +212,11 @@ export const es: TranslationSchema = {
         expenseWord: 'Gasto',
         deleteItemTitle: '¿Eliminar rubro?',
         deleteItemMsg: '¿Seguro que deseas eliminar este rubro del presupuesto?',
+        copyFromPreviousMonth: 'Copiar presupuesto del mes anterior ({month})',
+        copySuccess: 'Presupuesto copiado exitosamente de {month}',
+        noItemsInMonthBanner: 'No has configurado ingresos o gastos fijos para {month}.',
+        budgetForMonth: 'Presupuesto de {month}',
+        copyMonthBtn: 'Copiar {count} ítems de {month}',
     },
     reports: {
         title: 'Informes',

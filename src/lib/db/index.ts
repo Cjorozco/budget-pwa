@@ -65,6 +65,10 @@ export class PersonalBudgetDB extends Dexie {
         this.version(8).stores({
             budgetItems: 'id, type',
         });
+
+        this.version(9).stores({
+            budgetItems: 'id, month, type',
+        });
     }
 }
 
