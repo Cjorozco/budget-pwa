@@ -235,6 +235,26 @@ export interface TranslationSchema {
         resetSuccess: string;
         aboutSection: string;
         version: string;
+        activeProvider: string;
+        keyReady: string;
+        noKey: string;
+        activeKeyFor: string;
+        noKeyConfiguredFor: string;
+        keysStoredLocally: string;
+        changeKey: string;
+        testProvider: string;
+        forgetKey: string;
+        replaceKey: string;
+        viewStatusAndBenefits: string;
+        viewStatusManageLicense: string;
+        viewPlansAndPricing: string;
+        aiSmartCategorization: string;
+        aiUnlockPrompt: string;
+        unlockAiButton: string;
+        uploadButton: string;
+        overwriteWarning: string;
+        fullResetWarning: string;
+        transactionsResetWarning: string;
     };
     upgradeModal: {
         modalTitle: string;

@@ -245,7 +245,7 @@ export default function SettingsPage() {
             </section>
 
             <section className="space-y-4">
-                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Suscripción y Licencia</h2>
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{t.settings.licenseSection}</h2>
                 <div className={`p-5 rounded-2xl text-white shadow-lg relative overflow-hidden ${
                     isGod
                         ? 'bg-gradient-to-br from-rose-600 via-purple-600 to-amber-600'
@@ -264,10 +264,10 @@ export default function SettingsPage() {
 
                         <p className="text-xs text-amber-50 leading-relaxed opacity-95">
                             {isGod
-                                ? "¡Tienes activo el nivel más alto: Personal Budget GOD! Todas las funcionalidades actuales y sus actualizaciones incluidas de por vida."
+                                ? t.upgradeModal.godMemberDesc
                                 : isPro
-                                ? "¡Tienes activas todas las funciones de Personal Budget PRO! Cuentas ilimitadas, categorización con IA (BYOK), plantillas 1-tap y exportación."
-                                : "Desbloquea categorización automática con IA (usando tu API key de Gemini, Groq o Claude), cuentas y reservas ilimitadas y exportación a CSV/Excel."}
+                                ? t.upgradeModal.proMemberDesc
+                                : t.upgradeModal.modalSubtitle}
                         </p>
 
                         <div className="pt-1">
@@ -279,7 +279,7 @@ export default function SettingsPage() {
                                         : 'bg-white text-orange-600 hover:bg-amber-50'
                                 }`}
                             >
-                                {isGod ? "Ver Estado y Beneficios GOD" : isPro ? "Ver Estado / Gestionar Licencia" : "Ver Planes y Precios ($0.99 / mes)"}
+                                {isGod ? t.settings.viewStatusAndBenefits : isPro ? t.settings.viewStatusManageLicense : t.settings.viewPlansAndPricing}
                             </Button>
                         </div>
                     </div>
@@ -299,7 +299,7 @@ export default function SettingsPage() {
                                     <Bot className="text-blue-600 dark:text-blue-400" size={20} />
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-slate-900 dark:text-white text-sm">Categorización Inteligente con IA</h3>
+                                    <h3 className="font-bold text-slate-900 dark:text-white text-sm">{t.settings.aiSmartCategorization}</h3>
                                     <p className="text-[11px] text-slate-500">Google Gemini · OpenAI · Anthropic Claude · Groq</p>
                                 </div>
                             </div>
@@ -309,22 +309,22 @@ export default function SettingsPage() {
                             </div>
                         </div>
                         <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                            Al actualizar a <strong>Personal Budget PRO</strong>, podrás ingresar tu clave de API gratuita (BYOK) para que la inteligencia artificial sugiera categorías automáticamente mientras escribes tus gastos, con 100% de privacidad en tu navegador.
+                            {t.settings.aiUnlockPrompt}
                         </p>
                         <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => openUpgradeModal('Desbloquea categorización automática con IA')}
+                            onClick={() => openUpgradeModal(t.settings.unlockAiButton)}
                             className="w-full text-xs"
                         >
-                            <Sparkles className="w-3.5 h-3.5 mr-1.5 text-amber-500" /> Desbloquear Categorización con IA
+                            <Sparkles className="w-3.5 h-3.5 mr-1.5 text-amber-500" /> {t.settings.unlockAiButton}
                         </Button>
                     </div>
                 )}
             </section>
 
             <section className="space-y-4">
-                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Portabilidad de datos</h2>
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{t.settings.backupSection}</h2>
                 <div className="grid grid-cols-1 gap-3">
                     <button
                         onClick={handleExportJSON}
@@ -335,8 +335,8 @@ export default function SettingsPage() {
                                 <FileJson className="text-indigo-600 dark:text-indigo-400" size={20} />
                             </div>
                             <div>
-                                <h3 className="font-medium text-slate-900 dark:text-white text-sm">Exportar respaldo (JSON)</h3>
-                                <p className="text-[10px] text-slate-500">Copia completa de tu base de datos</p>
+                                <h3 className="font-medium text-slate-900 dark:text-white text-sm">{t.settings.exportJSON}</h3>
+                                <p className="text-[10px] text-slate-500">{t.settings.exportJSONDesc}</p>
                             </div>
                         </div>
                         <Download size={18} className="text-slate-400" />
@@ -352,10 +352,10 @@ export default function SettingsPage() {
                             </div>
                             <div>
                                 <h3 className="font-medium text-slate-900 dark:text-white text-sm flex items-center gap-1.5">
-                                    Exportar a Excel (CSV)
+                                    {t.settings.exportCSV}
                                     {!isPro && <Lock size={14} className="text-amber-500" />}
                                 </h3>
-                                <p className="text-[10px] text-slate-500">Solo transacciones para análisis externo</p>
+                                <p className="text-[10px] text-slate-500">{t.settings.exportCSVDesc}</p>
                             </div>
                         </div>
                         {!isPro ? (
@@ -371,23 +371,23 @@ export default function SettingsPage() {
                                 <Upload className="text-amber-600 dark:text-amber-400" size={20} />
                             </div>
                             <div className="text-left">
-                                <h3 className="font-medium text-slate-900 dark:text-white text-sm">Importar respaldo</h3>
-                                <p className="text-[10px] text-slate-500">Restaura datos desde un archivo .json</p>
+                                <h3 className="font-medium text-slate-900 dark:text-white text-sm">{t.settings.importJSON}</h3>
+                                <p className="text-[10px] text-slate-500">{t.settings.importJSONDesc}</p>
                             </div>
                         </div>
                         <input type="file" accept=".json" onChange={handleFileInput} className="hidden" />
-                        <span className="text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded">SUBIR</span>
+                        <span className="text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded">{t.settings.uploadButton}</span>
                     </label>
                 </div>
             </section>
 
             <section className="space-y-4">
-                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Zona de peligro</h2>
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{t.settings.dangerZone}</h2>
                 <div className="p-4 border border-red-200 bg-red-50 dark:bg-red-900/10 dark:border-red-900/50 rounded-2xl space-y-4">
                     <div className="flex items-center justify-between gap-4">
                         <div className="flex-1">
-                            <h3 className="font-medium text-red-900 dark:text-red-200 text-sm">Reset cuenta</h3>
-                            <p className="text-[10px] text-red-700 dark:text-red-300">Borra todas las transacciones y pone los saldos en 0.</p>
+                            <h3 className="font-medium text-red-900 dark:text-red-200 text-sm">{t.settings.resetTransactions}</h3>
+                            <p className="text-[10px] text-red-700 dark:text-red-300">{t.settings.resetTransactionsDesc}</p>
                         </div>
                         <Button
                             variant="destructive"
@@ -406,8 +406,8 @@ export default function SettingsPage() {
 
                     <div className="flex items-center justify-between gap-4">
                         <div className="flex-1">
-                            <h3 className="font-medium text-red-900 dark:text-red-200 text-sm">Reset total</h3>
-                            <p className="text-[10px] text-red-700 dark:text-red-300">Borra TODO: cuentas, categorías y config.</p>
+                            <h3 className="font-medium text-red-900 dark:text-red-200 text-sm">{t.settings.resetAllData}</h3>
+                            <p className="text-[10px] text-red-700 dark:text-red-300">{t.settings.resetAllDataDesc}</p>
                         </div>
                         <Button
                             variant="destructive"
@@ -426,7 +426,7 @@ export default function SettingsPage() {
 
             <footer className="pt-2 text-center">
                 <p className="text-xs text-slate-400 dark:text-slate-500">
-                    Versión {__APP_VERSION__}
+                    {t.settings.version} {__APP_VERSION__}
                 </p>
             </footer>
 
@@ -440,21 +440,21 @@ export default function SettingsPage() {
                         <AlertTriangle className="shrink-0" />
                         <p className="text-sm">
                             {actionType === 'import'
-                                ? "Se sobrescribirán todos los datos actuales con el contenido del archivo de respaldo."
+                                ? t.settings.overwriteWarning
                                 : actionType === 'full'
-                                ? "Esta acción no se puede deshacer. Se borrarán tus movimientos, cuentas y categorías. Tu licencia PRO / GOD permanecerá activa en este dispositivo."
-                                : "Esta acción borrará todos los movimientos y reiniciará los balances a cero."}
+                                ? t.settings.fullResetWarning
+                                : t.settings.transactionsResetWarning}
                         </p>
                     </div>
 
                     <div className="flex gap-3 justify-end">
-                        <Button variant="outline" onClick={() => setIsConfirmOpen(false)}>Cancelar</Button>
+                        <Button variant="outline" onClick={() => setIsConfirmOpen(false)}>{t.common.cancel}</Button>
                         <Button
                             variant="destructive"
                             onClick={confirmAction}
                             isLoading={isLoading}
                         >
-                            Confirmar
+                            {t.common.confirm}
                         </Button>
                     </div>
                 </div>

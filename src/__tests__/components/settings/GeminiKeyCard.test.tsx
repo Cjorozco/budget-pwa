@@ -2,10 +2,12 @@ import { describe, expect, it, beforeEach, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { GeminiKeyCard } from '@/components/settings/GeminiKeyCard';
 import { getAiApiKey, getSelectedAiProvider, setAiApiKey, setSelectedAiProvider } from '@/lib/ai/gateway/config';
+import { useI18nStore } from '@/lib/i18n/i18nStore';
 
 describe('GeminiKeyCard / Multi-Provider AI Settings', () => {
     beforeEach(() => {
         localStorage.clear();
+        useI18nStore.setState({ language: 'es' });
     });
 
     afterEach(() => {
@@ -16,7 +18,7 @@ describe('GeminiKeyCard / Multi-Provider AI Settings', () => {
     it('renders provider tabs and defaults to Gemini', () => {
         render(<GeminiKeyCard />);
 
-        expect(screen.getByText('Motor de Inteligencia Artificial')).toBeInTheDocument();
+        expect(screen.getByText(/Inteligencia Artificial/i)).toBeInTheDocument();
         expect(screen.getByTestId('ai-provider-select-gemini')).toBeInTheDocument();
         expect(screen.getByTestId('ai-provider-select-anthropic')).toBeInTheDocument();
         expect(screen.getByTestId('ai-provider-select-groq')).toBeInTheDocument();
