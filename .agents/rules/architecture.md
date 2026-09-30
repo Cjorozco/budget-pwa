@@ -10,10 +10,11 @@
 - **Vite 7**
 - **Tailwind CSS 4** para una UI mobile-first basada en utilidades
 - **Dexie.js (IndexedDB)** + `dexie-react-hooks` para persistencia y reactividad offline-first
-- **Zustand** para estado de UI transitorio (toasts, flags, confirm dialogs)
+- **Zustand** para estado de UI transitorio (toasts, flags, confirm dialogs) y estado de licencia
 - **React Router** para navegación
-- **React Hook Form + Zod** para validación consistente en formularios y fronteras de datos
+- **React Hook Form + Zod** para validación consistente en formularios, contratos de IA y backups
 - **Recharts** para visualizaciones (optimizadas para móvil)
+- **Vitest** con 270+ pruebas unitarias y de integración
 
 ### Convenciones Clave de Dominio:
 - Los cálculos “de verdad” deben derivarse de la historia de transacciones (no de “ajustes” implícitos).
@@ -30,7 +31,8 @@ Estos son los principios fundamentales que deben mantenerse en todo momento:
 - **Trazabilidad Total**: cualquier ajuste al saldo debe ser una transacción explícita (`isAdjustment: true`).
 - **Offline-First**: los datos nunca salen del dispositivo; persistimos robustamente en IndexedDB.
 - **Saldos Atómicos**: el saldo calculado es la verdad absoluta derivada de la historia de transacciones.
-- **Gemini BYOK (PRO)**: la única llamada de red opcional es a `generativelanguage.googleapis.com` con la API key que el usuario ingresa (Google AI Studio, modelo `gemini-flash-latest`). No hay proxy ni key en el build. El orquestador `suggestWithLlm` es el punto de extensión.
+- **AI Multi-Provider BYOK (PRO/GOD)**: soporte directo en navegador para Google Gemini, Anthropic Claude, OpenAI y Groq con claves ingresadas por el usuario. No hay proxy ni backend intermediario. El gateway en `src/lib/ai/gateway/` y el orquestador `categorizer.ts` son los puntos de extensión.
+- **Licenciamiento Lemon Squeezy**: activación contra `api.lemonsqueezy.com` y validación criptográfica local con fallback offline.
 
 ---
 
@@ -67,10 +69,10 @@ Esta app es una **vitrina pública** de capacidades como desarrollador **Senior 
 - **PWA moderna**:
   - Experiencia base (assets estáticos) funciona offline vía Service Worker (`registerType: 'autoUpdate'`).
   - `manifest.webmanifest` consistente con la UX (tema, íconos, display standalone).
-  - Runtime caching: `NetworkOnly` para `generativelanguage.googleapis.com` (Gemini BYOK).
+  - Runtime caching: `NetworkOnly` para APIs de IA (`generativelanguage.googleapis.com`, `api.anthropic.com`, `api.openai.com`, `api.groq.com`) y Lemon Squeezy.
 - **Offline UX**: toda acción de persistencia debe funcionar sin conexión a red; mostrar feedback claro y no invasivo.
 - **Seguridad y Privacidad**: sin telemetría ni tracking; validación con Zod en fronteras de persistencia y backups.
-- **Calidad de Código**: suite de pruebas unitarias/integración con Vitest para lógica pura, validaciones y acceso a DB.
+- **Calidad de Código**: suite de pruebas unitarias/integración con Vitest para lógica pura, validaciones, adaptadores de IA y acceso a DB.
 
 ---
 
@@ -79,10 +81,10 @@ Esta app es una **vitrina pública** de capacidades como desarrollador **Senior 
 - Persistencia: IndexedDB vía Dexie. `useLiveQuery` en componentes; nunca async crudo en render.
 - Escrituras multi-tabla: `db.transaction()`. IDs: `uuid`. Índices en campos de `.where()`.
 - Totales: derivar de la historia; no guardar saldos stale.
-- Zustand solo para UI (toasts, modales, flags). No duplicar la DB en Zustand.
+- Zustand solo para UI (toasts, modales, flags) y estado transitorio de licencias. No duplicar la DB en Zustand.
 - Formularios: React Hook Form + Zod.
 - Service Worker: `vite-plugin-pwa`, `registerType: 'autoUpdate'`. Core sin red.
-- Gemini BYOK: key NUNCA en `VITE_*`, Dexie ni backups. Workbox `NetworkOnly` para `generativelanguage.googleapis.com`.
+- BYOK Keys: NUNCA en `VITE_*`, Dexie ni backups. Almacenadas en `localStorage`.
 - UI: español `es-CO`. Moneda COP con `formatCurrency()`. Iconos Lucide. Confirmaciones con `ConfirmDialog` del UI store.
 - LLM: no escribe a IndexedDB ni a UI sin Zod + grounding.
 
@@ -91,14 +93,14 @@ Esta app es una **vitrina pública** de capacidades como desarrollador **Senior 
 Al shippear cambios con significado (no typos/comentarios), bumpear `package.json` `"version"`:
 
 - **PATCH**: bugs, copy, tests, refactors sin cambio de comportamiento
-- **MINOR**: features, pantallas, PWA/offline, reglas del categorizador
-- **MAJOR**: Dexie schema que pierde datos, backup incompatible, rutas rotas
+- **MINOR**: features, pantallas, PWA/offline, reglas del categorizador, nuevos proveedores
+- **MAJOR**: Dexie schema que pierde datos, backup incompatible, rutas rotas, lanzamiento de versión mayor
 
 Dexie `version(n)` ≠ semver de la app. Si la UI/manifest muestran versión, alinear con `package.json`.
 Mencionar: `📦 VERSION: x.y.z → x.y.w (PATCH|MINOR|MAJOR — razón)`.
 
 ## Fuera de alcance (sin aprobación)
 
-- Sync remoto / cuentas / backend
-- Telemetría
+- Sync remoto / cuentas / backend propio
+- Telemetría invasiva
 - Reemplazar Dexie por Convex u otra DB

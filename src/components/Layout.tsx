@@ -3,17 +3,19 @@ import { LayoutDashboard, Wallet, ArrowRightLeft, Settings, Calculator, PieChart
 import { cn } from '@/lib/utils';
 
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { useTranslation } from '@/lib/i18n';
 
 export default function Layout() {
     const location = useLocation();
+    const { t } = useTranslation();
 
     const navItems = [
-        { href: '/', icon: LayoutDashboard, label: 'Resumen' },
-        { href: '/budget', icon: Calculator, label: 'Presup.' },
-        { href: '/transactions', icon: ArrowRightLeft, label: 'Movs' },
-        { href: '/accounts', icon: Wallet, label: 'Cuentas' },
-        { href: '/reports', icon: PieChart, label: 'Informes' },
-        { href: '/settings', icon: Settings, label: 'Ajustes' },
+        { href: '/', icon: LayoutDashboard, label: t.nav.dashboard },
+        { href: '/budget', icon: Calculator, label: t.nav.budget },
+        { href: '/transactions', icon: ArrowRightLeft, label: t.nav.transactions },
+        { href: '/accounts', icon: Wallet, label: t.nav.accounts },
+        { href: '/reports', icon: PieChart, label: t.nav.reports },
+        { href: '/settings', icon: Settings, label: t.nav.settings },
     ];
 
     return (

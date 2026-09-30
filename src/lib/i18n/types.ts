@@ -1,0 +1,280 @@
+export type SupportedLanguage = 'es' | 'en' | 'fr';
+
+export interface LanguageOption {
+    code: SupportedLanguage;
+    label: string;
+    flag: string;
+    description: string;
+}
+
+export const SUPPORTED_LANGUAGES: LanguageOption[] = [
+    {
+        code: 'es',
+        label: 'Español',
+        flag: '🇲🇽',
+        description: 'Español (Latinoamérica)',
+    },
+    {
+        code: 'en',
+        label: 'English',
+        flag: '🇨🇦',
+        description: 'English (US & Canada)',
+    },
+    {
+        code: 'fr',
+        label: 'Français',
+        flag: '⚜️',
+        description: 'Français (Canada & International)',
+    },
+];
+
+export interface TranslationSchema {
+    common: {
+        save: string;
+        cancel: string;
+        delete: string;
+        edit: string;
+        create: string;
+        back: string;
+        close: string;
+        loading: string;
+        success: string;
+        error: string;
+        confirm: string;
+        search: string;
+        filter: string;
+        all: string;
+        actions: string;
+        status: string;
+        date: string;
+        amount: string;
+        description: string;
+        category: string;
+        account: string;
+        tags: string;
+        notes: string;
+        optional: string;
+        required: string;
+        active: string;
+        inactive: string;
+        viewDetails: string;
+        copy: string;
+        copied: string;
+    };
+    nav: {
+        dashboard: string;
+        budget: string;
+        transactions: string;
+        accounts: string;
+        reports: string;
+        settings: string;
+    };
+    dashboard: {
+        totalBalance: string;
+        availableBalance: string;
+        monthlyIncome: string;
+        monthlyExpense: string;
+        netSavings: string;
+        savingsReserves: string;
+        reservesTooltip: string;
+        quickActions: string;
+        newExpense: string;
+        newIncome: string;
+        transfer: string;
+        recentTransactions: string;
+        viewAllTransactions: string;
+        noRecentTransactions: string;
+        startByAdding: string;
+        reservesEmpty: string;
+        reservesEmptyDesc: string;
+        createReserve: string;
+        financialHealth: string;
+        expenseRatio: string;
+    };
+    transactions: {
+        title: string;
+        subtitle: string;
+        newTransaction: string;
+        newExpense: string;
+        newIncome: string;
+        newTransfer: string;
+        editTransaction: string;
+        deleteTransactionConfirm: string;
+        searchPlaceholder: string;
+        allFilter: string;
+        expensesFilter: string;
+        incomesFilter: string;
+        transfersFilter: string;
+        ambiguousFilter: string;
+        noTransactionsFound: string;
+        noTransactionsMatching: string;
+        incomeLabel: string;
+        expenseLabel: string;
+        transferLabel: string;
+        sourceAccount: string;
+        destinationAccount: string;
+        transferFee: string;
+        isAmbiguous: string;
+        ambiguousHelp: string;
+        aiSuggested: string;
+        aiConfidence: string;
+        applyAiSuggestion: string;
+        createTemplateFromThis: string;
+        tagsPlaceholder: string;
+        addTag: string;
+        transactionSaved: string;
+        transactionDeleted: string;
+    };
+    accounts: {
+        title: string;
+        subtitle: string;
+        newAccount: string;
+        editAccount: string;
+        deleteAccountConfirm: string;
+        accountName: string;
+        accountType: string;
+        accountTypeChecking: string;
+        accountTypeSavings: string;
+        accountTypeCredit: string;
+        accountTypeCash: string;
+        accountTypeInvestment: string;
+        accountTypeOther: string;
+        initialBalance: string;
+        calculatedBalance: string;
+        reconcile: string;
+        reconcileTitle: string;
+        reconcileDesc: string;
+        declaredBalance: string;
+        difference: string;
+        reconciledSuccess: string;
+        adjustmentCreated: string;
+        history: string;
+        reservesSection: string;
+        reserveName: string;
+        targetAmount: string;
+        currentAmount: string;
+        reserveSaved: string;
+        reserveDeleted: string;
+        noAccountsYet: string;
+    };
+    budget: {
+        title: string;
+        subtitle: string;
+        monthlyBudget: string;
+        totalAllocated: string;
+        spentSoFar: string;
+        remaining: string;
+        overBudget: string;
+        onTrack: string;
+        setBudget: string;
+        categoryBudget: string;
+        noBudgetsConfigured: string;
+        configureBudgetsHelp: string;
+        budgetSaved: string;
+        percentageUsed: string;
+    };
+    reports: {
+        title: string;
+        subtitle: string;
+        parentCategories: string;
+        subcategories: string;
+        incomeVsExpense: string;
+        fixedCompliance: string;
+        totalExpenses: string;
+        totalIncome: string;
+        savingsRate: string;
+        timeRange: string;
+        thisMonth: string;
+        lastMonth: string;
+        lastThreeMonths: string;
+        thisYear: string;
+        allTime: string;
+        customRange: string;
+        noDataForPeriod: string;
+        expenseBreakdown: string;
+        incomeBreakdown: string;
+        budgetVsActual: string;
+    };
+    settings: {
+        title: string;
+        subtitle: string;
+        languageSection: string;
+        languageDesc: string;
+        backupSection: string;
+        backupDesc: string;
+        exportJSON: string;
+        exportJSONDesc: string;
+        importJSON: string;
+        importJSONDesc: string;
+        exportCSV: string;
+        exportCSVDesc: string;
+        aiSection: string;
+        aiDesc: string;
+        licenseSection: string;
+        licenseDesc: string;
+        activeTier: string;
+        manageLicense: string;
+        userGuideSection: string;
+        userGuideDesc: string;
+        openUserGuide: string;
+        categoriesSection: string;
+        categoriesDesc: string;
+        manageCategories: string;
+        templatesSection: string;
+        templatesDesc: string;
+        manageTemplates: string;
+        dangerZone: string;
+        dangerZoneDesc: string;
+        resetTransactions: string;
+        resetTransactionsDesc: string;
+        resetAllData: string;
+        resetAllDataDesc: string;
+        confirmResetTitle: string;
+        confirmResetTransactionsMsg: string;
+        confirmResetFullMsg: string;
+        resetSuccess: string;
+        aboutSection: string;
+        version: string;
+    };
+    upgradeModal: {
+        modalTitle: string;
+        modalSubtitle: string;
+        plansTab: string;
+        keyTab: string;
+        monthlyPlan: string;
+        monthlyDesc: string;
+        monthlyPrice: string;
+        annualPlan: string;
+        annualDesc: string;
+        annualPrice: string;
+        annualDiscountBadge: string;
+        lifetimePlan: string;
+        lifetimeDesc: string;
+        lifetimePrice: string;
+        lifetimeBadge: string;
+        checkoutButton: string;
+        checkoutButtonUpdate: string;
+        securePaymentNote: string;
+        enterKeyLabel: string;
+        keyPlaceholder: string;
+        activateButton: string;
+        verifying: string;
+        deactivateButton: string;
+        activeMembership: string;
+        lifetimeMemberTitle: string;
+        lifetimeMemberDesc: string;
+        proMemberTitle: string;
+        proMemberDesc: string;
+        godMemberTitle: string;
+        godMemberDesc: string;
+        featuresHeader: string;
+        featureUnlimitedAccounts: string;
+        featureAiCategorization: string;
+        featureAmbiguousReview: string;
+        featureQuickTemplates: string;
+        featureAdvancedReports: string;
+        featureGodTeaserTitle: string;
+        featureGodTeaserDesc: string;
+        featureGodTeaserDiscount: string;
+    };
+}

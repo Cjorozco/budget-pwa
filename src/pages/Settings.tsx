@@ -7,9 +7,11 @@ import { Modal } from '@/components/ui/Modal';
 import { exportDatabase, downloadBackup, importDatabase, exportToCSV, downloadCSV } from '@/lib/db/backup';
 import { GeminiKeyCard } from '@/components/settings/GeminiKeyCard';
 import { UserGuideModal } from '@/components/settings/UserGuideModal';
+import { LanguageSelector } from '@/components/settings/LanguageSelector';
 import { useLicenseStore, getTierDisplayName } from '@/store/licenseStore';
 import { useUIStore } from '@/store/ui';
 import { ProBadge } from '@/components/ui/ProBadge';
+import { useTranslation } from '@/lib/i18n';
 
 export default function SettingsPage() {
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -19,6 +21,7 @@ export default function SettingsPage() {
     const [isGuideOpen, setIsGuideOpen] = useState(false);
     const { addToast, confirm } = useUIStore();
     const { tier, isPro, isGod, openUpgradeModal } = useLicenseStore();
+    const { t } = useTranslation();
 
     const handleExportJSON = async () => {
         try {
@@ -154,9 +157,14 @@ export default function SettingsPage() {
     return (
         <div className="p-4 safe-bottom space-y-6">
             <header>
-                <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Ajustes</h1>
-                <p className="text-sm text-slate-500">Configuración general</p>
+                <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t.settings.title}</h1>
+                <p className="text-sm text-slate-500">{t.settings.subtitle}</p>
             </header>
+
+            {/* Language Selector */}
+            <section>
+                <LanguageSelector />
+            </section>
 
             {import.meta.env.DEV && (
                 <section className="space-y-3 p-4 rounded-2xl border-2 border-dashed border-violet-300 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/30">
@@ -178,7 +186,7 @@ export default function SettingsPage() {
             )}
 
             <section className="space-y-4">
-                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Ayuda y Gestión</h2>
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{t.settings.categoriesSection}</h2>
                 <div className="grid grid-cols-1 gap-3">
                     {/* Interactive User Guide */}
                     <button
@@ -192,11 +200,11 @@ export default function SettingsPage() {
                                     <BookOpen size={20} />
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-slate-900 dark:text-white text-sm">Manual de Usuario y Guía</h3>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">Aprende a usar saldos atómicos, conciliación y categorización</p>
+                                    <h3 className="font-bold text-slate-900 dark:text-white text-sm">{t.settings.userGuideSection}</h3>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">{t.settings.userGuideDesc}</p>
                                 </div>
                             </div>
-                            <span className="text-blue-600 dark:text-blue-400 font-semibold text-xs">Abrir →</span>
+                            <span className="text-blue-600 dark:text-blue-400 font-semibold text-xs">→</span>
                         </div>
                     </button>
 
@@ -208,8 +216,8 @@ export default function SettingsPage() {
                                         <FolderTree className="text-blue-600 dark:text-blue-400" size={20} />
                                     </div>
                                     <div>
-                                        <h3 className="font-medium text-slate-900 dark:text-white text-sm">Categorías</h3>
-                                        <p className="text-[10px] text-slate-500">Gestiona tus categorías de ingresos y gastos</p>
+                                        <h3 className="font-medium text-slate-900 dark:text-white text-sm">{t.settings.manageCategories}</h3>
+                                        <p className="text-[10px] text-slate-500">{t.settings.categoriesDesc}</p>
                                     </div>
                                 </div>
                                 <span className="text-slate-400">→</span>
@@ -225,8 +233,8 @@ export default function SettingsPage() {
                                         <RefreshCw className="text-purple-600 dark:text-purple-400" size={20} />
                                     </div>
                                     <div>
-                                        <h3 className="font-medium text-slate-900 dark:text-white text-sm">Plantillas rápidas</h3>
-                                        <p className="text-[10px] text-slate-500">Configura accesos rápidos para tus gastos frecuentes</p>
+                                        <h3 className="font-medium text-slate-900 dark:text-white text-sm">{t.settings.manageTemplates}</h3>
+                                        <p className="text-[10px] text-slate-500">{t.settings.templatesDesc}</p>
                                     </div>
                                 </div>
                                 <span className="text-slate-400">→</span>
