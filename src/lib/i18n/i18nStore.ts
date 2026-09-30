@@ -10,15 +10,11 @@ const STORAGE_KEY = 'budget_language';
 
 const getInitialLanguage = (): SupportedLanguage => {
     try {
-        const saved = localStorage.getItem(STORAGE_KEY) as SupportedLanguage | null;
-        if (saved && (saved === 'es' || saved === 'en' || saved === 'fr')) {
-            return saved;
-        }
-
-        if (typeof navigator !== 'undefined' && navigator.language) {
-            const browserLang = navigator.language.toLowerCase();
-            if (browserLang.startsWith('fr')) return 'fr';
-            if (browserLang.startsWith('en')) return 'en';
+        if (typeof window !== 'undefined' && window.localStorage) {
+            const saved = window.localStorage.getItem(STORAGE_KEY) as SupportedLanguage | null;
+            if (saved && (saved === 'es' || saved === 'en' || saved === 'fr')) {
+                return saved;
+            }
         }
     } catch {
         // Fallback for SSR / test environments
@@ -30,7 +26,9 @@ export const useI18nStore = create<I18nState>((set) => ({
     language: getInitialLanguage(),
     setLanguage: (language) => {
         try {
-            localStorage.setItem(STORAGE_KEY, language);
+            if (typeof window !== 'undefined' && window.localStorage) {
+                window.localStorage.setItem(STORAGE_KEY, language);
+            }
             if (typeof document !== 'undefined') {
                 document.documentElement.lang = language;
             }

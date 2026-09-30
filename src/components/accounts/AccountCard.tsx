@@ -2,10 +2,10 @@ import { Wallet, CreditCard, Banknote, Pencil, History, CheckCircle2, PiggyBank 
 import { cn, formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
 import type { Account } from '@/lib/types';
+import { useTranslation, getDateFnsLocale } from '@/lib/i18n';
 
 interface AccountCardProps {
     account: Account;
@@ -17,6 +17,9 @@ interface AccountCardProps {
 }
 
 export function AccountCard({ account, onEdit, onReconcile, onViewHistory, onAddReserve, onViewReserves }: AccountCardProps) {
+    const { t, language } = useTranslation();
+    const dateLocale = getDateFnsLocale(language);
+
     const getIcon = (type: string) => {
         switch (type) {
             case 'cash': return Banknote;
@@ -36,30 +39,25 @@ export function AccountCard({ account, onEdit, onReconcile, onViewHistory, onAdd
 
     const reservedAmount = activeReserves.reduce((sum, r) => sum + r.amount, 0);
 
-    // PRINCIPLE: Available is Truth - Reserved.
-    // Truth is account.actualBalance if reconciled, otherwise calculatedBalance.
     const currentTotal = account.actualBalance !== undefined ? account.actualBalance : account.calculatedBalance;
     const availableBalance = currentTotal - reservedAmount;
 
     const Icon = getIcon(account.type);
 
-    // PRINCIPLE: Difference is always (Actual - Calculated).
-    // It represents the discrepancy between reality and system data.
     const difference = account.actualBalance !== undefined
         ? account.actualBalance - account.calculatedBalance
         : null;
 
-    // Tolerance for floating point precision in currency calculations
     const isMatched = difference !== null && Math.abs(difference) < 0.01;
 
     const getRealBalanceLabel = (acc: Account) => {
         if (acc.type === 'cash') {
-            return 'Saldo real en efectivo';
+            return t.accounts.realBalanceCash;
         }
         if (acc.type === 'credit') {
-            return `Saldo / Deuda en ${acc.name}`;
+            return t.accounts.realBalanceCredit.replace('{name}', acc.name);
         }
-        return `Saldo real en ${acc.name}`;
+        return t.accounts.realBalanceBank.replace('{name}', acc.name);
     };
 
     return (
@@ -85,7 +83,7 @@ export function AccountCard({ account, onEdit, onReconcile, onViewHistory, onAdd
                         <div>
                             <h3 className="font-semibold text-slate-900 dark:text-slate-100 leading-tight text-sm">{account.name}</h3>
                             <span className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">
-                                {account.type === 'bank' ? 'Bancaria' : account.type === 'credit' ? 'Crédito' : 'Efectivo'}
+                                {account.type === 'bank' ? t.accounts.bankType : account.type === 'credit' ? t.accounts.creditType : t.accounts.cashType}
                             </span>
                         </div>
                     </div>
@@ -95,7 +93,7 @@ export function AccountCard({ account, onEdit, onReconcile, onViewHistory, onAdd
                             variant="ghost"
                             className="h-8 w-8 p-0 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full"
                             onClick={() => onEdit(account)}
-                            title="Editar"
+                            title={t.common.edit}
                         >
                             <Pencil size={14} />
                         </Button>
@@ -104,9 +102,9 @@ export function AccountCard({ account, onEdit, onReconcile, onViewHistory, onAdd
                             variant="ghost"
                             className="h-8 w-8 p-0 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full"
                             onClick={() => onReconcile(account)}
-                            title="Reconciliar"
+                            title={t.accounts.reconcile}
                             data-testid="reconcile-button"
-                            aria-label={`Reconciliar ${account.name}`}
+                            aria-label={`Reconcile ${account.name}`}
                         >
                             <History size={14} className="text-blue-600" />
                         </Button>
@@ -115,7 +113,7 @@ export function AccountCard({ account, onEdit, onReconcile, onViewHistory, onAdd
                             variant="ghost"
                             className="h-8 w-8 p-0 hover:bg-amber-100 dark:hover:bg-amber-900/30 rounded-full"
                             onClick={() => onAddReserve?.(account)}
-                            title="Reservar Dinero"
+                            title={t.accounts.reserveName}
                         >
                             <PiggyBank size={14} className="text-amber-600" />
                         </Button>
@@ -137,13 +135,13 @@ export function AccountCard({ account, onEdit, onReconcile, onViewHistory, onAdd
                                 type="button"
                                 onClick={() => onViewReserves?.(account)}
                                 className="text-left group/res hover:bg-amber-50 dark:hover:bg-amber-900/10 p-1.5 -m-1.5 rounded-xl transition-colors"
-                                title="Ver detalles de reservas"
+                                title={t.common.viewDetails}
                                 data-testid="view-reserves-button"
                             >
-                                <span className="text-[10px] font-bold text-amber-500 uppercase tracking-tight block mb-1 group-hover/res:text-amber-600">Reservado</span>
+                                <span className="text-[10px] font-bold text-amber-500 uppercase tracking-tight block mb-1 group-hover/res:text-amber-600">{t.accounts.reservedLabel}</span>
                                 <div className="text-sm font-bold text-amber-600 dark:text-amber-400 truncate flex items-center gap-1">
                                     {formatCurrency(reservedAmount)}
-                                    <span className="text-[8px] bg-amber-100 dark:bg-amber-900/40 px-1 rounded opacity-0 group-hover/res:opacity-100 transition-opacity">VER</span>
+                                    <span className="text-[8px] bg-amber-100 dark:bg-amber-900/40 px-1 rounded opacity-0 group-hover/res:opacity-100 transition-opacity">{t.accounts.viewLabel}</span>
                                 </div>
                             </button>
                         )}
@@ -157,11 +155,11 @@ export function AccountCard({ account, onEdit, onReconcile, onViewHistory, onAdd
                                     "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400"
                     )}>
                         <span className="text-[10px] font-bold uppercase tracking-wider">
-                            {reservedAmount > 0 ? 'Disponible' : 'Diferencia'}
+                            {reservedAmount > 0 ? t.accounts.availableLabel : t.accounts.differenceLabel}
                         </span>
                         <span className="text-sm font-black tracking-tight">
                             {reservedAmount > 0 ? formatCurrency(availableBalance) :
-                                difference === null ? 'Pendiente' :
+                                difference === null ? t.accounts.pendingLabel :
                                     (difference > 0 ? '+' : '') + formatCurrency(difference)}
                         </span>
                     </div>
@@ -174,11 +172,11 @@ export function AccountCard({ account, onEdit, onReconcile, onViewHistory, onAdd
                             <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-medium italic group-hover:text-blue-500 transition-colors">
                                 <CheckCircle2 size={12} className={cn(isMatched ? "text-green-500" : "text-slate-400 group-hover:text-blue-500")} />
                                 <span>
-                                    Última: {format(account.lastReconciliationDate, "d MMM, p", { locale: es })}
+                                    {t.accounts.lastReconciliation.replace('{date}', format(account.lastReconciliationDate, "d MMM, p", { locale: dateLocale }))}
                                 </span>
                             </div>
                             <span className="text-[10px] font-bold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                                Ver historial →
+                                {t.accounts.viewHistory}
                             </span>
                         </button>
                     )}

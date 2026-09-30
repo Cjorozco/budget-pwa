@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
 import { startOfMonth, endOfMonth, format, subMonths, addMonths } from 'date-fns';
-import { es } from 'date-fns/locale';
 import { ExpenseBarChart, type CategoryChartData } from '@/components/charts/ExpenseBarChart';
 import { BudgetVsActualChart, type BudgetVsActualItem } from '@/components/charts/BudgetVsActualChart';
 import {
@@ -19,11 +18,14 @@ import {
 } from 'lucide-react';
 import { formatCurrency, adjustColor, cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
+import { useTranslation, getDateFnsLocale } from '@/lib/i18n';
 
 type ReportTab = 'expenses' | 'income' | 'fixed-budget';
 type HierarchyView = 'parents' | 'children';
 
 export default function Reports() {
+  const { t, language } = useTranslation();
+  const dateLocale = getDateFnsLocale(language);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [activeTab, setActiveTab] = useState<ReportTab>('expenses');
   const [hierarchyView, setHierarchyView] = useState<HierarchyView>('parents');
@@ -74,7 +76,7 @@ export default function Reports() {
             if (!aggregated[key]) {
               aggregated[key] = {
                 amount: 0,
-                name: parent?.name || 'Categoría Principal',
+                name: parent?.name || t.reports.parentCategories,
                 color: parent?.color || cat.color || '#94a3b8',
               };
             }
@@ -94,7 +96,7 @@ export default function Reports() {
             if (!aggregated[key]) {
               aggregated[key] = {
                 amount: 0,
-                name: 'Sin Categoría',
+                name: t.transactions.uncategorized,
                 color: '#94a3b8',
               };
             }
@@ -107,7 +109,7 @@ export default function Reports() {
             const parentName = cat?.parentId ? catMap.get(cat.parentId)?.name : undefined;
             aggregated[key] = {
               amount: 0,
-              name: cat?.name || 'Sin Categoría',
+              name: cat?.name || t.transactions.uncategorized,
               parentName,
               color: cat?.color || '#94a3b8',
             };
@@ -157,17 +159,17 @@ export default function Reports() {
 
     const budgetComparisonChart: BudgetVsActualItem[] = [
       {
-        name: 'Gastos Fijos',
+        name: t.budget.fixedExpenses,
         Planeado: totalFixedExpense,
         Real: totalExpense,
       },
       {
-        name: 'Ingresos',
+        name: t.transactions.incomesFilter,
         Planeado: totalFixedIncome,
         Real: totalIncome,
       },
       {
-        name: 'Flujo Neto',
+        name: t.reports.plannedAvailableMetric,
         Planeado: Math.max(0, plannedAvailable),
         Real: Math.max(0, realNetFlow),
       },
@@ -188,7 +190,7 @@ export default function Reports() {
       fixedIncomes,
       budgetComparisonChart,
     };
-  }, [currentDate]);
+  }, [currentDate, language]);
 
   const isLoading = !reportData;
 
@@ -228,9 +230,9 @@ export default function Reports() {
       <header className="flex flex-col gap-4">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Informes</h1>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t.reports.reportsTitle}</h1>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Analiza tus gastos, ingresos y cumplimiento de presupuesto
+              {t.reports.reportsSubtitle}
             </p>
           </div>
         </div>
@@ -238,17 +240,17 @@ export default function Reports() {
         <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-2 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
           <button
             onClick={() => navigateMonth('prev')}
-            aria-label="Mes anterior"
+            aria-label="Previous month"
             className="p-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
           >
             <ChevronLeft size={20} />
           </button>
           <span className="font-semibold text-slate-700 dark:text-slate-200 capitalize">
-            {format(currentDate, "MMMM yyyy", { locale: es })}
+            {format(currentDate, "MMMM yyyy", { locale: dateLocale })}
           </span>
           <button
             onClick={() => navigateMonth('next')}
-            aria-label="Mes siguiente"
+            aria-label="Next month"
             className="p-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
           >
             <ChevronRight size={20} />
@@ -257,7 +259,7 @@ export default function Reports() {
       </header>
 
       {/* Main Tabs: Gastos / Ingresos / Presupuesto Fijo */}
-      <nav className="flex bg-slate-100 dark:bg-slate-800/60 p-1 rounded-2xl gap-1 text-xs font-semibold" aria-label="Secciones de informe">
+      <nav className="flex bg-slate-100 dark:bg-slate-800/60 p-1 rounded-2xl gap-1 text-xs font-semibold" aria-label="Sections">
         <button
           onClick={() => setActiveTab('expenses')}
           className={cn(
@@ -268,7 +270,7 @@ export default function Reports() {
           )}
         >
           <TrendingDown size={15} />
-          <span>Gastos</span>
+          <span>{t.reports.expensesTab}</span>
         </button>
 
         <button
@@ -281,7 +283,7 @@ export default function Reports() {
           )}
         >
           <TrendingUp size={15} />
-          <span>Ingresos</span>
+          <span>{t.reports.incomeTab}</span>
         </button>
 
         <button
@@ -294,7 +296,7 @@ export default function Reports() {
           )}
         >
           <Target size={15} />
-          <span>Presupuesto Fijo</span>
+          <span>{t.reports.fixedBudgetTab}</span>
         </button>
       </nav>
 
@@ -308,17 +310,17 @@ export default function Reports() {
                 {activeTab === 'expenses' ? (
                   <>
                     <TrendingDown className="text-red-500" size={18} />
-                    Gastos por {hierarchyView === 'parents' ? 'Categoría' : 'Subcategoría'}
+                    {hierarchyView === 'parents' ? t.reports.expensesByCategory : t.reports.expensesBySubcategory}
                   </>
                 ) : (
                   <>
                     <TrendingUp className="text-green-500" size={18} />
-                    Ingresos por {hierarchyView === 'parents' ? 'Categoría' : 'Subcategoría'}
+                    {hierarchyView === 'parents' ? t.reports.incomeByCategory : t.reports.incomeBySubcategory}
                   </>
                 )}
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Total mes:{' '}
+                {t.reports.monthlyTotal}{' '}
                 <span className={cn(
                   "font-bold",
                   activeTab === 'expenses' ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"
@@ -339,10 +341,9 @@ export default function Reports() {
                     ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs font-semibold"
                     : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
                 )}
-                title="Consolidar en categorías padre"
               >
                 <Layers size={13} />
-                <span>Categorías</span>
+                <span>{t.reports.categoriesToggle}</span>
               </button>
               <button
                 data-testid="toggle-children"
@@ -353,10 +354,9 @@ export default function Reports() {
                     ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs font-semibold"
                     : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
                 )}
-                title="Ver detalle por subcategorías"
               >
                 <ListTree size={13} />
-                <span>Subcategorías</span>
+                <span>{t.reports.subcategoriesToggle}</span>
               </button>
             </div>
           </div>
@@ -373,8 +373,8 @@ export default function Reports() {
                 data={currentChartData}
                 emptyMessage={
                   activeTab === 'expenses'
-                    ? 'No hay gastos registrados en este mes.'
-                    : 'No hay ingresos registrados en este mes.'
+                    ? t.reports.noExpensesThisMonth
+                    : t.reports.noIncomeThisMonth
                 }
               />
             )}
@@ -384,7 +384,7 @@ export default function Reports() {
           {!isLoading && currentChartData.length > 0 && (
             <div className="pt-4 border-t border-slate-100 dark:border-slate-800/60 space-y-2.5">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                Desglose detallado
+                {t.reports.detailedBreakdown}
               </h3>
               <div className="space-y-2">
                 {currentChartData.map((item, index) => (
@@ -444,17 +444,17 @@ export default function Reports() {
               <div>
                 <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                   <Target className="text-indigo-600 dark:text-indigo-400" size={20} />
-                  Cumplimiento de Gastos Fijos
+                  {t.reports.fixedExpensesCompliance}
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Comparación entre tu presupuesto fijo planeado y los gastos reales del mes
+                  {t.reports.fixedExpensesComplianceSubtitle}
                 </p>
               </div>
               <Link
                 to="/budget"
                 className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold hover:underline shrink-0"
               >
-                Ajustar presupuesto &rarr;
+                {t.reports.adjustBudget}
               </Link>
             </div>
 
@@ -472,16 +472,16 @@ export default function Reports() {
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                   {(reportData?.totalFixedExpense ?? 0) === 0 ? (
-                    'Sin presupuesto de gastos fijos'
+                    t.reports.noFixedBudgetConfigured
                   ) : expensePercentage > 100 ? (
                     <>
                       <AlertTriangle size={15} className="text-red-500" />
-                      <span className="text-red-700 dark:text-red-400 font-bold">Límite excedido ({expensePercentage}%)</span>
+                      <span className="text-red-700 dark:text-red-400 font-bold">{t.reports.limitExceeded.replace('{percentage}', String(expensePercentage))}</span>
                     </>
                   ) : (
                     <>
                       <CheckCircle2 size={15} className="text-emerald-500" />
-                      <span className="text-emerald-700 dark:text-emerald-400 font-bold">Dentro del presupuesto ({expensePercentage}%)</span>
+                      <span className="text-emerald-700 dark:text-emerald-400 font-bold">{t.reports.withinBudget.replace('{percentage}', String(expensePercentage))}</span>
                     </>
                   )}
                 </span>
@@ -507,11 +507,11 @@ export default function Reports() {
 
               <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-2">
                 {(reportData?.totalFixedExpense ?? 0) === 0 ? (
-                  <>Ve a la sección de <Link to="/budget" className="underline font-semibold">Presupuesto Fijo</Link> para registrar tus gastos fijos (arriendo, servicios, etc.).</>
+                  <>{t.reports.goToFixedBudget}</>
                 ) : expenseDifference >= 0 ? (
-                  <>Te quedan <strong>{formatCurrency(expenseDifference)}</strong> de margen frente a tus gastos fijos presupuestados.</>
+                  <>{t.reports.marginRemaining.replace('{amount}', formatCurrency(expenseDifference))}</>
                 ) : (
-                  <>Has sobrepasado tus gastos fijos planeados por <strong>{formatCurrency(Math.abs(expenseDifference))}</strong>.</>
+                  <>{t.reports.budgetExceededBy.replace('{amount}', formatCurrency(Math.abs(expenseDifference)))}</>
                 )}
               </p>
             </div>
@@ -520,29 +520,29 @@ export default function Reports() {
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {/* Gastos Fijos Card */}
               <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-800">
-                <span className="text-[11px] text-slate-500 font-medium block mb-1">Gastos Fijos Planeados</span>
+                <span className="text-[11px] text-slate-500 font-medium block mb-1">{t.reports.plannedFixedExpenses}</span>
                 <span className="text-base font-bold text-slate-900 dark:text-white block">
                   {formatCurrency(reportData?.totalFixedExpense ?? 0)}
                 </span>
                 <span className="text-[10px] text-slate-400">
-                  {reportData?.fixedExpenses.length ?? 0} rubros configurados
+                  {t.reports.itemsConfigured.replace('{count}', String(reportData?.fixedExpenses.length ?? 0))}
                 </span>
               </div>
 
               {/* Ingresos Planeados Card */}
               <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-800">
-                <span className="text-[11px] text-slate-500 font-medium block mb-1">Ingresos Fijos Planeados</span>
+                <span className="text-[11px] text-slate-500 font-medium block mb-1">{t.reports.plannedFixedIncomes}</span>
                 <span className="text-base font-bold text-slate-900 dark:text-white block">
                   {formatCurrency(reportData?.totalFixedIncome ?? 0)}
                 </span>
                 <span className="text-[10px] text-green-600 dark:text-green-400 font-medium">
-                  {incomePercentage}% recibido este mes
+                  {t.reports.receivedThisMonth.replace('{percentage}', String(incomePercentage))}
                 </span>
               </div>
 
               {/* Disponible Planeado vs Real */}
               <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-800 col-span-2 sm:col-span-1">
-                <span className="text-[11px] text-slate-500 font-medium block mb-1">Disponible Planeado</span>
+                <span className="text-[11px] text-slate-500 font-medium block mb-1">{t.reports.plannedAvailableMetric}</span>
                 <span className={cn(
                   "text-base font-bold block",
                   (reportData?.plannedAvailable ?? 0) >= 0 ? "text-indigo-600 dark:text-indigo-400" : "text-red-500"
@@ -550,7 +550,7 @@ export default function Reports() {
                   {formatCurrency(reportData?.plannedAvailable ?? 0)}
                 </span>
                 <span className="text-[10px] text-slate-400">
-                  Flujo real: {formatCurrency(reportData?.realNetFlow ?? 0)}
+                  {t.reports.realFlow.replace('{amount}', formatCurrency(reportData?.realNetFlow ?? 0))}
                 </span>
               </div>
             </div>
@@ -560,10 +560,10 @@ export default function Reports() {
           <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-3">
             <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
               <Wallet size={16} className="text-indigo-500" />
-              Gráfico Comparativo: Presupuesto Fijo vs Ejecución Real
+              {t.reports.comparisonChartTitle}
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Valores presupuestados en Presupuesto Fijo vs transacciones registradas este mes
+              {t.reports.comparisonChartSubtitle}
             </p>
 
             <div className="pt-2">
@@ -582,7 +582,7 @@ export default function Reports() {
             <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-3">
               <div className="flex justify-between items-center">
                 <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
-                  Rubros de Gastos Fijos Configurados
+                  {t.reports.fixedItemsConfigured}
                 </h3>
                 <span className="text-xs text-slate-400">
                   Total: {formatCurrency(reportData.totalFixedExpense)}

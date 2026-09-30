@@ -13,8 +13,10 @@ import { ReservesList } from '@/components/accounts/ReservesList';
 import type { Account, Reserve } from '@/lib/types';
 import { useLicenseStore } from '@/store/licenseStore';
 import { ProBadge } from '@/components/ui/ProBadge';
+import { useTranslation } from '@/lib/i18n';
 
 export default function AccountsPage() {
+    const { t } = useTranslation();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isReconcileModalOpen, setIsReconcileModalOpen] = useState(false);
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
@@ -32,7 +34,7 @@ export default function AccountsPage() {
 
     const handleOpenNewAccount = () => {
         if (!canCreateAccount(accounts?.length || 0)) {
-            openUpgradeModal('El plan básico incluye hasta 2 cuentas. Pasa a PRO para tener cuentas y tarjetas ilimitadas.');
+            openUpgradeModal(t.accounts.proLimitAccounts);
             return;
         }
         setEditingAccount(null);
@@ -41,7 +43,7 @@ export default function AccountsPage() {
 
     const handleOpenAddReserve = (acc: Account) => {
         if (!canCreateReserve(activeReservesCount)) {
-            openUpgradeModal('El plan básico permite hasta 1 fondo de reserva activo. Pasa a PRO para fondos de ahorro ilimitados.');
+            openUpgradeModal(t.accounts.proLimitReserves);
             return;
         }
         setReserveAccount(acc);
@@ -55,14 +57,14 @@ export default function AccountsPage() {
                 <div className="flex items-center gap-2">
                     <div>
                         <div className="flex items-center gap-2">
-                            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Cuentas</h1>
+                            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t.accounts.title}</h1>
                             {!isPro && <ProBadge showUnlockAction size="sm" />}
                         </div>
-                        <p className="text-sm text-slate-500">Administra tus fuentes de dinero</p>
+                        <p className="text-sm text-slate-500">{t.accounts.subtitle}</p>
                     </div>
                 </div>
                 <Button size="sm" onClick={handleOpenNewAccount}>
-                    <Plus className="mr-2 h-4 w-4" /> Nueva
+                    <Plus className="mr-2 h-4 w-4" /> {t.accounts.newAccountBtn}
                 </Button>
             </div>
 
@@ -94,8 +96,8 @@ export default function AccountsPage() {
                 {accounts?.length === 0 && (
                     <div className="col-span-full py-12 text-center text-slate-400 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800">
                         <Wallet className="mx-auto h-12 w-12 opacity-20 mb-3" />
-                        <p>No tienes cuentas registradas.</p>
-                        <Button variant="link" onClick={() => setIsModalOpen(true)}>Crear la primera</Button>
+                        <p>{t.accounts.noAccountsRegistered}</p>
+                        <Button variant="link" onClick={() => setIsModalOpen(true)}>{t.accounts.createFirstAccount}</Button>
                     </div>
                 )}
             </div>
@@ -106,7 +108,7 @@ export default function AccountsPage() {
                     setIsModalOpen(false);
                     setEditingAccount(null);
                 }}
-                title={editingAccount ? "Editar Cuenta" : "Nueva Cuenta"}
+                title={editingAccount ? t.accounts.editAccount : t.accounts.newAccount}
             >
                 <AccountForm
                     initialData={editingAccount}
@@ -127,7 +129,7 @@ export default function AccountsPage() {
                     setIsReconcileModalOpen(false);
                     setReconcilingAccount(null);
                 }}
-                title={`Reconciliar ${reconcilingAccount?.name || ''}`}
+                title={t.accounts.reconcileWith.replace('{name}', reconcilingAccount?.name || '')}
             >
                 {reconcilingAccount && (
                     <ReconciliationForm
@@ -150,7 +152,7 @@ export default function AccountsPage() {
                     setIsHistoryModalOpen(false);
                     setHistoryAccount(null);
                 }}
-                title={`Historial: ${historyAccount?.name || ''}`}
+                title={t.accounts.historyWith.replace('{name}', historyAccount?.name || '')}
             >
                 {historyAccount && (
                     <ReconciliationHistory accountId={historyAccount.id} />
@@ -163,7 +165,9 @@ export default function AccountsPage() {
                     setIsReserveModalOpen(false);
                     setEditingReserve(null);
                 }}
-                title={editingReserve ? `Editar Reserva - ${reserveAccount?.name}` : `Reservar Dinero - ${reserveAccount?.name}`}
+                title={editingReserve
+                    ? t.accounts.editReserveWith.replace('{name}', reserveAccount?.name || '')
+                    : t.accounts.reserveMoneyWith.replace('{name}', reserveAccount?.name || '')}
             >
                 {reserveAccount && (
                     <ReserveForm
@@ -189,7 +193,7 @@ export default function AccountsPage() {
             <Modal
                 isOpen={isReservesListModalOpen}
                 onClose={() => setIsReservesListModalOpen(false)}
-                title={`Detalle de Reservas: ${reserveAccount?.name}`}
+                title={t.accounts.reservesDetailWith.replace('{name}', reserveAccount?.name || '')}
             >
                 {reserveAccount && (
                     <ReservesList

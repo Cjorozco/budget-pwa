@@ -5,6 +5,7 @@ import { AccountSelect } from './AccountSelect';
 import { v4 as uuidv4 } from 'uuid';
 import { ArrowRight, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
+import { useTranslation } from '@/lib/i18n';
 
 interface TransferFormProps {
     onSuccess: () => void;
@@ -12,6 +13,7 @@ interface TransferFormProps {
 }
 
 export function TransferForm({ onSuccess, onCancel }: TransferFormProps) {
+    const { t } = useTranslation();
     const [sourceAccountId, setSourceAccountId] = useState('');
     const [destinationAccountId, setDestinationAccountId] = useState('');
     const [amount, setAmount] = useState('');
@@ -34,15 +36,15 @@ export function TransferForm({ onSuccess, onCancel }: TransferFormProps) {
                 const sourceAccount = await db.accounts.get(sourceAccountId);
                 const destAccount = await db.accounts.get(destinationAccountId);
 
-                // Unified description: e.g., "Transferencia: Bancolombia ➔ Efectivo"
-                const unifiedDescription = `Transferencia: ${sourceAccount?.name} ➔ ${destAccount?.name}`;
+                // Unified description
+                const unifiedDescription = `${t.transactions.transferLabel}: ${sourceAccount?.name} ➔ ${destAccount?.name}`;
 
                 // 1. Outgoing Transaction (Source)
                 await db.transactions.add({
                     id: uuidv4(),
                     transferId,
-                    type: 'transfer', // Distinct type
-                    amount: numericAmount, // Positive value stored, UI handles display
+                    type: 'transfer',
+                    amount: numericAmount,
                     description: unifiedDescription,
                     date: timestamp,
                     categoryId: 'transfer-out',
@@ -75,7 +77,6 @@ export function TransferForm({ onSuccess, onCancel }: TransferFormProps) {
                     const updates: any = {
                         calculatedBalance: source.calculatedBalance - numericAmount
                     };
-                    // Also update actualBalance to prevent creating a "Difference" gap
                     if (typeof source.actualBalance === 'number') {
                         updates.actualBalance = source.actualBalance - numericAmount;
                     }
@@ -86,9 +87,8 @@ export function TransferForm({ onSuccess, onCancel }: TransferFormProps) {
                     const updates: any = {
                         calculatedBalance: dest.calculatedBalance + numericAmount
                     };
-                    // Also update actualBalance to prevent creating a "Difference" gap
                     if (typeof dest.actualBalance === 'number') {
-                        updates.actualBalance = dest.actualBalance + numericAmount;
+                        updates.actualBalance = dest.actualBalance - numericAmount;
                     }
                     await db.accounts.update(destinationAccountId, updates);
                 }
@@ -106,7 +106,7 @@ export function TransferForm({ onSuccess, onCancel }: TransferFormProps) {
         <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-[1fr,auto,1fr] gap-2 items-center">
                 <AccountSelect
-                    label="Desde"
+                    label={t.forms.transferFrom}
                     value={sourceAccountId}
                     onChange={setSourceAccountId}
                     excludeId={destinationAccountId}
@@ -115,7 +115,7 @@ export function TransferForm({ onSuccess, onCancel }: TransferFormProps) {
                     <ArrowRight size={20} />
                 </div>
                 <AccountSelect
-                    label="Para"
+                    label={t.forms.transferTo}
                     value={destinationAccountId}
                     onChange={setDestinationAccountId}
                     excludeId={sourceAccountId}
@@ -123,7 +123,7 @@ export function TransferForm({ onSuccess, onCancel }: TransferFormProps) {
             </div>
 
             <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Monto a transferir</label>
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">{t.forms.transferAmount}</label>
                 <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-semibold">$</span>
                     <input
@@ -141,7 +141,7 @@ export function TransferForm({ onSuccess, onCancel }: TransferFormProps) {
             </div>
 
             <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Fecha</label>
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">{t.common.date}</label>
                 <div className="relative">
                     <input
                         type="date"
@@ -157,19 +157,19 @@ export function TransferForm({ onSuccess, onCancel }: TransferFormProps) {
             </div>
 
             <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Nota (opcional)</label>
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">{t.forms.transferNote}</label>
                 <textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     rows={2}
                     className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none"
-                    placeholder="Motivo de la transferencia..."
+                    placeholder={t.forms.transferNotePlaceholder}
                 />
             </div>
 
             <div className="flex gap-3 pt-2">
                 <Button type="button" variant="ghost" onClick={onCancel} className="flex-1">
-                    Cancelar
+                    {t.common.cancel}
                 </Button>
                 <Button
                     type="submit"
@@ -177,7 +177,7 @@ export function TransferForm({ onSuccess, onCancel }: TransferFormProps) {
                     isLoading={isLoading}
                     disabled={!sourceAccountId || !destinationAccountId || !amount}
                 >
-                    Transferir
+                    {t.forms.transferBtn}
                 </Button>
             </div>
         </form>

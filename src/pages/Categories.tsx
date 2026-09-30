@@ -7,8 +7,10 @@ import { CategoryForm } from '@/components/forms/CategoryForm';
 import { Plus, Pencil, Trash2, ChevronRight } from 'lucide-react';
 import type { Category } from '@/lib/types';
 import { useUIStore } from '@/store/ui';
+import { useTranslation } from '@/lib/i18n';
 
 export default function CategoriesPage() {
+    const { t } = useTranslation();
     const { confirm, addToast } = useUIStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -37,9 +39,9 @@ export default function CategoriesPage() {
 
         if (txCount > 0) {
             const ok = await confirm({
-                title: '¿Eliminar categoría?',
-                message: `Esta categoría tiene ${txCount} transacciones asociadas. ¿Seguro que quieres eliminarla? Las transacciones quedarán sin categoría.`,
-                confirmLabel: 'Eliminar categoría',
+                title: t.categories.deleteCategoryTitle,
+                message: t.categories.deleteCategoryWithTx.replace('{count}', String(txCount)),
+                confirmLabel: t.common.delete,
                 variant: 'danger',
             });
             if (!ok) return;
@@ -48,16 +50,16 @@ export default function CategoriesPage() {
         // Check if it's a parent with children
         const children = getChildren(category.id);
         if (children.length > 0) {
-            addToast(`No puedes eliminar esta categoría porque tiene ${children.length} subcategorías. Elimina primero las subcategorías.`, 'error');
+            addToast(t.categories.deleteCategoryWithChildren.replace('{count}', String(children.length)), 'error');
             return;
         }
 
         try {
             await db.categories.update(category.id, { isActive: false });
-            addToast('Categoría eliminada', 'success');
+            addToast(t.categories.categoryDeleted, 'success');
         } catch (error) {
             console.error('Error deleting category:', error);
-            addToast('Error al eliminar la categoría', 'error');
+            addToast(t.common.error, 'error');
         }
     };
 
@@ -75,8 +77,8 @@ export default function CategoriesPage() {
                 <div>
                     <p className="font-medium text-slate-900 dark:text-white">{category.name}</p>
                     <p className="text-xs text-slate-500">
-                        {category.type === 'income' ? 'Ingreso' : 'Gasto'}
-                        {!isChild && getChildren(category.id).length > 0 && ` • ${getChildren(category.id).length} subcategorías`}
+                        {category.type === 'income' ? t.transactions.incomeLabel : t.transactions.expenseLabel}
+                        {!isChild && getChildren(category.id).length > 0 && ` • ${t.categories.subcategoriesCount.replace('{count}', String(getChildren(category.id).length))}`}
                     </p>
                 </div>
             </div>
@@ -91,7 +93,7 @@ export default function CategoriesPage() {
                             setEditingCategory(null);
                             setIsModalOpen(true);
                         }}
-                        title="Agregar subcategoría"
+                        title={t.categories.addSubcategory}
                     >
                         <Plus size={14} />
                     </Button>
@@ -105,6 +107,7 @@ export default function CategoriesPage() {
                         setDefaultParentId(undefined);
                         setIsModalOpen(true);
                     }}
+                    title={t.categories.editCategory}
                 >
                     <Pencil size={14} />
                 </Button>
@@ -113,6 +116,7 @@ export default function CategoriesPage() {
                     variant="ghost"
                     className="text-red-600 hover:text-red-700"
                     onClick={() => handleDelete(category)}
+                    title={t.common.delete}
                 >
                     <Trash2 size={14} />
                 </Button>
@@ -124,8 +128,8 @@ export default function CategoriesPage() {
         <div className="p-4 safe-bottom space-y-6">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Categorías</h1>
-                    <p className="text-sm text-slate-500">Gestiona tus categorías de ingresos y gastos</p>
+                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t.categories.categoriesTitle}</h1>
+                    <p className="text-sm text-slate-500">{t.categories.categoriesSubtitle}</p>
                 </div>
                 <Button
                     size="sm"
@@ -136,15 +140,15 @@ export default function CategoriesPage() {
                         setIsModalOpen(true);
                     }}
                 >
-                    <Plus className="mr-2 h-4 w-4" /> Nueva
+                    <Plus className="mr-2 h-4 w-4" /> {t.categories.newCategory}
                 </Button>
             </div>
 
             {/* Income Categories */}
             <section className="space-y-3">
-                <h2 className="text-lg font-semibold text-green-600 dark:text-green-400">Ingresos</h2>
+                <h2 className="text-lg font-semibold text-green-600 dark:text-green-400">{t.categories.incomeCategories}</h2>
                 {incomeParents.length === 0 ? (
-                    <p className="text-sm text-slate-500">No hay categorías de ingresos</p>
+                    <p className="text-sm text-slate-500">{t.categories.noIncomeCategories}</p>
                 ) : (
                     <div className="space-y-2">
                         {incomeParents.map((parent) => (
@@ -161,9 +165,9 @@ export default function CategoriesPage() {
 
             {/* Expense Categories */}
             <section className="space-y-3">
-                <h2 className="text-lg font-semibold text-red-600 dark:text-red-400">Gastos</h2>
+                <h2 className="text-lg font-semibold text-red-600 dark:text-red-400">{t.categories.expenseCategories}</h2>
                 {expenseParents.length === 0 ? (
-                    <p className="text-sm text-slate-500">No hay categorías de gastos</p>
+                    <p className="text-sm text-slate-500">{t.categories.noExpenseCategories}</p>
                 ) : (
                     <div className="space-y-2">
                         {expenseParents.map((parent) => (
@@ -185,7 +189,7 @@ export default function CategoriesPage() {
                     setEditingCategory(null);
                     setDefaultParentId(undefined);
                 }}
-                title={editingCategory ? 'Editar categoría' : 'Nueva categoría'}
+                title={editingCategory ? t.categories.editCategory : t.categories.createCategory}
             >
                 <CategoryForm
                     initialData={editingCategory}

@@ -7,6 +7,7 @@ import { Select } from '@/components/ui/Select';
 import { db } from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
 import { useUIStore } from '@/store/ui';
+import { useTranslation } from '@/lib/i18n';
 
 interface AccountFormProps {
     onSuccess: () => void;
@@ -15,6 +16,7 @@ interface AccountFormProps {
 }
 
 export function AccountForm({ onSuccess, onCancel, initialData }: AccountFormProps) {
+    const { t } = useTranslation();
     const { confirm, addToast } = useUIStore();
     const {
         register,
@@ -60,25 +62,25 @@ export function AccountForm({ onSuccess, onCancel, initialData }: AccountFormPro
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <Input
-                label="Nombre de la cuenta"
-                placeholder="Ej. Davivienda Nómina"
+                label={t.forms.accountNameLabel}
+                placeholder={t.forms.accountNamePlaceholder}
                 error={errors.name?.message}
                 {...register('name')}
             />
 
             <Select
-                label="Tipo"
+                label={t.forms.accountTypeLabel}
                 options={[
-                    { label: 'Cuenta Bancaria', value: 'bank' },
-                    { label: 'Efectivo', value: 'cash' },
-                    { label: 'Tarjeta de Crédito', value: 'credit' },
+                    { label: t.accounts.accountTypeChecking, value: 'bank' },
+                    { label: t.accounts.accountTypeCash, value: 'cash' },
+                    { label: t.accounts.accountTypeCredit, value: 'credit' },
                 ]}
                 error={errors.type?.message}
                 {...register('type')}
             />
 
             <Input
-                label="Saldo actual de la cuenta"
+                label={t.forms.currentBalanceLabel}
                 type="number"
                 placeholder="0"
                 step="0.01"
@@ -95,9 +97,9 @@ export function AccountForm({ onSuccess, onCancel, initialData }: AccountFormPro
                             className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
                             onClick={async () => {
                                 const ok = await confirm({
-                                    title: '¿Reiniciar historial de la cuenta?',
-                                    message: '¿Estás seguro de reiniciar esta cuenta? Se borrarán TODAS las transacciones, reconciliaciones y reservas asociadas.',
-                                    confirmLabel: 'Reiniciar Historial',
+                                    title: t.forms.resetAccountHistoryTitle,
+                                    message: t.forms.resetAccountHistoryMsg,
+                                    confirmLabel: t.forms.resetAccountHistory,
                                     variant: 'danger',
                                 });
                                 if (!ok) return;
@@ -114,24 +116,24 @@ export function AccountForm({ onSuccess, onCancel, initialData }: AccountFormPro
                                             lastReconciliationDate: undefined
                                         });
                                     });
-                                    addToast('Cuenta reiniciada correctamente', 'success');
+                                    addToast(t.forms.resetAccountSuccess, 'success');
                                     onSuccess();
                                 } catch (error) {
                                     console.error('Error resetting account:', error);
-                                    addToast('Error al reiniciar la cuenta', 'error');
+                                    addToast(t.common.error, 'error');
                                 }
                             }}
                         >
-                            Reiniciar Historial
+                            {t.forms.resetAccountHistory}
                         </Button>
                     )}
                 </div>
                 <div className="flex gap-3">
                     <Button type="button" variant="ghost" onClick={onCancel}>
-                        Cancelar
+                        {t.common.cancel}
                     </Button>
                     <Button type="submit" isLoading={isSubmitting}>
-                        {initialData?.id ? 'Actualizar Cuenta' : 'Guardar Cuenta'}
+                        {initialData?.id ? t.forms.updateAccount : t.forms.saveAccount}
                     </Button>
                 </div>
             </div>

@@ -6,8 +6,10 @@ import { Trash2, Pencil, TrendingUp, TrendingDown, Info, Calculator } from 'luci
 import { Modal } from '@/components/ui/Modal';
 import type { BudgetItem } from '@/lib/types';
 import { useUIStore } from '@/store/ui';
+import { useTranslation } from '@/lib/i18n';
 
 export default function Budget() {
+  const { t } = useTranslation();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<BudgetItem | null>(null);
   const [newItemType, setNewItemType] = useState<'income' | 'expense'>('income');
@@ -60,7 +62,7 @@ export default function Budget() {
     e.preventDefault();
 
     if (!newItemName.trim() || !newItemAmount || Number(newItemAmount) <= 0) {
-      addToast("Por favor completa los campos correctamente", "error");
+      addToast(t.common.error, "error");
       return;
     }
 
@@ -71,7 +73,7 @@ export default function Budget() {
           amount: Number(newItemAmount),
           type: newItemType,
         });
-        addToast("Rubro actualizado exitosamente", "success");
+        addToast(t.budget.budgetSaved, "success");
       } else {
         const newItem: BudgetItem = {
           id: crypto.randomUUID(),
@@ -81,40 +83,40 @@ export default function Budget() {
           createdAt: Date.now()
         };
         await db.budgetItems.add(newItem);
-        addToast("Añadido exitosamente", "success");
+        addToast(t.budget.budgetSaved, "success");
       }
       setIsAddModalOpen(false);
       setEditingItem(null);
     } catch (error) {
       console.error("Error saving budget item:", error);
-      addToast("Error al guardar", "error");
+      addToast(t.common.error, "error");
     }
   };
 
   const handleDeleteItem = async (id: string) => {
     const ok = await confirm({
-      title: '¿Eliminar rubro?',
-      message: '¿Seguro que deseas eliminar este rubro del presupuesto?',
-      confirmLabel: 'Eliminar',
+      title: t.budget.deleteItemTitle,
+      message: t.budget.deleteItemMsg,
+      confirmLabel: t.common.delete,
       variant: 'danger',
     });
     if (!ok) return;
 
     try {
       await db.budgetItems.delete(id);
-      addToast("Eliminado exitosamente", "success");
+      addToast(t.common.success, "success");
     } catch (error) {
       console.error("Error deleting budget item:", error);
-      addToast("Error al eliminar", "error");
+      addToast(t.common.error, "error");
     }
   };
 
   return (
     <div className="p-4 space-y-6">
       <header>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Presupuesto Fijo</h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t.budget.fixedBudgetTitle}</h1>
         <p className="text-sm text-slate-500 dark:text-slate-400">
-          Planifica tu mes antes de gastar
+          {t.budget.fixedBudgetSubtitle}
         </p>
       </header>
 
@@ -128,7 +130,7 @@ export default function Budget() {
         <div className="flex items-center gap-2 mb-2 text-indigo-100">
           <Calculator size={20} className={plannedAvailable < 0 ? "text-red-200" : ""} />
           <span className={cn("text-sm font-medium", plannedAvailable < 0 ? "text-red-100" : "")}>
-            Disponible Planeado
+            {t.budget.plannedAvailable}
           </span>
         </div>
         <div className="text-4xl font-bold tracking-tight">
@@ -136,12 +138,12 @@ export default function Budget() {
         </div>
         {plannedAvailable < 0 && (
           <div className="mt-2 text-xs font-medium text-red-200 bg-red-800/50 p-2 rounded-lg inline-block">
-            ¡Tus gastos fijos superan tus ingresos! ({formatCurrency(plannedAvailable)})
+            {t.budget.overBudgetWarning.replace('{amount}', formatCurrency(plannedAvailable))}
           </div>
         )}
         {plannedAvailable >= 0 && (
           <div className="mt-2 text-xs font-medium text-indigo-100/80">
-            Dinero libre para gastos variables o ahorros.
+            {t.budget.freeMoney}
           </div>
         )}
       </div>
@@ -150,7 +152,7 @@ export default function Budget() {
         <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-2 mb-1">
             <TrendingUp className="text-green-500" size={18} />
-            <span className="text-xs text-slate-500 font-medium">Ingresos Fijos</span>
+            <span className="text-xs text-slate-500 font-medium">{t.budget.fixedIncomes}</span>
           </div>
           <p className="text-lg font-bold text-slate-900 dark:text-white">
             {formatCurrency(totalFixedIncome)}
@@ -159,7 +161,7 @@ export default function Budget() {
         <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-2 mb-1">
             <TrendingDown className="text-red-500" size={18} />
-            <span className="text-xs text-slate-500 font-medium">Gastos Fijos</span>
+            <span className="text-xs text-slate-500 font-medium">{t.budget.fixedExpenses}</span>
           </div>
           <p className="text-lg font-bold text-slate-900 dark:text-white">
             {formatCurrency(totalFixedExpense)}
@@ -174,20 +176,20 @@ export default function Budget() {
             <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center text-green-600">
               <TrendingUp size={16} />
             </div>
-            Ingresos Mensuales
+            {t.budget.monthlyIncomes}
           </h2>
           <button
             onClick={() => handleOpenAddModal('income')}
             className="text-sm font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 rounded-full hover:bg-blue-100 transition-colors"
           >
-            + Añadir
+            {t.budget.addItem}
           </button>
         </div>
 
         <div className="space-y-2">
           {fixedIncomes.length === 0 ? (
             <p className="text-sm text-slate-400 text-center py-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
-              No has registrado ingresos fijos (ej. Salario)
+              {t.budget.noFixedIncomes}
             </p>
           ) : (
             fixedIncomes.map(item => (
@@ -199,17 +201,17 @@ export default function Budget() {
                   <span className="font-bold text-green-600 text-sm mr-1">+{formatCurrency(item.amount)}</span>
                   <button
                     onClick={() => handleOpenEditModal(item)}
-                    aria-label={`Editar ${item.name}`}
+                    aria-label={`${t.common.edit} ${item.name}`}
                     className="text-slate-400 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-                    title="Editar"
+                    title={t.common.edit}
                   >
                     <Pencil size={16} />
                   </button>
                   <button
                     onClick={() => handleDeleteItem(item.id)}
-                    aria-label={`Eliminar ${item.name}`}
+                    aria-label={`${t.common.delete} ${item.name}`}
                     className="text-slate-400 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                    title="Eliminar"
+                    title={t.common.delete}
                   >
                     <Trash2 size={16} />
                   </button>
@@ -227,7 +229,7 @@ export default function Budget() {
             <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/40 flex items-center justify-center text-red-600">
               <TrendingDown size={16} />
             </div>
-            Gastos Fijos
+            {t.budget.fixedExpenses}
           </h2>
           <div className="flex items-center gap-2 self-start sm:self-auto w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
             <select
@@ -235,16 +237,16 @@ export default function Budget() {
               onChange={(e) => setExpenseSortOrder(e.target.value as 'az' | 'za' | 'amount-asc' | 'amount-desc')}
               className="text-sm bg-slate-50 dark:bg-slate-800 border-none rounded-lg px-2 py-1.5 text-slate-600 dark:text-slate-300 focus:ring-0 cursor-pointer outline-none shrink-0"
             >
-              <option value="amount-desc">Mayor a menor</option>
-              <option value="amount-asc">Menor a mayor</option>
-              <option value="az">A-Z</option>
-              <option value="za">Z-A</option>
+              <option value="amount-desc">{t.budget.sortAmountDesc}</option>
+              <option value="amount-asc">{t.budget.sortAmountAsc}</option>
+              <option value="az">{t.budget.sortAZ}</option>
+              <option value="za">{t.budget.sortZA}</option>
             </select>
             <button
               onClick={() => handleOpenAddModal('expense')}
               className="text-sm font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 rounded-full hover:bg-blue-100 transition-colors shrink-0 whitespace-nowrap"
             >
-              + Añadir
+              {t.budget.addItem}
             </button>
           </div>
         </div>
@@ -252,7 +254,7 @@ export default function Budget() {
         <div className="space-y-2">
           {sortedFixedExpenses.length === 0 ? (
             <p className="text-sm text-slate-400 text-center py-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
-              No has registrado gastos fijos (ej. Arriendo, Servicios)
+              {t.budget.noFixedExpenses}
             </p>
           ) : (
             sortedFixedExpenses.map(item => (
@@ -264,17 +266,17 @@ export default function Budget() {
                   <span className="font-bold text-red-600 text-sm mr-1">-{formatCurrency(item.amount)}</span>
                   <button
                     onClick={() => handleOpenEditModal(item)}
-                    aria-label={`Editar ${item.name}`}
+                    aria-label={`${t.common.edit} ${item.name}`}
                     className="text-slate-400 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-                    title="Editar"
+                    title={t.common.edit}
                   >
                     <Pencil size={16} />
                   </button>
                   <button
                     onClick={() => handleDeleteItem(item.id)}
-                    aria-label={`Eliminar ${item.name}`}
+                    aria-label={`${t.common.delete} ${item.name}`}
                     className="text-slate-400 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                    title="Eliminar"
+                    title={t.common.delete}
                   >
                     <Trash2 size={16} />
                   </button>
@@ -288,7 +290,7 @@ export default function Budget() {
       <div className="flex items-start gap-2 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl">
         <Info size={20} className="text-blue-500 shrink-0 mt-0.5" />
         <p className="text-xs text-blue-800 dark:text-blue-200 leading-relaxed">
-          Estos rubros no afectan directamente el saldo de tus cuentas reales. Son una herramienta de planeación para saber cuánto de tus ingresos mensuales ya está comprometido.
+          {t.budget.fixedBudgetNote}
         </p>
       </div>
 
@@ -300,27 +302,27 @@ export default function Budget() {
         }}
         title={
           editingItem
-            ? (editingItem.type === 'income' ? 'Editar Ingreso Fijo' : 'Editar Gasto Fijo')
-            : (newItemType === 'income' ? 'Nuevo Ingreso Fijo' : 'Nuevo Gasto Fijo')
+            ? (editingItem.type === 'income' ? t.budget.editFixedIncome : t.budget.editFixedExpense)
+            : (newItemType === 'income' ? t.budget.newFixedIncome : t.budget.newFixedExpense)
         }
       >
         <form onSubmit={handleSaveItem} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              Nombre del rubro
+              {t.budget.itemNameLabel}
             </label>
             <input
               type="text"
               required
               value={newItemName}
               onChange={e => setNewItemName(e.target.value)}
-              placeholder={newItemType === 'income' ? 'Ej. Salario, Rendimientos' : 'Ej. Arriendo, Internet, Plan celular'}
+              placeholder={newItemType === 'income' ? t.budget.incomePlaceholder : t.budget.expensePlaceholder}
               className="w-full h-12 px-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-0 transition-colors"
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              Monto mensual esperado
+              {t.budget.itemAmountLabel}
             </label>
             <input
               type="number"
@@ -341,7 +343,7 @@ export default function Budget() {
               newItemType === 'income' ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"
             )}
           >
-            {editingItem ? 'Actualizar' : 'Guardar'} {newItemType === 'income' ? 'Ingreso' : 'Gasto'}
+            {editingItem ? t.budget.updateBtn : t.budget.saveBtn} {newItemType === 'income' ? t.budget.incomeWord : t.budget.expenseWord}
           </button>
           <button
             type="button"
@@ -351,7 +353,7 @@ export default function Budget() {
             }}
             className="w-full h-12 rounded-xl font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
           >
-            Cancelar
+            {t.common.cancel}
           </button>
         </form>
       </Modal>

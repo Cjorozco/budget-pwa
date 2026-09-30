@@ -2,14 +2,17 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
 import { formatCurrency } from '@/lib/utils';
 import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
 import { History, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { useTranslation, getDateFnsLocale } from '@/lib/i18n';
 
 interface ReconciliationHistoryProps {
     accountId: string;
 }
 
 export function ReconciliationHistory({ accountId }: ReconciliationHistoryProps) {
+    const { t, language } = useTranslation();
+    const dateLocale = getDateFnsLocale(language);
+
     const history = useLiveQuery(
         () => db.reconciliations
             .where('accountId')
@@ -18,13 +21,13 @@ export function ReconciliationHistory({ accountId }: ReconciliationHistoryProps)
             .sortBy('date')
     );
 
-    if (!history) return <div className="p-8 text-center animate-pulse text-slate-400">Cargando historial...</div>;
+    if (!history) return <div className="p-8 text-center animate-pulse text-slate-400">{t.forms.loadingHistory}</div>;
 
     if (history.length === 0) {
         return (
             <div className="p-8 text-center space-y-3">
                 <History className="mx-auto h-12 w-12 text-slate-200" />
-                <p className="text-slate-500 text-sm">No hay reconciliaciones registradas aún.</p>
+                <p className="text-slate-500 text-sm">{t.forms.noReconciliationsYet}</p>
             </div>
         );
     }
@@ -47,20 +50,20 @@ export function ReconciliationHistory({ accountId }: ReconciliationHistoryProps)
                                         <AlertCircle size={14} className="text-amber-500" />
                                     )}
                                     <span className="text-xs font-bold text-slate-900 dark:text-slate-100 italic">
-                                        {format(record.date, "d MMM, yyyy - p", { locale: es })}
+                                        {format(record.date, "d MMM, yyyy - p", { locale: dateLocale })}
                                     </span>
                                 </div>
                                 <div className={`text-xs font-black ${isMatched ? 'text-green-600' : record.difference > 0 ? 'text-blue-600' : 'text-red-600'}`}>
-                                    {isMatched ? 'SIN DIFERENCIA' : (record.difference > 0 ? '+' : '') + formatCurrency(record.difference)}
+                                    {isMatched ? t.forms.noDifference : (record.difference > 0 ? '+' : '') + formatCurrency(record.difference)}
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-500 mb-2">
                                 <div>
-                                    <span className="font-medium">Calculado:</span> {formatCurrency(record.calculatedBalance)}
+                                    <span className="font-medium">{t.forms.calculated}</span> {formatCurrency(record.calculatedBalance)}
                                 </div>
                                 <div>
-                                    <span className="font-medium">Real:</span> {formatCurrency(record.declaredBalance)}
+                                    <span className="font-medium">{t.forms.real}</span> {formatCurrency(record.declaredBalance)}
                                 </div>
                             </div>
 
