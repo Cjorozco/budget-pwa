@@ -26,6 +26,15 @@ export function GeminiKeyCard() {
     const meta = getProviderMeta(selectedProvider);
     const stored = getAiApiKey(selectedProvider);
 
+    const activeProviderT = selectedProvider in t.aiProviders
+        ? t.aiProviders[selectedProvider as 'gemini' | 'openai' | 'anthropic' | 'groq']
+        : undefined;
+    const providerLabel = activeProviderT?.label ?? meta.label;
+    const keyUrlLabel = activeProviderT?.keyUrlLabel ?? meta.keyUrlLabel;
+    const helpText = activeProviderT?.helpText ?? meta.helpText;
+    const modelDescription = activeProviderT?.modelDescription ?? meta.modelDescription;
+    const placeholder = activeProviderT?.placeholder ?? meta.placeholder;
+
     const [draft, setDraft] = useState('');
     const [hasKey, setHasKey] = useState(Boolean(stored));
     const [masked, setMasked] = useState(stored ? maskApiKey(stored) : '');
@@ -63,16 +72,14 @@ export function GeminiKeyCard() {
     };
 
     const handleSave = () => {
-        const reason = validateProviderKey(selectedProvider, draft);
+        const reason = validateProviderKey(selectedProvider, draft, t.aiProviders.validations);
         if (reason) {
             setFieldError(reason);
             return;
         }
         persistAndRefresh(draft.trim());
         addToast(
-            hasKey
-                ? `API key de ${meta.label} reemplazada en este dispositivo`
-                : `API key de ${meta.label} guardada en este dispositivo`,
+            (hasKey ? t.aiProviders.keyReplaced : t.aiProviders.keySaved).replace('{provider}', providerLabel),
             'success'
         );
     };
@@ -80,10 +87,10 @@ export function GeminiKeyCard() {
     const handleTest = async () => {
         const keyToTest = draft.trim() || getAiApiKey(selectedProvider);
         if (!keyToTest) {
-            setFieldError(`Pega o guarda una API key de ${meta.label} primero.`);
+            setFieldError(t.aiProviders.pasteKeyFirst.replace('{provider}', providerLabel));
             return;
         }
-        const reason = validateProviderKey(selectedProvider, keyToTest);
+        const reason = validateProviderKey(selectedProvider, keyToTest, t.aiProviders.validations);
         if (reason && draft.trim()) {
             setFieldError(reason);
             return;
@@ -101,7 +108,7 @@ export function GeminiKeyCard() {
                 addToast(result.message, 'error');
             }
         } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : 'Error al conectar';
+            const msg = err instanceof Error ? err.message : t.aiProviders.connectionError;
             addToast(`Error: ${msg}`, 'error');
         } finally {
             setIsTesting(false);
@@ -110,7 +117,7 @@ export function GeminiKeyCard() {
 
     const handleForget = () => {
         persistAndRefresh(null);
-        addToast(`API key de ${meta.label} eliminada de este dispositivo`, 'success');
+        addToast(t.aiProviders.keyDeleted.replace('{provider}', providerLabel), 'success');
     };
 
     const handleCancelReplace = () => {
@@ -145,6 +152,11 @@ export function GeminiKeyCard() {
                     {SUPPORTED_AI_PROVIDERS.map((p) => {
                         const isSelected = p.id === selectedProvider;
                         const providerHasStoredKey = Boolean(getAiApiKey(p.id));
+                        const pT = p.id in t.aiProviders
+                            ? t.aiProviders[p.id as 'gemini' | 'openai' | 'anthropic' | 'groq']
+                            : undefined;
+                        const pLabel = pT?.label ?? p.label;
+                        const pSubLabel = pT?.subLabel ?? (p.id === 'gemini' ? 'Google AI' : p.id === 'openai' ? 'ChatGPT' : p.id === 'groq' ? 'Llama 3 / Mixtral' : 'Claude 3.5');
 
                         return (
                             <button
@@ -179,10 +191,10 @@ export function GeminiKeyCard() {
                                             ? 'text-indigo-900 dark:text-indigo-200'
                                             : 'text-slate-800 dark:text-slate-200'
                                     }`}>
-                                        {p.label}
+                                        {pLabel}
                                     </p>
                                     <p className="text-[10px] text-slate-600 dark:text-slate-300 truncate">
-                                        {p.id === 'gemini' ? 'Google AI' : p.id === 'openai' ? 'ChatGPT' : p.id === 'groq' ? 'Llama 3 / Mixtral' : 'Claude 3.5'}
+                                        {pSubLabel}
                                     </p>
                                 </div>
                             </button>
@@ -198,11 +210,11 @@ export function GeminiKeyCard() {
                 </div>
                 <div className="min-w-0 flex-1">
                     <h4 className="font-medium text-slate-900 dark:text-white text-xs">
-                        {meta.label}
+                        {providerLabel}
                     </h4>
-                    <p className="text-[11px] text-slate-500 mt-0.5">{meta.helpText}</p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">{helpText}</p>
                     <p className="text-[11px] font-medium text-slate-700 dark:text-slate-300 mt-1 font-mono">
-                        {meta.modelDescription}
+                        {modelDescription}
                     </p>
                 </div>
             </div>
@@ -213,14 +225,14 @@ export function GeminiKeyCard() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
             >
-                {meta.keyUrlLabel}
+                {keyUrlLabel}
                 <ExternalLink size={12} />
             </a>
 
             {hasKey ? (
                 <div className="rounded-xl bg-slate-50 dark:bg-slate-800/60 px-3 py-2 space-y-0.5">
                     <p className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                        {t.settings.activeKeyFor} {meta.label}
+                        {t.settings.activeKeyFor} {providerLabel}
                     </p>
                     <p className="text-xs text-slate-600 dark:text-slate-400">
                         {t.common.active}: <span className="font-mono">{masked}</span>
@@ -228,18 +240,18 @@ export function GeminiKeyCard() {
                 </div>
             ) : (
                 <p className="text-[11px] text-slate-500">
-                    {t.settings.noKeyConfiguredFor.replace('{provider}', meta.label)}
+                    {t.settings.noKeyConfiguredFor.replace('{provider}', providerLabel)}
                 </p>
             )}
 
             {showEditor && (
                 <Input
-                    label={hasKey ? `${meta.label} (${t.settings.replaceKey})` : `API key (${meta.label})`}
+                    label={hasKey ? `${providerLabel} (${t.settings.replaceKey})` : `API key (${providerLabel})`}
                     type="password"
                     revealPassword
                     autoComplete="off"
                     spellCheck={false}
-                    placeholder={meta.placeholder}
+                    placeholder={placeholder}
                     value={draft}
                     error={fieldError}
                     onChange={(e) => {
@@ -285,7 +297,7 @@ export function GeminiKeyCard() {
                     isLoading={isTesting}
                     data-testid="gemini-api-key-test"
                 >
-                    {t.settings.testProvider} {meta.label}
+                    {t.settings.testProvider} {providerLabel}
                 </Button>
                 {hasKey && (
                     <Button

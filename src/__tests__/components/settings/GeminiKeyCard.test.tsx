@@ -88,4 +88,27 @@ describe('GeminiKeyCard / Multi-Provider AI Settings', () => {
         expect(getAiApiKey('gemini')).toBeNull();
         expect(screen.getByTestId('gemini-api-key-input')).toBeInTheDocument();
     });
+
+    it('renders localized texts in English and French when language changes', () => {
+        // Test English
+        useI18nStore.setState({ language: 'en' });
+        const { rerender } = render(<GeminiKeyCard />);
+
+        expect(screen.getByText(/Artificial Intelligence/i)).toBeInTheDocument();
+        expect(screen.getByText(/Create API key in Google AI Studio/i)).toBeInTheDocument();
+        expect(screen.getByPlaceholderText(/Paste your Google AI Studio key/i)).toBeInTheDocument();
+
+        // Switch to Groq in English
+        fireEvent.click(screen.getByTestId('ai-provider-select-groq'));
+        expect(screen.getByText(/Create API key in Groq Console/i)).toBeInTheDocument();
+        expect(screen.getByText(/Ultra-fast categorization in milliseconds/i)).toBeInTheDocument();
+
+        // Test French
+        useI18nStore.setState({ language: 'fr' });
+        rerender(<GeminiKeyCard />);
+
+        expect(screen.getByText(/Intelligence Artificielle/i)).toBeInTheDocument();
+        expect(screen.getByText(/Créer une clé API sur Groq Console/i)).toBeInTheDocument();
+        expect(screen.getByText(/Catégorisation ultra-rapide en quelques millisecondes/i)).toBeInTheDocument();
+    });
 });

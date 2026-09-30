@@ -482,6 +482,93 @@ export interface TranslationSchema {
         overwriteWarning: string;
         fullResetWarning: string;
         transactionsResetWarning: string;
+        csvRequiresPro: string;
+        backupDownloaded: string;
+        backupExportError: string;
+        csvExportSuccess: string;
+        csvExportError: string;
+        backupRestoredSuccess: string;
+        backupRestoreError: string;
+        confirmResetTransactionsTitle: string;
+        confirmResetFullTitle: string;
+        confirmRestoreTitle: string;
+        confirmActionTitle: string;
+    };
+    aiProviders: {
+        gemini: {
+            label: string;
+            subLabel: string;
+            keyUrlLabel: string;
+            modelDescription: string;
+            helpText: string;
+            placeholder: string;
+        };
+        openai: {
+            label: string;
+            subLabel: string;
+            keyUrlLabel: string;
+            modelDescription: string;
+            helpText: string;
+            placeholder: string;
+        };
+        anthropic: {
+            label: string;
+            subLabel: string;
+            keyUrlLabel: string;
+            modelDescription: string;
+            helpText: string;
+            placeholder: string;
+        };
+        groq: {
+            label: string;
+            subLabel: string;
+            keyUrlLabel: string;
+            modelDescription: string;
+            helpText: string;
+            placeholder: string;
+        };
+        keyReplaced: string;
+        keySaved: string;
+        keyDeleted: string;
+        pasteKeyFirst: string;
+        connectionError: string;
+        validations: {
+            invalidKey: string;
+            looksLikeAnthropic: string;
+            looksLikeOpenAI: string;
+            looksLikeGemini: string;
+            looksLikeGroq: string;
+            geminiIncomplete: string;
+            openAIIncomplete: string;
+            openAIMustStartWithSk: string;
+            anthropicIncomplete: string;
+            anthropicMustStartWithSkAnt: string;
+            groqIncomplete: string;
+        };
+    };
+    userGuide: {
+        modalBadge: string;
+        modalTitle: string;
+        modalSubtitle: string;
+        closeButton: string;
+        closeAriaLabel: string;
+        sections: {
+            noBankTitle: string;
+            noBankDesc: string;
+            atomicBalancesTitle: string;
+            atomicBalancesDesc: string;
+            reconciliationTitle: string;
+            reconciliationDesc: string;
+            aiCategorizationTitle: string;
+            aiCategorizationDesc: string;
+            aiKeyStudioLink: string;
+            reservesTitle: string;
+            reservesDesc: string;
+            quickTemplatesTitle: string;
+            quickTemplatesDesc: string;
+            privacyOfflineTitle: string;
+            privacyOfflineDesc: string;
+        };
     };
     upgradeModal: {
         modalTitle: string;

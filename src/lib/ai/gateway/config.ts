@@ -147,27 +147,41 @@ export function getProviderMeta(provider: AiProviderType): ProviderMeta {
     return SUPPORTED_AI_PROVIDERS.find((p) => p.id === provider) ?? SUPPORTED_AI_PROVIDERS[0];
 }
 
-export function validateProviderKey(provider: AiProviderType, value: string): string | null {
+export interface ProviderValidationMessages {
+    invalidKey?: string;
+    looksLikeAnthropic?: string;
+    looksLikeOpenAI?: string;
+    looksLikeGemini?: string;
+    looksLikeGroq?: string;
+    geminiIncomplete?: string;
+    openAIIncomplete?: string;
+    openAIMustStartWithSk?: string;
+    anthropicIncomplete?: string;
+    anthropicMustStartWithSkAnt?: string;
+    groqIncomplete?: string;
+}
+
+export function validateProviderKey(provider: AiProviderType, value: string, validations?: ProviderValidationMessages): string | null {
     const trimmed = value.trim();
-    if (!trimmed) return 'Pega una API key válida.';
+    if (!trimmed) return validations?.invalidKey ?? 'Pega una API key válida.';
     if (provider === 'gemini') {
-        if (trimmed.startsWith('sk-ant')) return 'Eso parece una key de Anthropic (Claude). Gemini usa keys de Google AI Studio.';
-        if (trimmed.startsWith('sk-')) return 'Eso parece una key de OpenAI. Gemini usa keys de Google AI Studio.';
-        if (trimmed.length < 16) return 'La key parece incompleta. Pégala completa desde Google AI Studio.';
+        if (trimmed.startsWith('sk-ant')) return validations?.looksLikeAnthropic ?? 'Eso parece una key de Anthropic (Claude). Gemini usa keys de Google AI Studio.';
+        if (trimmed.startsWith('sk-')) return validations?.looksLikeOpenAI ?? 'Eso parece una key de OpenAI. Gemini usa keys de Google AI Studio.';
+        if (trimmed.length < 16) return validations?.geminiIncomplete ?? 'La key parece incompleta. Pégala completa desde Google AI Studio.';
     } else if (provider === 'openai') {
-        if (trimmed.startsWith('AIzaSy')) return 'Eso parece una key de Google Gemini. OpenAI usa keys de platform.openai.com (sk-...).';
-        if (trimmed.startsWith('sk-ant')) return 'Eso parece una key de Anthropic. OpenAI usa keys de platform.openai.com (sk-...).';
-        if (trimmed.startsWith('gsk_')) return 'Eso parece una key de Groq. OpenAI usa keys de platform.openai.com (sk-...).';
-        if (!trimmed.startsWith('sk-')) return 'La key de OpenAI debe empezar por sk-... (de platform.openai.com).';
-        if (trimmed.length < 20) return 'La key parece incompleta. Pégala completa desde OpenAI Platform.';
+        if (trimmed.startsWith('AIzaSy')) return validations?.looksLikeGemini ?? 'Eso parece una key de Google Gemini. OpenAI usa keys de platform.openai.com (sk-...).';
+        if (trimmed.startsWith('sk-ant')) return validations?.looksLikeAnthropic ?? 'Eso parece una key de Anthropic. OpenAI usa keys de platform.openai.com (sk-...).';
+        if (trimmed.startsWith('gsk_')) return validations?.looksLikeGroq ?? 'Eso parece una key de Groq. OpenAI usa keys de platform.openai.com (sk-...).';
+        if (!trimmed.startsWith('sk-')) return validations?.openAIMustStartWithSk ?? 'La key de OpenAI debe empezar por sk-... (de platform.openai.com).';
+        if (trimmed.length < 20) return validations?.openAIIncomplete ?? 'La key parece incompleta. Pégala completa desde OpenAI Platform.';
     } else if (provider === 'anthropic') {
-        if (trimmed.startsWith('AIzaSy')) return 'Eso parece una key de Google Gemini. Anthropic usa keys de console.anthropic.com (sk-ant-...).';
-        if (trimmed.startsWith('gsk_')) return 'Eso parece una key de Groq. Anthropic usa keys de console.anthropic.com (sk-ant-...).';
-        if (!trimmed.startsWith('sk-ant')) return 'La key de Anthropic debe empezar por sk-ant-... (de console.anthropic.com).';
-        if (trimmed.length < 20) return 'La key parece incompleta. Pégala completa desde Anthropic Console.';
+        if (trimmed.startsWith('AIzaSy')) return validations?.looksLikeGemini ?? 'Eso parece una key de Google Gemini. Anthropic usa keys de console.anthropic.com (sk-ant-...).';
+        if (trimmed.startsWith('gsk_')) return validations?.looksLikeGroq ?? 'Eso parece una key de Groq. Anthropic usa keys de console.anthropic.com (sk-ant-...).';
+        if (!trimmed.startsWith('sk-ant')) return validations?.anthropicMustStartWithSkAnt ?? 'La key de Anthropic debe empezar por sk-ant-... (de console.anthropic.com).';
+        if (trimmed.length < 20) return validations?.anthropicIncomplete ?? 'La key parece incompleta. Pégala completa desde Anthropic Console.';
     } else if (provider === 'groq') {
-        if (trimmed.startsWith('sk-ant')) return 'Eso parece una key de Anthropic. Groq usa keys de console.groq.com (gsk_...).';
-        if (trimmed.length < 10) return 'La key parece incompleta. Pégala completa desde Groq Console.';
+        if (trimmed.startsWith('sk-ant')) return validations?.looksLikeAnthropic ?? 'Eso parece una key de Anthropic. Groq usa keys de console.groq.com (gsk_...).';
+        if (trimmed.length < 10) return validations?.groqIncomplete ?? 'La key parece incompleta. Pégala completa desde Groq Console.';
     }
     return null;
 }
