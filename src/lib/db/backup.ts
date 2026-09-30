@@ -94,6 +94,30 @@ export const BackupAppConfigSchema = z.object({
     enableAISuggestions: z.boolean().optional(),
 }).passthrough();
 
+export const BackupQuickTemplateSchema = z.object({
+    id: z.string().min(1),
+    name: z.string().min(1),
+    icon: z.string(),
+    description: z.string(),
+    amount: z.number(),
+    type: z.enum(['income', 'expense']),
+    categoryId: z.string().optional(),
+    accountId: z.string().optional(),
+    createdAt: z.number().optional(),
+    updatedAt: z.number().optional(),
+}).passthrough();
+
+export const BackupBudgetItemSchema = z.object({
+    id: z.string().min(1),
+    month: z.string().optional(),
+    name: z.string().min(1),
+    amount: z.number(),
+    type: z.enum(['income', 'expense']),
+    categoryId: z.string().optional(),
+    createdAt: z.number().optional(),
+    updatedAt: z.number().optional(),
+}).passthrough();
+
 // Zod schema for backup validation
 export const BackupSchema = z.object({
     version: z.number(),
@@ -106,6 +130,8 @@ export const BackupSchema = z.object({
         tags: z.array(BackupTagSchema),
         reserves: z.array(BackupReserveSchema),
         appConfig: z.array(BackupAppConfigSchema),
+        quickTemplates: z.array(BackupQuickTemplateSchema).optional().default([]),
+        budgetItems: z.array(BackupBudgetItemSchema).optional().default([]),
     })
 });
 
@@ -120,6 +146,8 @@ export interface BackupData {
         tags: Tag[];
         reserves: Reserve[];
         appConfig: AppConfig[];
+        quickTemplates?: any[];
+        budgetItems?: any[];
     };
 }
 
@@ -136,6 +164,8 @@ export async function exportDatabase(): Promise<string> {
             tags: await db.tags.toArray(),
             reserves: await db.reserves.toArray(),
             appConfig: await db.appConfig.toArray(),
+            quickTemplates: await db.quickTemplates.toArray(),
+            budgetItems: await db.budgetItems.toArray(),
         }
     };
 
@@ -167,7 +197,9 @@ export async function importDatabase(jsonString: string): Promise<void> {
         db.categories,
         db.tags,
         db.reserves,
-        db.appConfig
+        db.appConfig,
+        db.quickTemplates,
+        db.budgetItems
     ], async () => {
         try {
             await Promise.all([
@@ -178,6 +210,8 @@ export async function importDatabase(jsonString: string): Promise<void> {
                 db.tags.clear(),
                 db.reserves.clear(),
                 db.appConfig.clear(),
+                db.quickTemplates.clear(),
+                db.budgetItems.clear(),
             ]);
 
             if (data.tables.transactions.length > 0) await db.transactions.bulkAdd(data.tables.transactions as any);
@@ -187,6 +221,8 @@ export async function importDatabase(jsonString: string): Promise<void> {
             if (data.tables.tags.length > 0) await db.tags.bulkAdd(data.tables.tags as any);
             if (data.tables.reserves.length > 0) await db.reserves.bulkAdd(data.tables.reserves as any);
             if (data.tables.appConfig.length > 0) await db.appConfig.bulkAdd(data.tables.appConfig as any);
+            if (data.tables.quickTemplates && data.tables.quickTemplates.length > 0) await db.quickTemplates.bulkAdd(data.tables.quickTemplates as any);
+            if (data.tables.budgetItems && data.tables.budgetItems.length > 0) await db.budgetItems.bulkAdd(data.tables.budgetItems as any);
         } catch (error) {
             console.error('Error during bulk import:', error);
             throw new Error('Error al insertar los datos en la base de datos local');

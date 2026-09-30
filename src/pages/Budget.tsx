@@ -1,15 +1,39 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
 import { cn, formatCurrency } from '@/lib/utils';
-import { Trash2, Pencil, TrendingUp, TrendingDown, Info, Calculator } from 'lucide-react';
+import {
+  Trash2,
+  Pencil,
+  TrendingUp,
+  TrendingDown,
+  Info,
+  Calculator,
+  ChevronLeft,
+  ChevronRight,
+  Copy,
+} from 'lucide-react';
+import { format, subMonths, addMonths } from 'date-fns';
 import { Modal } from '@/components/ui/Modal';
 import type { BudgetItem } from '@/lib/types';
 import { useUIStore } from '@/store/ui';
-import { useTranslation } from '@/lib/i18n';
+import { useTranslation, getDateFnsLocale } from '@/lib/i18n';
 
 export default function Budget() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
+  const dateLocale = getDateFnsLocale(language);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const monthParam = searchParams.get('month');
+
+  const [currentDate, setCurrentDate] = useState<Date>(() => {
+    if (monthParam && /^\d{4}-\d{2}$/.test(monthParam)) {
+      const [year, month] = monthParam.split('-').map(Number);
+      return new Date(year, month - 1, 1);
+    }
+    return new Date();
+  });
+
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<BudgetItem | null>(null);
   const [newItemType, setNewItemType] = useState<'income' | 'expense'>('income');
@@ -18,10 +42,31 @@ export default function Budget() {
   const [expenseSortOrder, setExpenseSortOrder] = useState<'az' | 'za' | 'amount-asc' | 'amount-desc'>('amount-desc');
   const { addToast, confirm } = useUIStore();
 
-  const budgetItems = useLiveQuery(() => db.budgetItems.toArray()) || [];
+  const currentMonthKey = format(currentDate, 'yyyy-MM');
+  const isViewingCurrentRealMonth = currentMonthKey === format(new Date(), 'yyyy-MM');
 
-  const fixedIncomes = budgetItems.filter(item => item.type === 'income');
-  const fixedExpenses = budgetItems.filter(item => item.type === 'expense');
+  const allBudgetItems = useLiveQuery(() => db.budgetItems.toArray()) || [];
+
+  // Filter items specifically for the active month
+  const currentMonthItems = useMemo(() => {
+    return allBudgetItems.filter(item => {
+      const itemMonth = item.month || format(new Date(item.createdAt || Date.now()), 'yyyy-MM');
+      return itemMonth === currentMonthKey;
+    });
+  }, [allBudgetItems, currentMonthKey]);
+
+  const fixedIncomes = currentMonthItems.filter(item => item.type === 'income');
+  const fixedExpenses = currentMonthItems.filter(item => item.type === 'expense');
+
+  // Check if previous month has items to offer one-click cloning
+  const prevDate = subMonths(currentDate, 1);
+  const prevMonthKey = format(prevDate, 'yyyy-MM');
+  const prevMonthItems = useMemo(() => {
+    return allBudgetItems.filter(item => {
+      const itemMonth = item.month || format(new Date(item.createdAt || Date.now()), 'yyyy-MM');
+      return itemMonth === prevMonthKey;
+    });
+  }, [allBudgetItems, prevMonthKey]);
 
   const sortedFixedExpenses = [...fixedExpenses].sort((a, b) => {
     switch (expenseSortOrder) {
@@ -41,6 +86,45 @@ export default function Budget() {
   const totalFixedIncome = fixedIncomes.reduce((acc, curr) => acc + curr.amount, 0);
   const totalFixedExpense = fixedExpenses.reduce((acc, curr) => acc + curr.amount, 0);
   const plannedAvailable = totalFixedIncome - totalFixedExpense;
+
+  const navigateMonth = (direction: 'prev' | 'next') => {
+    setCurrentDate(prev => {
+      const next = direction === 'prev' ? subMonths(prev, 1) : addMonths(prev, 1);
+      setSearchParams({ month: format(next, 'yyyy-MM') }, { replace: true });
+      return next;
+    });
+  };
+
+  const jumpToCurrentMonth = () => {
+    const now = new Date();
+    setCurrentDate(now);
+    setSearchParams({ month: format(now, 'yyyy-MM') }, { replace: true });
+  };
+
+  const handleCopyPreviousMonth = async () => {
+    if (prevMonthItems.length === 0) return;
+    try {
+      const clonedItems: BudgetItem[] = prevMonthItems.map(item => ({
+        id: crypto.randomUUID(),
+        month: currentMonthKey,
+        name: item.name,
+        amount: item.amount,
+        type: item.type,
+        categoryId: item.categoryId,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      }));
+
+      await db.budgetItems.bulkAdd(clonedItems);
+      addToast(
+        t.budget.copySuccess.replace('{month}', format(prevDate, 'MMMM yyyy', { locale: dateLocale })),
+        'success'
+      );
+    } catch (err) {
+      console.error('Error copying budget:', err);
+      addToast(t.common.error, 'error');
+    }
+  };
 
   const handleOpenAddModal = (type: 'income' | 'expense') => {
     setEditingItem(null);
@@ -72,15 +156,18 @@ export default function Budget() {
           name: newItemName.trim(),
           amount: Number(newItemAmount),
           type: newItemType,
+          updatedAt: Date.now(),
         });
         addToast(t.budget.budgetSaved, "success");
       } else {
         const newItem: BudgetItem = {
           id: crypto.randomUUID(),
+          month: currentMonthKey,
           name: newItemName.trim(),
           amount: Number(newItemAmount),
           type: newItemType,
-          createdAt: Date.now()
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
         };
         await db.budgetItems.add(newItem);
         addToast(t.budget.budgetSaved, "success");
@@ -113,12 +200,71 @@ export default function Budget() {
 
   return (
     <div className="p-4 space-y-6">
-      <header>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t.budget.fixedBudgetTitle}</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          {t.budget.fixedBudgetSubtitle}
-        </p>
+      {/* Header & Month Selector */}
+      <header className="space-y-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t.budget.fixedBudgetTitle}</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            {t.budget.fixedBudgetSubtitle}
+          </p>
+        </div>
+
+        {/* Month Selector Carousel */}
+        <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-2 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
+          <button
+            onClick={() => navigateMonth('prev')}
+            aria-label="Previous month"
+            className="p-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-slate-700 dark:text-slate-200 capitalize">
+              {format(currentDate, "MMMM yyyy", { locale: dateLocale })}
+            </span>
+            {!isViewingCurrentRealMonth && (
+              <button
+                type="button"
+                onClick={jumpToCurrentMonth}
+                className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 px-2 py-0.5 rounded-full hover:bg-indigo-100 transition-colors"
+              >
+                {t.transactions.currentMonth}
+              </button>
+            )}
+          </div>
+          <button
+            onClick={() => navigateMonth('next')}
+            aria-label="Next month"
+            className="p-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
+          >
+            <ChevronRight size={20} />
+          </button>
+        </div>
       </header>
+
+      {/* Copy Previous Month Banner if Current Month is Empty */}
+      {currentMonthItems.length === 0 && prevMonthItems.length > 0 && (
+        <div className="p-4 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+          <div>
+            <h3 className="font-bold text-sm text-indigo-950 dark:text-indigo-200">
+              {t.budget.noItemsInMonthBanner.replace('{month}', format(currentDate, 'MMMM yyyy', { locale: dateLocale }))}
+            </h3>
+            <p className="text-xs text-indigo-700 dark:text-indigo-300 mt-0.5">
+              {t.budget.copyFromPreviousMonth.replace('{month}', format(prevDate, 'MMMM yyyy', { locale: dateLocale }))}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleCopyPreviousMonth}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors shrink-0"
+          >
+            <Copy size={14} />
+            {t.budget.copyMonthBtn
+              .replace('{count}', String(prevMonthItems.length))
+              .replace('{month}', format(prevDate, 'MMMM', { locale: dateLocale }))}
+          </button>
+        </div>
+      )}
 
       {/* Resumen Card */}
       <div className={cn(
@@ -130,7 +276,7 @@ export default function Budget() {
         <div className="flex items-center gap-2 mb-2 text-indigo-100">
           <Calculator size={20} className={plannedAvailable < 0 ? "text-red-200" : ""} />
           <span className={cn("text-sm font-medium", plannedAvailable < 0 ? "text-red-100" : "")}>
-            {t.budget.plannedAvailable}
+            {t.budget.plannedAvailable} ({format(currentDate, "MMMM", { locale: dateLocale })})
           </span>
         </div>
         <div className="text-4xl font-bold tracking-tight">

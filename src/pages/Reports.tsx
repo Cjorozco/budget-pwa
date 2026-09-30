@@ -148,9 +148,15 @@ export default function Reports() {
     const incomeDataParents = aggregateTxs(incomes, 'parents');
     const incomeDataChildren = aggregateTxs(incomes, 'children');
 
-    // Fixed Budget calculations
-    const fixedExpenses = budgetItems.filter(b => b.type === 'expense');
-    const fixedIncomes = budgetItems.filter(b => b.type === 'income');
+    // Fixed Budget calculations for the selected month
+    const currentMonthKey = format(currentDate, 'yyyy-MM');
+    const monthBudgetItems = budgetItems.filter(b => {
+      const itemMonth = b.month || format(new Date(b.createdAt || Date.now()), 'yyyy-MM');
+      return itemMonth === currentMonthKey;
+    });
+
+    const fixedExpenses = monthBudgetItems.filter(b => b.type === 'expense');
+    const fixedIncomes = monthBudgetItems.filter(b => b.type === 'income');
 
     const totalFixedExpense = fixedExpenses.reduce((acc, curr) => acc + curr.amount, 0);
     const totalFixedIncome = fixedIncomes.reduce((acc, curr) => acc + curr.amount, 0);
@@ -451,7 +457,7 @@ export default function Reports() {
                 </p>
               </div>
               <Link
-                to="/budget"
+                to={`/budget?month=${format(currentDate, 'yyyy-MM')}`}
                 className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold hover:underline shrink-0"
               >
                 {t.reports.adjustBudget}

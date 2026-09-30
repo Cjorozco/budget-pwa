@@ -240,6 +240,11 @@ export interface TranslationSchema {
         expenseWord: string;
         deleteItemTitle: string;
         deleteItemMsg: string;
+        copyFromPreviousMonth: string;
+        copySuccess: string;
+        noItemsInMonthBanner: string;
+        budgetForMonth: string;
+        copyMonthBtn: string;
     };
     reports: {
         title: string;
