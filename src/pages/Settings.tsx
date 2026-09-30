@@ -27,23 +27,23 @@ export default function SettingsPage() {
         try {
             const json = await exportDatabase();
             downloadBackup(json);
-            addToast('Backup descargado con éxito', 'success');
+            addToast(t.settings.backupDownloaded, 'success');
         } catch (error) {
-            addToast('Error al exportar backup', 'error');
+            addToast(t.settings.backupExportError, 'error');
         }
     };
 
     const handleExportCSV = async () => {
         if (!isPro) {
-            openUpgradeModal('La exportación a formato CSV/Excel requiere Personal Budget PRO.');
+            openUpgradeModal(t.settings.csvRequiresPro);
             return;
         }
         try {
             const csv = await exportToCSV();
             downloadCSV(csv);
-            addToast('Movimientos exportados a CSV', 'success');
+            addToast(t.settings.csvExportSuccess, 'success');
         } catch (error) {
-            addToast('Error al exportar CSV', 'error');
+            addToast(t.settings.csvExportError, 'error');
         }
     };
 
@@ -66,11 +66,11 @@ export default function SettingsPage() {
         setIsLoading(true);
         try {
             await importDatabase(importJson);
-            addToast('¡Respaldo restaurado con éxito!', 'success');
+            addToast(t.settings.backupRestoredSuccess, 'success');
             setTimeout(() => window.location.reload(), 1500);
         } catch (error: any) {
             console.error(error);
-            addToast(error.message || 'Error al restaurar respaldo', 'error');
+            addToast(error.message || t.settings.backupRestoreError, 'error');
             setIsConfirmOpen(false);
         } finally {
             setIsLoading(false);
@@ -84,11 +84,11 @@ export default function SettingsPage() {
                 await db.transactions.clear();
                 await db.accounts.toCollection().modify({ calculatedBalance: 0 });
             });
-            addToast('Movimientos eliminados correctamente', 'success');
+            addToast(t.transactions.deleteSuccess, 'success');
             setIsConfirmOpen(false);
         } catch (error) {
             console.error(error);
-            addToast('Error al reiniciar movimientos', 'error');
+            addToast(t.transactions.deleteError, 'error');
         } finally {
             setIsLoading(false);
         }
@@ -130,11 +130,11 @@ export default function SettingsPage() {
         setIsLoading(true);
         try {
             await db.delete();
-            addToast('Base de datos borrada completamente', 'success');
+            addToast(t.settings.resetSuccess, 'success');
             setTimeout(() => window.location.reload(), 1500);
         } catch (error) {
             console.error(error);
-            addToast('Error al borrar la base de datos', 'error');
+            addToast(t.common.error, 'error');
             setIsLoading(false);
         }
     };
@@ -147,10 +147,10 @@ export default function SettingsPage() {
 
     const getModalTitle = () => {
         switch (actionType) {
-            case 'transactions': return "¿Reset cuenta?";
-            case 'full': return "¿Reset total?";
-            case 'import': return "¿Restaurar respaldo?";
-            default: return "Confirmar acción";
+            case 'transactions': return t.settings.confirmResetTransactionsTitle;
+            case 'full': return t.settings.confirmResetFullTitle;
+            case 'import': return t.settings.confirmRestoreTitle;
+            default: return t.settings.confirmActionTitle;
         }
     };
 
