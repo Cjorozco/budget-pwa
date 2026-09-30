@@ -16,9 +16,11 @@ import {
 import { createAiClient } from '@/lib/ai/gateway/factory';
 import type { AiProviderType } from '@/lib/ai/types';
 import { useUIStore } from '@/store/ui';
+import { useTranslation } from '@/lib/i18n';
 
 export function GeminiKeyCard() {
     const addToast = useUIStore((s) => s.addToast);
+    const { t } = useTranslation();
     const [selectedProvider, setSelectedProviderState] = useState<AiProviderType>(getSelectedAiProvider());
 
     const meta = getProviderMeta(selectedProvider);
@@ -126,10 +128,10 @@ export function GeminiKeyCard() {
                 </div>
                 <div>
                     <h3 className="font-semibold text-slate-900 dark:text-white text-sm">
-                        Motor de Inteligencia Artificial
+                        {t.settings.aiSection}
                     </h3>
                     <p className="text-[11px] text-slate-500">
-                        Selecciona el proveedor activo para categorización automática
+                        {t.settings.aiDesc}
                     </p>
                 </div>
             </div>
@@ -137,7 +139,7 @@ export function GeminiKeyCard() {
             {/* Responsive Provider Selection Grid (2x2 on mobile, 4-col on tablet/desktop) */}
             <div className="space-y-1.5">
                 <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
-                    Proveedor Activo
+                    {t.settings.activeProvider}
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {SUPPORTED_AI_PROVIDERS.map((p) => {
@@ -163,11 +165,11 @@ export function GeminiKeyCard() {
                                     {providerHasStoredKey ? (
                                         <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100/80 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded-full">
                                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                            Key lista
+                                            {t.settings.keyReady}
                                         </span>
                                     ) : (
                                         <span className="text-[9px] text-slate-600 dark:text-slate-300">
-                                            Sin key
+                                            {t.settings.noKey}
                                         </span>
                                     )}
                                 </div>
@@ -218,21 +220,21 @@ export function GeminiKeyCard() {
             {hasKey ? (
                 <div className="rounded-xl bg-slate-50 dark:bg-slate-800/60 px-3 py-2 space-y-0.5">
                     <p className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                        API Key activa para {meta.label}
+                        {t.settings.activeKeyFor} {meta.label}
                     </p>
                     <p className="text-xs text-slate-600 dark:text-slate-400">
-                        Activa: <span className="font-mono">{masked}</span>
+                        {t.common.active}: <span className="font-mono">{masked}</span>
                     </p>
                 </div>
             ) : (
                 <p className="text-[11px] text-slate-500">
-                    No hay API key configurada para {meta.label}. Pégala abajo para activar este motor.
+                    {t.settings.noKeyConfiguredFor.replace('{provider}', meta.label)}
                 </p>
             )}
 
             {showEditor && (
                 <Input
-                    label={hasKey ? `Nueva API key de ${meta.label} (reemplazar)` : `API key de ${meta.label}`}
+                    label={hasKey ? `${meta.label} (${t.settings.replaceKey})` : `API key (${meta.label})`}
                     type="password"
                     revealPassword
                     autoComplete="off"
@@ -249,18 +251,18 @@ export function GeminiKeyCard() {
             )}
 
             <p className="text-[10px] text-slate-500">
-                Las llaves se almacenan exclusivamente en este navegador. Nunca se transmiten a nuestros servidores ni entran en los backups JSON.
+                {t.settings.keysStoredLocally}
             </p>
 
             <div className="flex flex-wrap gap-2">
                 {showEditor ? (
                     <>
                         <Button type="button" size="sm" onClick={handleSave} data-testid="gemini-api-key-save">
-                            {hasKey ? 'Reemplazar' : 'Guardar'}
+                            {hasKey ? t.settings.replaceKey : t.common.save}
                         </Button>
                         {isReplacing && (
                             <Button type="button" size="sm" variant="ghost" onClick={handleCancelReplace}>
-                                Cancelar
+                                {t.common.cancel}
                             </Button>
                         )}
                     </>
@@ -272,7 +274,7 @@ export function GeminiKeyCard() {
                         onClick={() => setIsReplacing(true)}
                         data-testid="gemini-api-key-replace"
                     >
-                        Cambiar key
+                        {t.settings.changeKey}
                     </Button>
                 )}
                 <Button
@@ -283,7 +285,7 @@ export function GeminiKeyCard() {
                     isLoading={isTesting}
                     data-testid="gemini-api-key-test"
                 >
-                    Probar {meta.label}
+                    {t.settings.testProvider} {meta.label}
                 </Button>
                 {hasKey && (
                     <Button
@@ -294,7 +296,7 @@ export function GeminiKeyCard() {
                         data-testid="gemini-api-key-forget"
                     >
                         <Trash2 size={14} />
-                        Olvidar
+                        {t.settings.forgetKey}
                     </Button>
                 )}
             </div>
