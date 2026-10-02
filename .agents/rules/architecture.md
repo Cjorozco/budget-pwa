@@ -32,7 +32,7 @@ Estos son los principios fundamentales que deben mantenerse en todo momento:
 - **Offline-First**: los datos nunca salen del dispositivo; persistimos robustamente en IndexedDB.
 - **Saldos Atómicos**: el saldo calculado es la verdad absoluta derivada de la historia de transacciones.
 - **AI Multi-Provider BYOK (PRO/GOD)**: soporte directo en navegador para Google Gemini, Anthropic Claude, OpenAI y Groq con claves ingresadas por el usuario. No hay proxy ni backend intermediario. El gateway en `src/lib/ai/gateway/` y el orquestador `categorizer.ts` son los puntos de extensión.
-- **Licenciamiento Lemon Squeezy**: activación contra `api.lemonsqueezy.com` y validación criptográfica local con fallback offline.
+- **Licenciamiento Lemon Squeezy**: activación contra `api.lemonsqueezy.com` (store/product verificados), revalidación periódica y periodo de gracia offline.
 
 ---
 

@@ -45,8 +45,8 @@ La app **no** requiere ni incluye API keys centralizadas en el servidor. El plan
 ## 💳 Sistema de Licenciamiento (Lemon Squeezy)
 
 La aplicación integra monetización y activación de licencias sin necesidad de backend propio:
-- **Activación en vivo:** Conexión con `api.lemonsqueezy.com` para activar claves y calcular dinámicamente vigencias mensuales, anuales o perpetuas.
-- **Validación Criptográfica Local:** Validador de checksums integrado (`licenseValidator.ts`) con tolerancia y soporte offline.
+- **Activación en vivo:** Conexión con `api.lemonsqueezy.com` para activar claves (requiere internet) y verificar que pertenezcan a nuestra tienda/producto; vigencias mensuales, anuales o perpetuas.
+- **Revalidación y gracia offline:** Se revalida en segundo plano (máx. 1 vez cada 24 h) y se tolera hasta 14 días sin conexión (`licenseConfig.ts`). No existen claves offline ni maestras.
 - **Planes:**
   - **Free (Local Core):** Categorizador por reglas locales, presupuesto, cuentas, reportes y reconciliación ilimitada sin costo.
   - **PRO:** Activación de IA Multi-proveedor (BYOK) y soporte extendido.

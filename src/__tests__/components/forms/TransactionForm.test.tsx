@@ -4,13 +4,15 @@ import userEvent from '@testing-library/user-event';
 import { TransactionForm } from '@/components/forms/TransactionForm';
 import { db } from '@/lib/db';
 import { useUIStore } from '@/store/ui';
+import { useLicenseStore } from '@/store/licenseStore';
 
 describe('TransactionForm', () => {
     const mockOnSuccess = vi.fn();
 
     beforeEach(async () => {
         vi.clearAllMocks();
-        useUIStore.setState({ isPro: false, toasts: [] });
+        useUIStore.setState({ toasts: [] });
+        useLicenseStore.setState({ isPro: false });
 
         // Clean Dexie test tables
         await db.transactions.clear();
