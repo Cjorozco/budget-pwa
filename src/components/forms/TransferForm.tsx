@@ -88,7 +88,7 @@ export function TransferForm({ onSuccess, onCancel }: TransferFormProps) {
                         calculatedBalance: dest.calculatedBalance + numericAmount
                     };
                     if (typeof dest.actualBalance === 'number') {
-                        updates.actualBalance = dest.actualBalance - numericAmount;
+                        updates.actualBalance = dest.actualBalance + numericAmount;
                     }
                     await db.accounts.update(destinationAccountId, updates);
                 }
