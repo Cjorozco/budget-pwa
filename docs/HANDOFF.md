@@ -2,7 +2,7 @@
 
 > Documento vivo. Se actualiza a petición del usuario en la sesión de Claude Code
 > (https://claude.ai/code/session_01QSR3F1PLYCdmFb7HAvbmBY).
-> **Última actualización:** 2026-10-02 · **Versión en producción:** 1.3.1 (`master` @ `1a24720`)
+> **Última actualización:** 2026-10-02 (cuenta corregida a mano) · **Versión en producción:** 1.3.1 (`master` @ `1a24720`)
 
 ## 1. Qué es
 PWA de presupuesto personal, offline-first. Datos solo en el dispositivo (IndexedDB/Dexie), sin backend.
@@ -42,7 +42,7 @@ en `TransactionForm`, `TransferForm`, borrado en `Transactions.tsx` y `Reconcili
 | — | i18n completo es/en/fr; proveedores IA localizados; OpenAI + activación Lemon Squeezy |
 
 ## 5. Problemas conocidos / pendientes
-1. **Datos ya afectados por el bug de transferencias (≤1.3.0):** la cuenta destino quedó con `actualBalance` bajo por `2 × monto` por cada transferencia. Solución actual: reconciliar la cuenta. Opción pendiente de decisión: migración automática (cuidado con el principio "no reescribir el pasado": debería generar ajuste explícito `isAdjustment: true`).
+1. ~~Datos afectados por el bug de transferencias (≤1.3.0)~~ **Resuelto:** el usuario corrigió a mano la cuenta destino (2026-10-02). No se necesita migración.
 2. **Bug probable, sin arreglar:** al borrar una transferencia (`src/pages/Transactions.tsx`, bloque "Handle Linked Transfer Deletion") se revierte `calculatedBalance` de la cuenta vinculada pero **no** su `actualBalance` → "Disponible" queda desfasado. Pendiente: corregir + test.
 3. Revisar de forma similar la edición de transacciones en `TransactionForm` (líneas ~231–280) por coherencia de `actualBalance`.
 4. Deuda de lint (71 problemas), p. ej. `updates: any` en `TransferForm`/`Transactions`.
