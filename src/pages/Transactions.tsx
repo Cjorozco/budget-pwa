@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { TransactionForm } from '@/components/forms/TransactionForm';
 import { formatCurrency } from '@/lib/utils';
-import type { Transaction } from '@/lib/types';
+import type { Account, Transaction } from '@/lib/types';
 import { useUIStore } from '@/store/ui';
 import { useTranslation, getDateFnsLocale } from '@/lib/i18n';
 
@@ -114,7 +114,14 @@ export default function TransactionsPage() {
                                 ? linkedAccount.calculatedBalance - linkedAmount
                                 : linkedAccount.calculatedBalance + linkedAmount;
 
-                            await db.accounts.update(linkedTx.accountId, { calculatedBalance: linkedReversedBalance });
+                            const linkedUpdate: Partial<Account> = { calculatedBalance: linkedReversedBalance };
+                            if (linkedAccount.actualBalance !== undefined) {
+                                linkedUpdate.actualBalance = isLinkedIncome
+                                    ? linkedAccount.actualBalance - linkedAmount
+                                    : linkedAccount.actualBalance + linkedAmount;
+                            }
+
+                            await db.accounts.update(linkedTx.accountId, linkedUpdate);
                         }
                         // Delete the linked transaction
                         await db.transactions.delete(linkedTx.id);
