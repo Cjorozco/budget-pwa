@@ -1,0 +1,52 @@
+# Handoff — Personal Budget PWA
+
+> Documento vivo. Se actualiza a petición del usuario en la sesión de Claude Code
+> (https://claude.ai/code/session_01QSR3F1PLYCdmFb7HAvbmBY).
+> **Última actualización:** 2026-10-02 · **Versión en producción:** 1.3.1 (`master` @ `1a24720`)
+
+## 1. Qué es
+PWA de presupuesto personal, offline-first. Datos solo en el dispositivo (IndexedDB/Dexie), sin backend.
+IA opcional BYOK (Gemini, Claude, OpenAI, Groq) con claves en `localStorage`. Licencias vía Lemon Squeezy + validación offline.
+Idioma es/en/fr; moneda COP.
+
+**Stack:** React 19 · TS · Vite 7 · Tailwind 4 · Dexie · Zustand (UI y licencia) · React Router · RHF + Zod · Recharts · Vitest.
+
+## 2. Despliegue y flujo de trabajo
+- `master` = producción, desplegada en **Vercel** (no hay `vercel.json` ni workflows en el repo; el despliegue lo gestiona Vercel al detectar `master`).
+- Historial previo: ramas `develop` fusionadas a `master`. Hoy solo existe `master` en remoto (más la rama de trabajo de Claude).
+- Reglas del repo: leer `AGENTS.md`, `.agents/rules/{working-style,ux-principles,architecture}.md`.
+- SemVer en `package.json` al shippear (PATCH bugs/tests, MINOR features, MAJOR schema/backup incompatible). Dexie `version(n)` ≠ semver (actual: Dexie v9).
+- Comandos: `npm ci`, `npm run build` (`tsc -b && vite build`), `npm run test:run`, `npm run lint`.
+
+## 3. Estado actual
+- PRs abiertos: 0 · Issues abiertos: 0.
+- Verificación al último cambio: `tsc -b` y build OK; Vitest 30 archivos / 280 pruebas OK.
+- Lint: **71 problemas preexistentes** (mayoría `no-explicit-any`, algún `no-empty`). Sin limpiar.
+
+### Mapa del código
+- `src/pages/`: Dashboard, Accounts, Transactions, Budget, Reports, Categories, Templates, AmbiguousReview, Settings.
+- `src/components/forms/`: TransactionForm, TransferForm, ReconciliationForm, AccountForm, etc.
+- `src/lib/db/`: `index.ts` (esquema Dexie), `backup.ts` (Zod), seeds, `migrateCategories.ts`.
+- `src/lib/ai/` (gateway + categorizer), `src/lib/license/`, `src/lib/i18n/`, `src/store/`.
+
+### Modelo de saldos (importante)
+Cada `Account` guarda `calculatedBalance` (derivado de transacciones) y `actualBalance?` (saldo real declarado, ajustado por reconciliación).
+El **Dashboard** calcula "Disponible" = Σ(`actualBalance ?? calculatedBalance`) − reservas. Las escrituras de saldo se hacen a mano
+en `TransactionForm`, `TransferForm`, borrado en `Transactions.tsx` y `ReconciliationForm`; deben mantener ambos campos coherentes.
+
+## 4. Cambios recientes
+| Versión | Cambio |
+|---|---|
+| 1.3.1 | Fix: `TransferForm` restaba `actualBalance` en la cuenta destino (saldo negativo y "Disponible" alterado). Test de regresión `TransferForm.test.tsx`. PR Cjorozco/budget-pwa#23 |
+| 1.3.0 | Presupuesto fijo por mes con arrastre/copia y reportes de cumplimiento (Dexie v9) |
+| — | i18n completo es/en/fr; proveedores IA localizados; OpenAI + activación Lemon Squeezy |
+
+## 5. Problemas conocidos / pendientes
+1. **Datos ya afectados por el bug de transferencias (≤1.3.0):** la cuenta destino quedó con `actualBalance` bajo por `2 × monto` por cada transferencia. Solución actual: reconciliar la cuenta. Opción pendiente de decisión: migración automática (cuidado con el principio "no reescribir el pasado": debería generar ajuste explícito `isAdjustment: true`).
+2. **Bug probable, sin arreglar:** al borrar una transferencia (`src/pages/Transactions.tsx`, bloque "Handle Linked Transfer Deletion") se revierte `calculatedBalance` de la cuenta vinculada pero **no** su `actualBalance` → "Disponible" queda desfasado. Pendiente: corregir + test.
+3. Revisar de forma similar la edición de transacciones en `TransactionForm` (líneas ~231–280) por coherencia de `actualBalance`.
+4. Deuda de lint (71 problemas), p. ej. `updates: any` en `TransferForm`/`Transactions`.
+5. README/arquitectura dicen "270+ pruebas"; hoy son 280.
+
+## 6. Cómo actualizar este documento
+Pedirlo en el chat de la sesión: Claude revisa `git log`, PRs/issues y el código, y edita este archivo.
