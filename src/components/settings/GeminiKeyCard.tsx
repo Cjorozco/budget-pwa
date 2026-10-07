@@ -156,7 +156,7 @@ export function GeminiKeyCard() {
                             ? t.aiProviders[p.id as 'gemini' | 'openai' | 'anthropic' | 'groq']
                             : undefined;
                         const pLabel = pT?.label ?? p.label;
-                        const pSubLabel = pT?.subLabel ?? (p.id === 'gemini' ? 'Google AI' : p.id === 'openai' ? 'ChatGPT' : p.id === 'groq' ? 'Llama 3 / Mixtral' : 'Claude 3.5');
+                        const pSubLabel = pT?.subLabel ?? (p.id === 'gemini' ? 'Google AI' : p.id === 'openai' ? 'ChatGPT' : p.id === 'groq' ? 'Llama 3 / Mixtral' : 'Claude 5.5');
 
                         return (
                             <button

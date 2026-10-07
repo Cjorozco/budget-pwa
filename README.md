@@ -34,7 +34,7 @@ La app **no** requiere ni incluye API keys centralizadas en el servidor. El plan
 | Proveedor | Modelos Soportados | Endpoint / CORS |
 |---|---|---|
 | **Google Gemini** | `gemini-flash-latest`, `gemini-1.5-pro` | Directo en navegador vía Google AI Studio |
-| **Anthropic Claude** | `claude-3-5-haiku-latest`, `claude-3-5-sonnet-latest` | Directo en navegador con rol de Asesor Financiero |
+| **Anthropic Claude** | `claude-haiku-5-5`, `claude-haiku-4-5`, `claude-sonnet-5-5` | Directo en navegador con rol de Asesor Financiero |
 | **OpenAI** | `gpt-4o-mini`, `gpt-4o` | Directo en navegador vía OpenAI API |
 | **Groq** | `llama-3.3-70b-versatile` | Inferencia de ultra-baja latencia |
 

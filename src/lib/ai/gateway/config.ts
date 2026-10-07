@@ -128,7 +128,7 @@ export const SUPPORTED_AI_PROVIDERS: ProviderMeta[] = [
         label: 'Anthropic Claude',
         keyUrl: 'https://console.anthropic.com/settings/keys',
         keyUrlLabel: 'Crear API key en Anthropic Console',
-        modelDescription: 'Modelo: Claude 3.5 Haiku (con respaldo en Claude 3 Haiku y 3.5 Sonnet)',
+        modelDescription: 'Modelo: Claude Haiku 5.5 (con respaldo en Claude Haiku 4.5 y Sonnet 5.5)',
         helpText: 'API key de Anthropic Console (sk-ant-api03-...). Inteligencia analítica y asesoría financiera precisa.',
         placeholder: 'Pega tu key de Anthropic (sk-ant-...)',
     },

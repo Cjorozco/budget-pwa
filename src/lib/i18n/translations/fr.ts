@@ -490,9 +490,9 @@ export const fr: TranslationSchema = {
         },
         anthropic: {
             label: 'Anthropic Claude',
-            subLabel: 'Claude 3.5',
+            subLabel: 'Claude 5.5',
             keyUrlLabel: 'Créer une clé API sur Anthropic Console',
-            modelDescription: 'Modèle : Claude 3.5 Haiku (avec secours sur Claude 3 Haiku et 3.5 Sonnet)',
+            modelDescription: 'Modèle : Claude Haiku 5.5 (avec secours sur Claude Haiku 4.5 et Sonnet 5.5)',
             helpText: 'Clé API d’Anthropic Console (sk-ant-api03-...). Rigueur analytique et conseils financiers précis.',
             placeholder: 'Collez votre clé Anthropic (sk-ant-...)',
         },
