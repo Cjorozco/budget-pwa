@@ -3,10 +3,16 @@ import type { ModelAttempt } from '../types';
 import type { AiGenerateOptions, AiGenerateResult, AiProviderClient, ConnectionTestResult } from './types';
 
 export const ANTHROPIC_MODELS = [
-    'claude-3-5-haiku-20241022',
-    'claude-3-haiku-20240307',
-    'claude-3-5-sonnet-20241022',
+    'claude-haiku-5-5',
+    'claude-haiku-4-5',
+    'claude-sonnet-5-5',
 ] as const;
+
+const ANTHROPIC_MODEL_LABELS: Record<(typeof ANTHROPIC_MODELS)[number], string> = {
+    'claude-haiku-5-5': 'Claude Haiku 5.5',
+    'claude-haiku-4-5': 'Claude Haiku 4.5',
+    'claude-sonnet-5-5': 'Claude Sonnet 5.5',
+};
 
 export const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 
@@ -55,13 +61,7 @@ export class AnthropicProviderClient implements AiProviderClient {
             }
 
             const model = modelsToTry[i];
-            const modelLabel = model.includes('3-5-haiku')
-                ? 'Claude 3.5 Haiku'
-                : model.includes('3-haiku')
-                ? 'Claude 3 Haiku'
-                : model.includes('3-5-sonnet')
-                ? 'Claude 3.5 Sonnet'
-                : `Claude (${model})`;
+            const modelLabel = ANTHROPIC_MODEL_LABELS[model];
 
             const currentAttempt: ModelAttempt = {
                 provider: 'anthropic',

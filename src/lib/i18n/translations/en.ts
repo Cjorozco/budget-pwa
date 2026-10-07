@@ -490,9 +490,9 @@ export const en: TranslationSchema = {
         },
         anthropic: {
             label: 'Anthropic Claude',
-            subLabel: 'Claude 3.5',
+            subLabel: 'Claude 5.5',
             keyUrlLabel: 'Create API key in Anthropic Console',
-            modelDescription: 'Model: Claude 3.5 Haiku (with fallback to Claude 3 Haiku and 3.5 Sonnet)',
+            modelDescription: 'Model: Claude Haiku 5.5 (with fallback to Claude Haiku 4.5 and Sonnet 5.5)',
             helpText: 'API key from Anthropic Console (sk-ant-api03-...). Analytical power and sharp financial advice.',
             placeholder: 'Paste your Anthropic key (sk-ant-...)',
         },
