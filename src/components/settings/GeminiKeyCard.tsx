@@ -34,6 +34,7 @@ export function GeminiKeyCard() {
     const helpText = activeProviderT?.helpText ?? meta.helpText;
     const modelDescription = activeProviderT?.modelDescription ?? meta.modelDescription;
     const placeholder = activeProviderT?.placeholder ?? meta.placeholder;
+    const isFreeTier = meta.pricing === 'free-tier';
 
     const [draft, setDraft] = useState('');
     const [hasKey, setHasKey] = useState(Boolean(stored));
@@ -209,15 +210,57 @@ export function GeminiKeyCard() {
                     <KeyRound size={16} />
                 </div>
                 <div className="min-w-0 flex-1">
-                    <h4 className="font-medium text-slate-900 dark:text-white text-xs">
-                        {providerLabel}
-                    </h4>
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="font-medium text-slate-900 dark:text-white text-xs">
+                            {providerLabel}
+                        </h4>
+                        <span
+                            data-testid="ai-provider-pricing-badge"
+                            className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                                isFreeTier
+                                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                                    : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                            }`}
+                        >
+                            {isFreeTier ? t.aiProviders.badgeFree : t.aiProviders.badgePaid}
+                        </span>
+                    </div>
                     <p className="text-[11px] text-slate-500 mt-0.5">{helpText}</p>
                     <p className="text-[11px] font-medium text-slate-700 dark:text-slate-300 mt-1 font-mono">
                         {modelDescription}
                     </p>
+                    {activeProviderT && (
+                        <p data-testid="ai-provider-cost-note" className="text-[11px] text-slate-600 dark:text-slate-400 mt-1">
+                            {activeProviderT.costNote}
+                        </p>
+                    )}
+                    <p data-testid="ai-subscription-notice" className="text-[11px] text-slate-500 mt-1">
+                        {t.aiProviders.subscriptionNotice}
+                    </p>
                 </div>
             </div>
+
+            {activeProviderT && (
+                <details data-testid="ai-provider-tutorial" className="rounded-xl bg-slate-50 dark:bg-slate-800/60 px-3">
+                    <summary className="min-h-[44px] flex items-center cursor-pointer text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        {t.aiProviders.tutorialTitle}
+                    </summary>
+                    <ol className="list-decimal pl-4 pb-2 space-y-1 text-[11px] text-slate-600 dark:text-slate-400">
+                        {activeProviderT.tutorialSteps.map((step) => (
+                            <li key={step}>{step}</li>
+                        ))}
+                    </ol>
+                    <a
+                        href={meta.docsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 pb-3 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+                    >
+                        {t.aiProviders.docsLinkLabel}
+                        <ExternalLink size={12} />
+                    </a>
+                </details>
+            )}
 
             <a
                 href={meta.keyUrl}

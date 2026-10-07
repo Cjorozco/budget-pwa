@@ -31,12 +31,14 @@ El desarrollo del proyecto se ejecutó mediante un flujo de **co-creación y orq
 
 La app **no** requiere ni incluye API keys centralizadas en el servidor. El plan PRO desbloquea ingresar **tu propia API key (Bring Your Own Key)** para máxima privacidad y costo cero de infraestructura:
 
-| Proveedor | Modelos Soportados | Endpoint / CORS |
-|---|---|---|
-| **Google Gemini** | `gemini-flash-latest`, `gemini-1.5-pro` | Directo en navegador vía Google AI Studio |
-| **Anthropic Claude** | `claude-haiku-5-5`, `claude-haiku-4-5`, `claude-sonnet-5-5` | Directo en navegador con rol de Asesor Financiero |
-| **OpenAI** | `gpt-4o-mini`, `gpt-4o` | Directo en navegador vía OpenAI API |
-| **Groq** | `llama-3.3-70b-versatile` | Inferencia de ultra-baja latencia |
+| Proveedor | Modelos Soportados | Endpoint / CORS | Costo de la API |
+|---|---|---|---|
+| **Google Gemini** | `gemini-flash-latest`, `gemini-1.5-pro` | Directo en navegador vía Google AI Studio | Capa gratuita con límites |
+| **Anthropic Claude** | `claude-haiku-5-5`, `claude-haiku-4-5`, `claude-sonnet-5-5` | Directo en navegador con rol de Asesor Financiero | De pago (créditos prepagados) |
+| **OpenAI** | `gpt-4o-mini`, `gpt-4o` | Directo en navegador vía OpenAI API | De pago (créditos prepagados) |
+| **Groq** | `llama-3.3-70b-versatile` | Inferencia de ultra-baja latencia | Capa gratuita con límites |
+
+> Las suscripciones de chat (ChatGPT Plus, Claude Pro, Claude Code) **no incluyen la API**: cada proveedor la factura aparte. La app explica esto y los pasos para obtener la key dentro de Ajustes.
 
 *Las API keys se almacenan exclusivamente en el `localStorage` del dispositivo y **nunca** se incluyen en los backups JSON ni viajan a servidores de terceros.*
 
