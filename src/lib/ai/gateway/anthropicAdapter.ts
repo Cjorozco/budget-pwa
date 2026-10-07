@@ -8,6 +8,9 @@ export const ANTHROPIC_MODELS = [
     'claude-sonnet-5-5',
 ] as const;
 
+// Claude 5.x models reject `temperature` with a 400 ("deprecated for this model").
+const MODELS_WITHOUT_TEMPERATURE: ReadonlySet<string> = new Set(['claude-haiku-5-5', 'claude-sonnet-5-5']);
+
 const ANTHROPIC_MODEL_LABELS: Record<(typeof ANTHROPIC_MODELS)[number], string> = {
     'claude-haiku-5-5': 'Claude Haiku 5.5',
     'claude-haiku-4-5': 'Claude Haiku 4.5',
@@ -85,11 +88,14 @@ export class AnthropicProviderClient implements AiProviderClient {
                 const requestBody: Record<string, unknown> = {
                     model,
                     max_tokens: Math.min(options.maxTokens ?? 512, 1024),
-                    temperature: options.temperature ?? 0.2,
                     messages: [
                         { role: 'user', content: options.prompt },
                     ],
                 };
+
+                if (!MODELS_WITHOUT_TEMPERATURE.has(model)) {
+                    requestBody.temperature = options.temperature ?? 0.2;
+                }
 
                 if (options.systemPrompt) {
                     requestBody.system = options.systemPrompt;

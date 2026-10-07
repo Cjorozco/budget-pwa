@@ -87,6 +87,31 @@ describe('AnthropicProviderClient (REST Adapter)', () => {
         await expect(client.generate({ prompt: 'test' })).rejects.toThrow(/401/i);
     });
 
+    it('omits temperature for Claude 5.x models and sends it for Claude 4.5', async () => {
+        const bodies: Array<Record<string, unknown>> = [];
+
+        globalThis.fetch = vi.fn().mockImplementation(async (_url: string, init: RequestInit) => {
+            bodies.push(JSON.parse(init.body as string));
+            if (bodies.length === 1) {
+                return { ok: false, status: 503, json: async () => ({ error: { message: 'overloaded' } }) };
+            }
+            return {
+                ok: true,
+                status: 200,
+                json: async () => ({ content: [{ type: 'text', text: '{"status":"ok"}' }] }),
+            };
+        });
+
+        const client = new AnthropicProviderClient(mockApiKey);
+        const result = await client.generate({ prompt: 'Ping', temperature: 0.2, timeoutMs: 5000 });
+
+        expect(bodies[0].model).toBe('claude-haiku-5-5');
+        expect(bodies[0]).not.toHaveProperty('temperature');
+        expect(bodies[1].model).toBe('claude-haiku-4-5');
+        expect(bodies[1].temperature).toBe(0.2);
+        expect(result.modelUsed).toBe('claude-haiku-4-5');
+    });
+
     it('tries fallback model on 429 rate limit / quota', async () => {
         let callCount = 0;
         globalThis.fetch = vi.fn().mockImplementation(async () => {
