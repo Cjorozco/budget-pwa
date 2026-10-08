@@ -13,7 +13,7 @@ PWA offline-first (`v1.1.0`). No Convex. No Next.js.
 
 ## Stack
 
-React 19 · TypeScript · Vite 7 · Tailwind 4 · Dexie (IndexedDB) · Zustand (UI y Licencias) · React Router · RHF + Zod · Recharts · Vitest
+React 19 · TypeScript · Vite 7 · Tailwind 4 · Dexie (IndexedDB) · Zustand (UI y Licencias) · React Router · RHF + Zod · TanStack Charts · Vitest
 
 ## No negociable (resumen)
 

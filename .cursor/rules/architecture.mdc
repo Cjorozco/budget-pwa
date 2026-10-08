@@ -17,7 +17,7 @@ globs: **/*
 - **Zustand** para estado de UI transitorio (toasts, flags, confirm dialogs) y estado de licencia
 - **React Router** para navegación
 - **React Hook Form + Zod** para validación consistente en formularios, contratos de IA y backups
-- **Recharts** para visualizaciones (optimizadas para móvil)
+- **TanStack Charts** (`@tanstack/charts`) para visualizaciones (optimizadas para móvil)
 - **Vitest** con 270+ pruebas unitarias y de integración
 
 ### Convenciones Clave de Dominio:
