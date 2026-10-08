@@ -16,17 +16,17 @@ interface AccountCardProps {
     onViewReserves?: (account: Account) => void;
 }
 
+function renderIcon(type: string, size: number) {
+    switch (type) {
+        case 'cash': return <Banknote size={size} />;
+        case 'credit': return <CreditCard size={size} />;
+        default: return <Wallet size={size} />;
+    }
+}
+
 export function AccountCard({ account, onEdit, onReconcile, onViewHistory, onAddReserve, onViewReserves }: AccountCardProps) {
     const { t, language } = useTranslation();
     const dateLocale = getDateFnsLocale(language);
-
-    const getIcon = (type: string) => {
-        switch (type) {
-            case 'cash': return Banknote;
-            case 'credit': return CreditCard;
-            default: return Wallet;
-        }
-    };
 
     // Fetch active reserves for this account
     const activeReserves = useLiveQuery(
@@ -41,8 +41,6 @@ export function AccountCard({ account, onEdit, onReconcile, onViewHistory, onAdd
 
     const currentTotal = account.actualBalance !== undefined ? account.actualBalance : account.calculatedBalance;
     const availableBalance = currentTotal - reservedAmount;
-
-    const Icon = getIcon(account.type);
 
     const difference = account.actualBalance !== undefined
         ? account.actualBalance - account.calculatedBalance
@@ -66,7 +64,7 @@ export function AccountCard({ account, onEdit, onReconcile, onViewHistory, onAdd
                 "absolute top-0 right-0 p-3 opacity-10",
                 account.type === 'credit' ? "text-purple-600" : "text-blue-600"
             )}>
-                <Icon size={80} />
+                {renderIcon(account.type, 80)}
             </div>
 
             <div className="relative z-10 flex flex-col h-full">
@@ -78,7 +76,7 @@ export function AccountCard({ account, onEdit, onReconcile, onViewHistory, onAdd
                                 account.type === 'cash' ? "bg-green-100 text-green-600 dark:bg-green-900/30" :
                                     "bg-blue-100 text-blue-600 dark:bg-blue-900/30"
                         )}>
-                            <Icon size={20} />
+                            {renderIcon(account.type, 20)}
                         </div>
                         <div>
                             <h3 className="font-semibold text-slate-900 dark:text-slate-100 leading-tight text-sm">{account.name}</h3>

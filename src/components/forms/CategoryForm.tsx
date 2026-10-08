@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -92,7 +92,7 @@ export function CategoryForm({ onSuccess, onCancel, initialData, defaultType, de
     const {
         register,
         handleSubmit,
-        watch,
+        control,
         setValue,
         formState: { errors, isSubmitting },
     } = useForm<CategoryFormData>({
@@ -110,8 +110,8 @@ export function CategoryForm({ onSuccess, onCancel, initialData, defaultType, de
         },
     });
 
-    const selectedType = watch('type');
-    const selectedColor = watch('color');
+    const selectedType = useWatch({ control, name: 'type' });
+    const selectedColor = useWatch({ control, name: 'color' });
     const filteredParents = parentCategories.filter(p => p.type === selectedType);
 
     // Determine which colors to show based on type

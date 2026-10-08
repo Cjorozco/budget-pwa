@@ -42,7 +42,7 @@ export function BudgetVsActualChart({ data }: BudgetVsActualChartProps) {
             width={85}
           />
           <Tooltip
-            formatter={(value: any, name: any) => [formatCurrency(Number(value)), name]}
+            formatter={(value, name) => [formatCurrency(Number(value)), name]}
             contentStyle={{
               borderRadius: '12px',
               border: 'none',

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, now } from '@/lib/utils';
+import type { Transaction } from '@/lib/types';
 import { AlertTriangle, Check, Pencil, Trash2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -14,7 +15,7 @@ export default function AmbiguousReviewPage() {
     const { t, language } = useTranslation();
     const dateLocale = getDateFnsLocale(language);
     const { confirm, addToast } = useUIStore();
-    const [editingTx, setEditingTx] = useState<any>(null);
+    const [editingTx, setEditingTx] = useState<Transaction | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const ambiguousTransactions = useLiveQuery(() =>
@@ -60,12 +61,12 @@ export default function AmbiguousReviewPage() {
         }
     };
 
-    const handleConfirm = async (tx: any) => {
+    const handleConfirm = async (tx: Transaction) => {
         await db.transactions.update(tx.id, {
             isAmbiguous: false,
             needsReview: false,
             aiConfidence: 1.0,
-            updatedAt: Date.now()
+            updatedAt: now()
         });
     };
 

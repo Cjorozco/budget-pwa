@@ -56,7 +56,7 @@ export function ExpenseBarChart({ data, emptyMessage = 'No hay datos para mostra
               interval={0}
             />
             <Tooltip
-              formatter={(value: any, _name: any, item: any) => {
+              formatter={(value, _name, item) => {
                 const num = Number(value);
                 const payload = item?.payload as CategoryChartData | undefined;
                 const formatted = formatCurrency(num);

@@ -2,14 +2,19 @@ import { useState, useEffect } from 'react';
 import { Download, X } from 'lucide-react';
 import { Button } from './ui/Button';
 
+interface BeforeInstallPromptEvent extends Event {
+    prompt: () => Promise<void>;
+    userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
 export function InstallPWA() {
-    const [promptInstall, setPromptInstall] = useState<any>(null);
+    const [promptInstall, setPromptInstall] = useState<BeforeInstallPromptEvent | null>(null);
     const [isVisible, setIsVisible] = useState(false);
 
     useEffect(() => {
-        const handler = (e: any) => {
+        const handler = (e: Event) => {
             e.preventDefault();
-            setPromptInstall(e);
+            setPromptInstall(e as BeforeInstallPromptEvent);
 
             // Show only if not already installed and haven't dismissed it in this session
             const isDismissed = sessionStorage.getItem('pwa-install-dismissed');

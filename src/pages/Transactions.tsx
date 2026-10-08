@@ -61,7 +61,7 @@ export default function TransactionsPage() {
         });
     }, [currentDate, showAllHistory, language]);
 
-    const handleDelete = async (transaction: any) => {
+    const handleDelete = async (transaction: Transaction) => {
         const ok = await confirm({
             title: t.transactions.deleteConfirmTitle,
             message: t.transactions.deleteConfirmMsg,
@@ -85,7 +85,7 @@ export default function TransactionsPage() {
                         ? account.calculatedBalance - amount
                         : account.calculatedBalance + amount;
 
-                    const updateData: any = { calculatedBalance: reversedCalcBalance };
+                    const updateData: Partial<Account> = { calculatedBalance: reversedCalcBalance };
 
                     if (account.actualBalance !== undefined) {
                         updateData.actualBalance = isIncome

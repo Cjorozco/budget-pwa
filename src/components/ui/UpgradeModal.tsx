@@ -59,7 +59,7 @@ export const UpgradeModal: React.FC = () => {
             } else {
                 addToast(result.message, 'error');
             }
-        } catch (error) {
+        } catch {
             setIsActivating(false);
             addToast('Ocurrió un error al verificar la licencia.', 'error');
         }
