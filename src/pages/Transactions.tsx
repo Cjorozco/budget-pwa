@@ -333,17 +333,21 @@ export default function TransactionsPage() {
                                     </p>
                                 </div>
                                 <div className="flex gap-1 ml-2">
-                                    <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        className="h-8 w-8 p-0"
-                                        onClick={() => {
-                                            setEditingTransaction(tx);
-                                            setIsModalOpen(true);
-                                        }}
-                                    >
-                                        <Pencil size={14} />
-                                    </Button>
+                                    {/* Las transferencias son dos movimientos enlazados: editarlas como gasto/ingreso desajustaría los saldos. Solo se pueden borrar. */}
+                                    {tx.type !== 'transfer' && (
+                                        <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="h-8 w-8 p-0"
+                                            aria-label={t.transactions.editTransaction}
+                                            onClick={() => {
+                                                setEditingTransaction(tx);
+                                                setIsModalOpen(true);
+                                            }}
+                                        >
+                                            <Pencil size={14} />
+                                        </Button>
+                                    )}
                                     <Button
                                         size="sm"
                                         variant="ghost"
