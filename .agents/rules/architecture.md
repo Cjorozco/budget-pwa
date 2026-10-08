@@ -12,7 +12,7 @@
 - **Zustand** para estado de UI transitorio (toasts, flags, confirm dialogs) y estado de licencia
 - **React Router** para navegación
 - **React Hook Form + Zod** para formularios, contratos de IA y backups
-- **Recharts** para las gráficas existentes
+- **TanStack Charts** (`@tanstack/charts`) para las gráficas
 - **date-fns**, **Lucide**, **vite-plugin-pwa**
 - **Vitest** para pruebas unitarias y de integración
 
@@ -24,7 +24,6 @@ Estas reglas comunes **no se aplican tal cual** aquí, por razones propias del p
 |---|---|---|
 | Backend fuerte, autorización en servidor | No hay backend. El "backend" es la capa de dominio local (`src/lib`). Sin autorización de usuarios. | Offline-first y soberanía de datos |
 | Llamadas a IA y servicios externos en el backend | Directo desde el navegador con claves BYOK en `localStorage` | Sin servidor propio; costo cero |
-| Gráficas: `@tanstack/charts` | **Gráficas nuevas con `@tanstack/charts`.** Recharts queda para las existentes; no se migran sin pedirlo. | Recharts ya está instalado y en uso |
 | Fechas: Temporal | `date-fns` | Ya instalado |
 | Auth: better-auth | No aplica | Sin cuentas ni backend |
 | Persistencia del repo común (Convex) | Dexie / IndexedDB | Offline-first |

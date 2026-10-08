@@ -15,7 +15,7 @@ PWA offline-first. No Convex. No Next.js. Versión y scripts: `package.json`.
 
 ## Stack
 
-React 19 · TypeScript · Vite 7 · Tailwind 4 · Dexie (IndexedDB) · Zustand (UI y Licencias) · React Router · RHF + Zod · Recharts (gráficas nuevas: `@tanstack/charts`) · Vitest
+React 19 · TypeScript · Vite 7 · Tailwind 4 · Dexie (IndexedDB) · Zustand (UI y Licencias) · React Router · RHF + Zod · TanStack Charts · Vitest
 
 ## No negociable
 

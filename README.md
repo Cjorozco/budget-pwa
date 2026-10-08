@@ -97,7 +97,7 @@ La app separa intencionalmente la **liquidez patrimonial acumulada** del **flujo
 - **Dexie.js 4** (IndexedDB wrapper reactivo con `dexie-react-hooks`)
 - **Zustand** (Estado transitorio de UI y licencias)
 - **React Hook Form** + **Zod** (Formularios, validación de schemas y contratos de IA)
-- **Recharts 3** (Visualización interactiva)
+- **TanStack Charts** (Visualización interactiva)
 - **Lucide React** (Iconografía)
 - **vite-plugin-pwa** (Progressive Web App con Service Worker de auto-actualización)
 - **Vitest** (280+ pruebas unitarias y de integración)

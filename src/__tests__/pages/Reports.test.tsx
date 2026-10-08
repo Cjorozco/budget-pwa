@@ -152,7 +152,7 @@ describe('Reports Page', () => {
 
     // In Parent view, Alimentación should be consolidated (50,000 + 150,000 = 200,000)
     await waitFor(() => {
-      expect(screen.getByText('Alimentación')).toBeInTheDocument();
+      expect(screen.getAllByText('Alimentación').length).toBeGreaterThan(0);
     });
   });
 
@@ -164,7 +164,7 @@ describe('Reports Page', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Alimentación')).toBeInTheDocument();
+      expect(screen.getAllByText('Alimentación').length).toBeGreaterThan(0);
     });
 
     // Switch to Subcategorías
@@ -172,8 +172,8 @@ describe('Reports Page', () => {
     fireEvent.click(subcatButton);
 
     await waitFor(() => {
-      expect(screen.getByText('Restaurantes')).toBeInTheDocument();
-      expect(screen.getByText('Supermercado')).toBeInTheDocument();
+      expect(screen.getAllByText('Restaurantes').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Supermercado').length).toBeGreaterThan(0);
     });
 
     // Switch back to Categorías (padres)
@@ -181,7 +181,7 @@ describe('Reports Page', () => {
     fireEvent.click(catButton);
 
     await waitFor(() => {
-      expect(screen.getByText('Alimentación')).toBeInTheDocument();
+      expect(screen.getAllByText('Alimentación').length).toBeGreaterThan(0);
     });
   });
 
@@ -203,7 +203,7 @@ describe('Reports Page', () => {
     // In Parent view, should display Salario parent category
     await waitFor(() => {
       expect(screen.getByText(/Ingresos por Categoría/i)).toBeInTheDocument();
-      expect(screen.getByText('Salario')).toBeInTheDocument();
+      expect(screen.getAllByText('Salario').length).toBeGreaterThan(0);
     });
 
     // Switch to Subcategorías in Income tab
@@ -211,7 +211,7 @@ describe('Reports Page', () => {
     fireEvent.click(subcatButton);
 
     await waitFor(() => {
-      expect(screen.getByText('Horas Extras')).toBeInTheDocument();
+      expect(screen.getAllByText('Horas Extras').length).toBeGreaterThan(0);
     });
   });
 
