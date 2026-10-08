@@ -2,7 +2,7 @@
 
 > Documento vivo. Se actualiza a petición del usuario en la sesión de Claude Code
 > (https://claude.ai/code/session_01QSR3F1PLYCdmFb7HAvbmBY).
-> **Última actualización:** 2026-10-02 · **Versión en producción:** 1.3.2 (`master` @ `b4b2378`, desplegada en Vercel vía merge de PR #24; despliegue no verificado desde la sesión)
+> **Última actualización:** 2026-10-08 · **Versión en `master`:** 1.4.1 (`4b4e8e1`, Vercel despliega desde `master`; despliegue no verificado desde la sesión) · **Fix pendiente de fusionar:** 1.4.2 (rama `claude/fix-hide-edit-on-transfers`)
 
 ## 1. Qué es
 PWA de presupuesto personal, offline-first. Datos solo en el dispositivo (IndexedDB/Dexie), sin backend.
@@ -20,7 +20,7 @@ Idioma es/en/fr; moneda COP.
 
 ## 3. Estado actual
 - PRs abiertos: 0 · Issues abiertos: 0.
-- Verificación al último cambio: `tsc -b` y build OK; Vitest 31 archivos / 281 pruebas OK.
+- Verificación al último cambio: `tsc -b` y build OK; Vitest 32 archivos / 289 pruebas OK (en la rama del fix 1.4.2).
 - Lint: **71 problemas preexistentes** (mayoría `no-explicit-any`, algún `no-empty`). Sin limpiar.
 
 ### Mapa del código
@@ -37,6 +37,8 @@ en `TransactionForm`, `TransferForm`, borrado en `Transactions.tsx` y `Reconcili
 ## 4. Cambios recientes
 | Versión | Cambio |
 |---|---|
+| 1.4.2 (rama, sin fusionar) | Fix: el botón de editar ya no aparece en transferencias (antes se podían editar como gasto y desajustaban saldos). Test `Transactions.editButton.test.tsx`. |
+| 1.4.1 | (otras sesiones, PR #25–#27) Modelos Anthropic Haiku 5.5/Haiku 4.5/Sonnet 5.5; guía de costos y tutorial por proveedor de IA en Ajustes (i18n es/en/fr); no enviar `temperature` a modelos Claude 5.x |
 | 1.3.2 | Fix: borrar una transferencia ahora revierte también `actualBalance` de la cuenta vinculada. Test `Transactions.transferDelete.test.tsx`. PR Cjorozco/budget-pwa#24 |
 | 1.3.1 | Fix: `TransferForm` restaba `actualBalance` en la cuenta destino (saldo negativo y "Disponible" alterado). Test de regresión `TransferForm.test.tsx`. PR Cjorozco/budget-pwa#23 |
 | 1.3.0 | Presupuesto fijo por mes con arrastre/copia y reportes de cumplimiento (Dexie v9) |
@@ -45,13 +47,13 @@ en `TransactionForm`, `TransferForm`, borrado en `Transactions.tsx` y `Reconcili
 ## 5. Problemas conocidos / pendientes
 1. ~~Datos afectados por el bug de transferencias (≤1.3.0)~~ **Resuelto:** el usuario corrigió a mano la cuenta destino (2026-10-02). No se necesita migración.
 2. ~~Borrar una transferencia no revertía `actualBalance` de la cuenta vinculada~~ **Corregido y desplegado en 1.3.2** (PR #24) con test `Transactions.transferDelete.test.tsx`.
-3. Edición de transacciones (`TransactionForm`, modo edición): revisada, la lógica de `calculatedBalance`/`actualBalance` es coherente para income/expense. **Por verificar:** que el botón de editar no se ofrezca para transacciones `transfer` (en el modo edición todo lo que no es `income` se trata como gasto). Sin test dedicado.
+3. Edición de transacciones: la lógica de saldos de `TransactionForm` (modo edición) es coherente para income/expense. Se verificó que el botón de editar **sí se mostraba en transferencias** (las trataba como gasto y desajustaba saldos); corregido en 1.4.2 ocultándolo (las transferencias solo se borran). **Pendiente:** fusionar `claude/fix-hide-edit-on-transfers` a `master`.
 4. Deuda de lint (71 problemas), p. ej. `updates: any` en `TransferForm`/`Transactions`.
 5. README dice "270+ pruebas" (actualizado a 280+ en la rama del handoff, aún no en `master`).
 6. Limpieza de datos de usuario: transferencias borradas antes de 1.3.2 pudieron dejar `actualBalance` desfasado en la cuenta vinculada; se corrige reconciliando la cuenta.
 
 ## 6. Convenciones de esta sesión
-- El handoff vive solo en la rama `claude/determined-davinci-36tnp1` y **no** debe fusionarse a `master`. Para llevar fixes a producción se usan ramas limpias desde `master` (p. ej. `claude/fix-...`) con PR + squash merge.
+- Otras sesiones (p. ej. `claude/hopeful-goodall-kw7qf8`) también envían PRs a `master`: antes de ramificar, hacer `git fetch origin master` (la copia local queda obsoleta). El handoff vive solo en la rama `claude/determined-davinci-36tnp1` y **no** debe fusionarse a `master`. Para llevar fixes a producción se usan ramas limpias desde `master` (p. ej. `claude/fix-...`) con PR + squash merge.
 - No usar push forzado (fue bloqueado por el clasificador de permisos); fusionar `master` a la rama del handoff con merge normal.
 
 ## 7. Cómo actualizar este documento
