@@ -1,11 +1,11 @@
 ---
-description: Principios de UX y frontend (capa com�n). Detalle de producto en architecture.
+description: Principios de UX y frontend (capa común). Detalle de producto en architecture.
 alwaysApply: true
 ---
 
 # Principios de UX y frontend
 
-> Capa común. Carpetas, persistencia y copy específico: `architecture` de este repo.
+> **Capa común** a todos los proyectos de José. Fuente: <https://app.notion.com/p/3f3aa39f8dab81bc80fadd7c6515a087>. Carpetas, persistencia, copy específico y excepciones: `architecture` de este repo.
 
 Objetivo: interfaces consistentes, baja carga cognitiva, usables con el pulgar.
 
