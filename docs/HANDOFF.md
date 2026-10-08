@@ -4,7 +4,7 @@
 Cubre: qué es el producto y cómo está armado · estado real (producción y pendientes) · reglas de negocio · comandos · próximos pasos · forma de trabajar.
 Es corto a propósito (ahorra tokens). El historial detallado vive en `git log` y en los PRs; aquí no se duplica.
 
-> **Última actualización:** 2026-10-08 · **Producción:** `master` v1.4.2 (`7046cca`) · Repo: Cjorozco/budget-pwa
+> **Última actualización:** 2026-10-08 · **Producción:** `master` v1.4.2 (`fa9fc50`) · Repo: Cjorozco/budget-pwa
 
 ## 1. Qué es y cómo está armado
 PWA de presupuesto personal, **offline-first**: los datos viven solo en el dispositivo (IndexedDB vía Dexie), sin backend ni telemetría.
@@ -26,9 +26,9 @@ Licencias con Lemon Squeezy (activación en vivo) + validación criptográfica o
 - **En producción:** 1.4.2. Sin PRs ni issues abiertos.
 - **Verificado:** `tsc -b` OK · `eslint` 0 problemas · Vitest 32 archivos / 289 pruebas OK.
 - **Corregido recientemente (ya en producción):** transferencias restaban el saldo real de la cuenta destino (1.3.1); borrar una transferencia no revertía el saldo real de la cuenta vinculada (1.3.2); el botón de editar aparecía en transferencias (1.4.2). El dueño ya corrigió a mano los datos afectados.
+- **Capa común alineada** con la página de principios (reglas en `.agents/rules`, espejo en `.cursor/rules`, excepciones del proyecto en `architecture.md`, carpeta `docs/adr/`): PR #29, en producción.
 - **Pendiente real:**
   - README dice "270+ pruebas"; en la rama de handoff está en "280+", aún no en `master`.
-  - Alinear la capa común del repo con la página común: hecho en la rama `claude/align-common-layer` (6 commits locales, sin push ni PR todavía).
   - `package.json` solo tiene Recharts; `@tanstack/charts` está aprobado para gráficas nuevas pero no instalado.
 
 ## 3. Reglas de negocio (no negociables)
@@ -54,17 +54,16 @@ npm run preview           # servir el build
 Antes de subir un cambio: `npx tsc -b`, `npm run lint` y `npm run test:run` deben quedar limpios.
 
 ## 5. Próximos pasos (propuestos, el dueño decide prioridades)
-1. Abrir PR de `claude/align-common-layer` a `master` (alineación de la capa común), si se aprueba.
-2. Fusionar el README con el conteo de pruebas actualizado, si se quiere.
-3. Instalar `@tanstack/charts` cuando se haga la primera gráfica nueva.
-4. Revisar otras rutas que muevan saldo en busca de la misma clase de bug (cuentas con `actualBalance` definido).
-5. Confirmar en Vercel que 1.4.2 desplegó bien.
+1. Fusionar el README con el conteo de pruebas actualizado, si se quiere.
+2. Instalar `@tanstack/charts` cuando se haga la primera gráfica nueva.
+3. Revisar otras rutas que muevan saldo en busca de la misma clase de bug (cuentas con `actualBalance` definido).
+4. Confirmar en Vercel que 1.4.2 desplegó bien.
 Si el dueño no ha priorizado, **preguntar antes de empezar**; no inventar alcance.
 
 ## 6. Forma de trabajar y librerías
 La capa común (forma de trabajar, principios de arquitectura, librerías por defecto, UX) **no se duplica aquí**:
 - Fuente: https://app.notion.com/p/3f3aa39f8dab81bc80fadd7c6515a087
-- En el repo: `AGENTS.md` y `.agents/rules/{working-style,ux-principles}.md` (alineado en la rama `claude/align-common-layer`, pendiente de PR a `master`).
+- En el repo: `AGENTS.md` y `.agents/rules/{working-style,ux-principles}.md` (alineado y fusionado a `master` en el PR #29).
 
 **Excepciones de este proyecto** (detalle en `.agents/rules/architecture.md`):
 - Sin backend: la capa de dominio es local (`src/lib`). IA directo desde el navegador con claves BYOK.
