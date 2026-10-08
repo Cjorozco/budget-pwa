@@ -4,21 +4,23 @@ Lee esto **antes** de explorar el repo.
 
 ## Capa de IA
 
-**Común:** `.agents/rules/working-style.md` + `.agents/rules/ux-principles.md`  
+**Común a todos los proyectos** (fuente: <https://app.notion.com/p/3f3aa39f8dab81bc80fadd7c6515a087>):
+`.agents/rules/working-style.md` + `.agents/rules/ux-principles.md`
 (Cursor: `.cursor/rules/working-style.mdc` + `ux-principles.mdc`)
 
-**Este producto:** `.agents/rules/architecture.md` (Cursor: `.cursor/rules/architecture.mdc`)
+**Este producto** (stack, dominio, excepciones a la capa común):
+`.agents/rules/architecture.md` (Cursor: `.cursor/rules/architecture.mdc`)
 
-PWA offline-first (`v1.1.0`). No Convex. No Next.js.
+PWA offline-first. No Convex. No Next.js. Versión y scripts: `package.json`.
 
 ## Stack
 
-React 19 · TypeScript · Vite 7 · Tailwind 4 · Dexie (IndexedDB) · Zustand (UI y Licencias) · React Router · RHF + Zod · Recharts · Vitest
+React 19 · TypeScript · Vite 7 · Tailwind 4 · Dexie (IndexedDB) · Zustand (UI y Licencias) · React Router · RHF + Zod · Recharts (gráficas nuevas: `@tanstack/charts`) · Vitest
 
-## No negociable (resumen)
+## No negociable
 
-- **Saldos Atómicos:** Historia de transacciones. Ajustes = transacción explícita (`isAdjustment: true`).
-- **Reconciliación Auditable:** No reescribe el pasado.
-- **Soberanía de Datos:** Datos en el dispositivo (IndexedDB). IA Multi-proveedor BYOK opcional (Gemini, Claude, OpenAI, Groq) con claves exclusivamente en `localStorage`.
-- **Licenciamiento:** Activación en vivo vía Lemon Squeezy + validador criptográfico de checksums offline.
-- **SemVer:** Bumpear semver en `package.json` cuando el cambio se “shippea”.
+Saldos atómicos, reconciliación auditable, soberanía de datos, licenciamiento y SemVer: ver `architecture.md`.
+
+## Mantenimiento de las reglas
+
+`.cursor/rules/*.mdc` es espejo de `.agents/rules/*.md` (mismo contenido, solo cambia el frontmatter). Al editar uno, actualiza el otro.
