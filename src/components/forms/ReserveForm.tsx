@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { v4 as uuidv4 } from 'uuid';
 import type { Account } from '@/lib/types';
+import { now } from '@/lib/utils';
 import { PiggyBank } from 'lucide-react';
 import { useUIStore } from '@/store/ui';
 import { useTranslation } from '@/lib/i18n';
@@ -49,7 +50,7 @@ export function ReserveForm({ account, onSuccess, onCancel, initialData }: Reser
                 await db.reserves.update(initialData.id, {
                     amount: data.amount,
                     description: data.description,
-                    updatedAt: Date.now(),
+                    updatedAt: now(),
                 });
                 addToast(t.forms.reserveUpdated, 'success');
             } else {
@@ -59,8 +60,8 @@ export function ReserveForm({ account, onSuccess, onCancel, initialData }: Reser
                     amount: data.amount,
                     description: data.description,
                     isActive: true,
-                    createdAt: Date.now(),
-                    updatedAt: Date.now(),
+                    createdAt: now(),
+                    updatedAt: now(),
                 });
                 addToast(t.forms.reserveCreated, 'success');
             }

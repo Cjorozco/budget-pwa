@@ -1,10 +1,11 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
-import { cn, formatCurrency } from '@/lib/utils';
+import { cn, formatCurrency, now } from '@/lib/utils';
 import { startOfMonth, endOfMonth, format } from 'date-fns';
 import { ArrowDownCircle, ArrowUpCircle, Wallet, AlertTriangle, ArrowRightLeft, Info } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useMemo, useState } from 'react';
+import type { QuickTemplate, Transaction } from '@/lib/types';
 import { Modal } from '@/components/ui/Modal';
 import { TransactionForm } from '@/components/forms/TransactionForm';
 import { TransferForm } from '@/components/forms/TransferForm';
@@ -14,7 +15,7 @@ export default function Dashboard() {
     const { t, language } = useTranslation();
     const dateLocale = getDateFnsLocale(language);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [templateData, setTemplateData] = useState<any>(null);
+    const [templateData, setTemplateData] = useState<Partial<Transaction> | null>(null);
     const [showBalanceExplanation, setShowBalanceExplanation] = useState(false);
 
     const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
@@ -90,12 +91,12 @@ export default function Dashboard() {
         }));
     });
 
-    const handleQuickTemplate = (data: any) => {
+    const handleQuickTemplate = (data: QuickTemplate) => {
         // Safe access to accounts
         const defaultAccountId = balanceData?.accounts[0]?.id || '';
         setTemplateData({
             ...data,
-            date: Date.now(),
+            date: now(),
             accountId: defaultAccountId
         });
         setIsModalOpen(true);
@@ -113,7 +114,7 @@ export default function Dashboard() {
     }, [balanceData]);
 
     const secondaryMetrics = useMemo(() => {
-        if (!secondaryData) return { ambiguousCount: 0, quickTemplates: [] as any[] };
+        if (!secondaryData) return { ambiguousCount: 0, quickTemplates: [] as QuickTemplate[] };
         return {
             ambiguousCount: secondaryData.ambiguousCount,
             quickTemplates: secondaryData.quickTemplates
@@ -334,7 +335,7 @@ export default function Dashboard() {
                 title={t.transactions.newTransaction}
             >
                 <TransactionForm
-                    initialData={templateData}
+                    initialData={templateData as Transaction | null}
                     onSuccess={() => {
                         setIsModalOpen(false);
                         setTemplateData(null);

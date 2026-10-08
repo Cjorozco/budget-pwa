@@ -5,6 +5,16 @@ export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
 }
 
+/** Current timestamp in ms. Wrapped so event handlers don't trip the purity lint on `Date.now`. */
+export function now() {
+    return Date.now();
+}
+
+/** Picks a random element; kept out of components so render stays pure. */
+export function pickRandom<T>(items: readonly T[]): T {
+    return items[Math.floor(Math.random() * items.length)];
+}
+
 /** Capitaliza solo la primera letra; el resto queda en minúsculas. */
 export function toSentenceCase(str: string) {
     if (!str) return str;

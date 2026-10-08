@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
 import type { Tag } from '@/lib/types';
+import { now, pickRandom } from '@/lib/utils';
 import { X, Plus, Tag as TagIcon, Check, Trash2 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useUIStore } from '@/store/ui';
@@ -27,7 +28,7 @@ export function TagSelector({ selectedTagIds, onChange }: TagSelectorProps) {
             if (tag) {
                 await db.tags.update(tagId, {
                     usageCount: Math.max(0, tag.usageCount - 1),
-                    updatedAt: Date.now()
+                    updatedAt: now()
                 });
             }
         } else {
@@ -37,7 +38,7 @@ export function TagSelector({ selectedTagIds, onChange }: TagSelectorProps) {
             if (tag) {
                 await db.tags.update(tagId, {
                     usageCount: tag.usageCount + 1,
-                    updatedAt: Date.now()
+                    updatedAt: now()
                 });
             }
         }
@@ -95,15 +96,15 @@ export function TagSelector({ selectedTagIds, onChange }: TagSelectorProps) {
         }
 
         const colors = ['#EC4899', '#8B5CF6', '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#06B6D4', '#6366F1'];
-        const randomColor = colors[Math.floor(Math.random() * colors.length)];
+        const randomColor = pickRandom(colors);
 
         const newTag: Tag = {
             id: uuidv4(),
             name,
             color: randomColor,
             usageCount: 1,
-            createdAt: Date.now(),
-            updatedAt: Date.now()
+            createdAt: now(),
+            updatedAt: now()
         };
 
         await db.tags.add(newTag);

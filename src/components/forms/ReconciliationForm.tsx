@@ -1,4 +1,4 @@
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { db } from '@/lib/db';
@@ -31,7 +31,7 @@ export function ReconciliationForm({ account, onSuccess, onCancel }: Reconciliat
     const {
         register,
         handleSubmit,
-        watch,
+        control,
         formState: { errors, isSubmitting },
     } = useForm<ReconciliationFormData>({
         resolver: zodResolver(ReconciliationSchema),
@@ -41,7 +41,7 @@ export function ReconciliationForm({ account, onSuccess, onCancel }: Reconciliat
         },
     });
 
-    const declaredBalance = watch('declaredBalance') || 0;
+    const declaredBalance = useWatch({ control, name: 'declaredBalance' }) || 0;
     const difference = declaredBalance - account.calculatedBalance;
     const hasDifference = Math.abs(difference) > 0.01; // Tolerance for floating point
 

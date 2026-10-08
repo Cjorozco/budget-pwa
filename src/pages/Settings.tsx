@@ -28,7 +28,7 @@ export default function SettingsPage() {
             const json = await exportDatabase();
             downloadBackup(json);
             addToast(t.settings.backupDownloaded, 'success');
-        } catch (error) {
+        } catch {
             addToast(t.settings.backupExportError, 'error');
         }
     };
@@ -42,7 +42,7 @@ export default function SettingsPage() {
             const csv = await exportToCSV();
             downloadCSV(csv);
             addToast(t.settings.csvExportSuccess, 'success');
-        } catch (error) {
+        } catch {
             addToast(t.settings.csvExportError, 'error');
         }
     };
@@ -68,9 +68,9 @@ export default function SettingsPage() {
             await importDatabase(importJson);
             addToast(t.settings.backupRestoredSuccess, 'success');
             setTimeout(() => window.location.reload(), 1500);
-        } catch (error: any) {
+        } catch (error) {
             console.error(error);
-            addToast(error.message || t.settings.backupRestoreError, 'error');
+            addToast((error instanceof Error && error.message) || t.settings.backupRestoreError, 'error');
             setIsConfirmOpen(false);
         } finally {
             setIsLoading(false);

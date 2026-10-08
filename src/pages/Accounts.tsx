@@ -20,9 +20,9 @@ export default function AccountsPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isReconcileModalOpen, setIsReconcileModalOpen] = useState(false);
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
-    const [editingAccount, setEditingAccount] = useState<any>(null);
-    const [reconcilingAccount, setReconcilingAccount] = useState<any>(null);
-    const [historyAccount, setHistoryAccount] = useState<any>(null);
+    const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+    const [reconcilingAccount, setReconcilingAccount] = useState<Account | null>(null);
+    const [historyAccount, setHistoryAccount] = useState<Account | null>(null);
     const [isReserveModalOpen, setIsReserveModalOpen] = useState(false);
     const [isReservesListModalOpen, setIsReservesListModalOpen] = useState(false);
     const [reserveAccount, setReserveAccount] = useState<Account | null>(null);
@@ -111,7 +111,7 @@ export default function AccountsPage() {
                 title={editingAccount ? t.accounts.editAccount : t.accounts.newAccount}
             >
                 <AccountForm
-                    initialData={editingAccount}
+                    initialData={editingAccount ?? undefined}
                     onSuccess={() => {
                         setIsModalOpen(false);
                         setEditingAccount(null);

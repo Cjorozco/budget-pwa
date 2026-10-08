@@ -99,7 +99,7 @@ export function validateLicenseKey(rawKey: string): LicenseValidationResult {
     const match = key.match(signedKeyRegex);
 
     if (match) {
-        const [_, prefix, identifier, signature] = match;
+        const [, prefix, identifier, signature] = match;
         const payload = `${prefix}-${identifier}`;
         const expectedSignature = computeChecksum(payload);
 

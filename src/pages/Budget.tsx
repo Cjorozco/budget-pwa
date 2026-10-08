@@ -1,8 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
-import { cn, formatCurrency } from '@/lib/utils';
+import { cn, formatCurrency, now } from '@/lib/utils';
 import {
   Trash2,
   Pencil,
@@ -19,6 +19,13 @@ import { Modal } from '@/components/ui/Modal';
 import type { BudgetItem } from '@/lib/types';
 import { useUIStore } from '@/store/ui';
 import { useTranslation, getDateFnsLocale } from '@/lib/i18n';
+
+const NO_BUDGET_ITEMS: BudgetItem[] = [];
+
+/** Month key of an item; legacy rows without `month` fall back to their creation date. */
+function getItemMonth(item: BudgetItem) {
+  return item.month || format(new Date(item.createdAt || now()), 'yyyy-MM');
+}
 
 export default function Budget() {
   const { t, language } = useTranslation();
@@ -45,15 +52,10 @@ export default function Budget() {
   const currentMonthKey = format(currentDate, 'yyyy-MM');
   const isViewingCurrentRealMonth = currentMonthKey === format(new Date(), 'yyyy-MM');
 
-  const allBudgetItems = useLiveQuery(() => db.budgetItems.toArray()) || [];
+  const allBudgetItems = useLiveQuery(() => db.budgetItems.toArray()) ?? NO_BUDGET_ITEMS;
 
   // Filter items specifically for the active month
-  const currentMonthItems = useMemo(() => {
-    return allBudgetItems.filter(item => {
-      const itemMonth = item.month || format(new Date(item.createdAt || Date.now()), 'yyyy-MM');
-      return itemMonth === currentMonthKey;
-    });
-  }, [allBudgetItems, currentMonthKey]);
+  const currentMonthItems = allBudgetItems.filter(item => getItemMonth(item) === currentMonthKey);
 
   const fixedIncomes = currentMonthItems.filter(item => item.type === 'income');
   const fixedExpenses = currentMonthItems.filter(item => item.type === 'expense');
@@ -61,12 +63,7 @@ export default function Budget() {
   // Check if previous month has items to offer one-click cloning
   const prevDate = subMonths(currentDate, 1);
   const prevMonthKey = format(prevDate, 'yyyy-MM');
-  const prevMonthItems = useMemo(() => {
-    return allBudgetItems.filter(item => {
-      const itemMonth = item.month || format(new Date(item.createdAt || Date.now()), 'yyyy-MM');
-      return itemMonth === prevMonthKey;
-    });
-  }, [allBudgetItems, prevMonthKey]);
+  const prevMonthItems = allBudgetItems.filter(item => getItemMonth(item) === prevMonthKey);
 
   const sortedFixedExpenses = [...fixedExpenses].sort((a, b) => {
     switch (expenseSortOrder) {
@@ -111,8 +108,8 @@ export default function Budget() {
         amount: item.amount,
         type: item.type,
         categoryId: item.categoryId,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
+        createdAt: now(),
+        updatedAt: now(),
       }));
 
       await db.budgetItems.bulkAdd(clonedItems);
@@ -156,7 +153,7 @@ export default function Budget() {
           name: newItemName.trim(),
           amount: Number(newItemAmount),
           type: newItemType,
-          updatedAt: Date.now(),
+          updatedAt: now(),
         });
         addToast(t.budget.budgetSaved, "success");
       } else {
@@ -166,8 +163,8 @@ export default function Budget() {
           name: newItemName.trim(),
           amount: Number(newItemAmount),
           type: newItemType,
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
+          createdAt: now(),
+          updatedAt: now(),
         };
         await db.budgetItems.add(newItem);
         addToast(t.budget.budgetSaved, "success");

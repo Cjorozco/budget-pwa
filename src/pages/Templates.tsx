@@ -44,9 +44,10 @@ export default function TemplatesPage() {
 
         try {
             if (editingTemplate.id.startsWith('new-')) {
-                const { id, ...rest } = editingTemplate;
+                const rest: Partial<QuickTemplate> = { ...editingTemplate };
+                delete rest.id;
                 await db.quickTemplates.add({
-                    ...rest,
+                    ...(rest as Omit<QuickTemplate, 'id'>),
                     id: uuidv4(),
                     createdAt: Date.now(),
                     updatedAt: Date.now()
@@ -61,7 +62,7 @@ export default function TemplatesPage() {
             }
             setIsModalOpen(false);
             setEditingTemplate(null);
-        } catch (error) {
+        } catch {
             addToast(t.common.error, 'error');
         }
     };
@@ -77,7 +78,7 @@ export default function TemplatesPage() {
         try {
             await db.quickTemplates.delete(id);
             addToast(t.templates.templateDeleted, 'success');
-        } catch (error) {
+        } catch {
             addToast(t.common.error, 'error');
         }
     };

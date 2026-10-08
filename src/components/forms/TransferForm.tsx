@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ArrowRight, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { useTranslation } from '@/lib/i18n';
+import type { Account } from '@/lib/types';
 
 interface TransferFormProps {
     onSuccess: () => void;
@@ -74,7 +75,7 @@ export function TransferForm({ onSuccess, onCancel }: TransferFormProps) {
                 const dest = await db.accounts.get(destinationAccountId);
 
                 if (source) {
-                    const updates: any = {
+                    const updates: Partial<Account> = {
                         calculatedBalance: source.calculatedBalance - numericAmount
                     };
                     if (typeof source.actualBalance === 'number') {
@@ -84,7 +85,7 @@ export function TransferForm({ onSuccess, onCancel }: TransferFormProps) {
                 }
 
                 if (dest) {
-                    const updates: any = {
+                    const updates: Partial<Account> = {
                         calculatedBalance: dest.calculatedBalance + numericAmount
                     };
                     if (typeof dest.actualBalance === 'number') {
