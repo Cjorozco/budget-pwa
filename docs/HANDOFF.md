@@ -2,7 +2,7 @@
 
 > Documento vivo. Se actualiza a petición del usuario en la sesión de Claude Code
 > (https://claude.ai/code/session_01QSR3F1PLYCdmFb7HAvbmBY).
-> **Última actualización:** 2026-10-08 · **Versión en `master`:** 1.4.2 (`2d49685`, PR #28; Vercel despliega desde `master`, despliegue no verificado desde la sesión)
+> **Última actualización:** 2026-10-08 (añadidos principios y librerías) · **Versión en `master`:** 1.4.2 (`2d49685`, PR #28; Vercel despliega desde `master`, despliegue no verificado desde la sesión)
 
 ## 1. Qué es
 PWA de presupuesto personal, offline-first. Datos solo en el dispositivo (IndexedDB/Dexie), sin backend.
@@ -52,9 +52,37 @@ en `TransactionForm`, `TransferForm`, borrado en `Transactions.tsx` y `Reconcili
 5. README dice "270+ pruebas" (actualizado a 280+ en la rama del handoff, aún no en `master`).
 6. Limpieza de datos de usuario: transferencias borradas antes de 1.3.2 pudieron dejar `actualBalance` desfasado en la cuenta vinculada; se corrige reconciliando la cuenta.
 
-## 6. Convenciones de esta sesión
+## 6. Principios de desarrollo y librerías
+Fuente: `AGENTS.md` y `.agents/rules/{working-style,architecture,ux-principles}.md`. Leerlos antes de tocar código.
+
+### Cómo trabajar
+- Usar el stack de `package.json`; no migrar framework, backend ni librerías salvo que se pida. No inventar alcance; si algo no está en `architecture` y no es obvio, preguntar.
+- TypeScript estricto, sin `any` en código nuevo. UI en español (es-CO, COP con `formatCurrency()`); código, variables y comentarios en inglés.
+- Reutilizar componentes y patrones del repo; sin sobreingeniería. La UI no decide negocio: captura input, muestra estado y dispara acciones.
+- Feedback inmediato (loading, `disabled` al enviar, empty, error, toasts). Acciones destructivas con `ConfirmDialog` del UI store, no `window.confirm`.
+- Secretos: nunca en el repo. Claves BYOK solo en `localStorage` (nunca en `VITE_*`, Dexie ni backups).
+- Salidas de IA: tratar como `unknown`, validar con Zod + grounding, con respaldo determinista. No persistir sin parseo.
+- FinOps: no sugerir opciones de pago por defecto. Si cambia arquitectura, deps, API o UX, actualizar los docs.
+- Versión: bumpear semver en `package.json` al shippear (PATCH bugs/tests/refactors, MINOR features/PWA/proveedores, MAJOR schema o backup incompatible).
+
+### Dominio (no negociable)
+- Saldos atómicos derivados de la historia de transacciones; los ajustes son transacciones explícitas (`isAdjustment: true`).
+- La reconciliación no reescribe el pasado. Offline-first: datos solo en IndexedDB. Sin sync remoto, cuentas ni telemetría sin aprobación.
+- Dexie: `useLiveQuery` en componentes (nunca async crudo en render), `db.transaction()` en escrituras multi-tabla, IDs `uuid`, índices en campos de `.where()`. Zustand solo para UI y licencia; no duplicar la DB.
+
+### UX
+- Mobile-first (sin depender de `md:`/`lg:` para funcionar), targets táctiles de al menos 44×44 px, `inputMode="decimal"` o `"numeric"` en números.
+- Máximo 3 a 5 opciones a la vez; un CTA principal por vista; HTML semántico y `aria-label` si no hay texto visible.
+- Flexible al capturar (trim, comas por puntos), estricto al persistir. `ErrorBoundary` y manejo de `null`/`undefined`.
+
+### Librerías
+- **Instaladas (no se reemplazan):** React 19, Vite 7, Tailwind 4, Dexie + `dexie-react-hooks`, Zustand, React Router, React Hook Form + Zod, Recharts, date-fns, Lucide, Vitest, `vite-plugin-pwa`.
+- **Librería de gráficas aprobada por el usuario: TanStack Charts** (https://tanstack.com/charts/latest). Úsala para gráficas nuevas. Hoy `package.json` solo trae Recharts (`recharts ^3.8.0`) y no tiene paquetes de TanStack: las gráficas actuales siguen en Recharts hasta que se instale TanStack Charts y se decida migrarlas. Esto prima sobre el default `chart.js` de `working-style.md`.
+- **Defaults para librerías nuevas** (solo si el repo no resuelve el problema): validaciones zod, fechas Temporal, tablas tanstack-table, auth better-auth, animaciones motion, tipografías fontsource, estado global zustand, drag & drop pragmatic-drag-and-drop, estado en la URL nuqs. `package.json` manda.
+
+## 7. Convenciones de esta sesión
 - Otras sesiones (p. ej. `claude/hopeful-goodall-kw7qf8`) también envían PRs a `master`: antes de ramificar, hacer `git fetch origin master` (la copia local queda obsoleta). El handoff vive solo en la rama `claude/determined-davinci-36tnp1` y **no** debe fusionarse a `master`. Para llevar fixes a producción se usan ramas limpias desde `master` (p. ej. `claude/fix-...`) con PR + squash merge.
 - No usar push forzado (fue bloqueado por el clasificador de permisos); fusionar `master` a la rama del handoff con merge normal.
 
-## 7. Cómo actualizar este documento
+## 8. Cómo actualizar este documento
 Pedirlo en el chat de la sesión: Claude revisa `git log`, PRs/issues y el código, y edita este archivo.
