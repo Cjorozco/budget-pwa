@@ -60,16 +60,15 @@ Antes de subir un cambio: `npx tsc -b`, `npm run lint` y `npm run test:run` debe
 Si el dueño no ha priorizado, **preguntar antes de empezar**; no inventar alcance.
 
 ## 6. Forma de trabajar y librerías
-Fuente: `AGENTS.md` y `.agents/rules/{working-style,architecture,ux-principles}.md`. Leerlos antes de tocar código.
-- Usar el stack de `package.json`; no migrar ni añadir librerías salvo que se pida. Si algo no es obvio, preguntar.
-- TypeScript estricto, sin `any` en código nuevo. UI en español (es-CO, `formatCurrency()`); código, variables y comentarios en inglés.
-- La UI no decide negocio: captura, muestra estado y dispara acciones. Feedback inmediato (loading, `disabled`, empty, error, toasts). Destructivo con `ConfirmDialog`, no `window.confirm`.
-- Mobile-first, targets táctiles de al menos 44×44 px, `inputMode` en números, un CTA principal por vista.
-- Dexie: `useLiveQuery` (nunca async crudo en render), `db.transaction()` en escrituras multi-tabla, IDs `uuid`.
-- Sin secretos en el repo. FinOps: no sugerir pago por defecto.
-- **SemVer** en `package.json` al publicar (PATCH bugs/tests, MINOR features, MAJOR schema/backup incompatible); Dexie `version(n)` es independiente.
-- **Librerías:** TanStack Charts (https://tanstack.com/charts/latest) es la aprobada por el dueño para gráficas nuevas. Defaults si el repo no resuelve algo: zod, Temporal, tanstack-table, motion, fontsource, zustand, nuqs. `package.json` manda.
-- **Flujo de git:** `master` es producción. Fixes por rama limpia desde `master` + PR + squash merge. Antes de ramificar, `git fetch origin master` (otras sesiones también publican). Sin push forzado. Con cada cambio: prueba de regresión que falle sin el fix.
+La capa común (forma de trabajar, principios de arquitectura, librerías por defecto, UX) **no se duplica aquí**:
+- Fuente: https://app.notion.com/p/3f3aa39f8dab81bc80fadd7c6515a087
+- En el repo: `AGENTS.md` y `.agents/rules/{working-style,ux-principles}.md` (alineado en la rama `claude/align-common-layer`, pendiente de PR a `master`).
+
+**Excepciones de este proyecto** (detalle en `.agents/rules/architecture.md`):
+- Sin backend: la capa de dominio es local (`src/lib`). IA directo desde el navegador con claves BYOK.
+- Dexie en lugar de Convex; `date-fns` en lugar de Temporal; sin auth.
+- Gráficas: nuevas con `@tanstack/charts` (aún no instalado en `package.json`); Recharts queda para las existentes.
+- Flujo de git: ramas nuevas desde `master`, PR y squash merge; `master` despliega a Vercel. Sin push forzado.
 
 ## 7. Cómo actualizar este documento
 Pedirlo en el chat. Revisar `git log`, PRs/issues y el código; editar solo lo que cambió (estado, pendientes, próximos pasos). **No** acumular historial de versiones aquí. Mantener la copia de Notion (Proyectos > Personal Budget PWA) en sync.
