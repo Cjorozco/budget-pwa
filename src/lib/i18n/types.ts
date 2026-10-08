@@ -507,6 +507,8 @@ export interface TranslationSchema {
             modelDescription: string;
             helpText: string;
             placeholder: string;
+            costNote: string;
+            tutorialSteps: string[];
         };
         openai: {
             label: string;
@@ -515,6 +517,8 @@ export interface TranslationSchema {
             modelDescription: string;
             helpText: string;
             placeholder: string;
+            costNote: string;
+            tutorialSteps: string[];
         };
         anthropic: {
             label: string;
@@ -523,6 +527,8 @@ export interface TranslationSchema {
             modelDescription: string;
             helpText: string;
             placeholder: string;
+            costNote: string;
+            tutorialSteps: string[];
         };
         groq: {
             label: string;
@@ -531,7 +537,14 @@ export interface TranslationSchema {
             modelDescription: string;
             helpText: string;
             placeholder: string;
+            costNote: string;
+            tutorialSteps: string[];
         };
+        tutorialTitle: string;
+        docsLinkLabel: string;
+        subscriptionNotice: string;
+        badgeFree: string;
+        badgePaid: string;
         keyReplaced: string;
         keySaved: string;
         keyDeleted: string;

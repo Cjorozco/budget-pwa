@@ -102,6 +102,10 @@ export interface ProviderMeta {
     modelDescription: string;
     helpText: string;
     placeholder: string;
+    /** 'free-tier' when the provider offers a free API tier; 'paid' when prepaid credits are required. */
+    pricing: 'free-tier' | 'paid';
+    /** Official getting-started documentation. */
+    docsUrl: string;
 }
 
 export const SUPPORTED_AI_PROVIDERS: ProviderMeta[] = [
@@ -113,6 +117,8 @@ export const SUPPORTED_AI_PROVIDERS: ProviderMeta[] = [
         modelDescription: 'Modelo: Gemini 3.1 Flash Lite (con respaldo en Flash 3.5 → 3.6 → 3.7 → 3.8)',
         helpText: 'API key gratuita o de pago creada en Google AI Studio. No sirven ChatGPT Plus ni Claude.ai.',
         placeholder: 'Pega tu key de Google AI Studio (AIzaSy...)',
+        pricing: 'free-tier',
+        docsUrl: 'https://ai.google.dev/gemini-api/docs/api-key',
     },
     {
         id: 'openai',
@@ -122,15 +128,19 @@ export const SUPPORTED_AI_PROVIDERS: ProviderMeta[] = [
         modelDescription: 'Modelo: GPT-4o Mini (con respaldo en GPT-4o y GPT-3.5 Turbo)',
         helpText: 'API key de OpenAI Platform (sk-proj-... o sk-...). Respuestas precisas e inferencia económica.',
         placeholder: 'Pega tu key de OpenAI (sk-...)',
+        pricing: 'paid',
+        docsUrl: 'https://platform.openai.com/docs/quickstart',
     },
     {
         id: 'anthropic',
         label: 'Anthropic Claude',
         keyUrl: 'https://console.anthropic.com/settings/keys',
         keyUrlLabel: 'Crear API key en Anthropic Console',
-        modelDescription: 'Modelo: Claude 3.5 Haiku (con respaldo en Claude 3 Haiku y 3.5 Sonnet)',
+        modelDescription: 'Modelo: Claude Haiku 5.5 (con respaldo en Claude Haiku 4.5 y Sonnet 5.5)',
         helpText: 'API key de Anthropic Console (sk-ant-api03-...). Inteligencia analítica y asesoría financiera precisa.',
         placeholder: 'Pega tu key de Anthropic (sk-ant-...)',
+        pricing: 'paid',
+        docsUrl: 'https://docs.anthropic.com/en/docs/get-started',
     },
     {
         id: 'groq',
@@ -140,6 +150,8 @@ export const SUPPORTED_AI_PROVIDERS: ProviderMeta[] = [
         modelDescription: 'Modelo: openai/gpt-oss-120b (con respaldo en gpt-oss-20b, groq/compound y qwen3.8-27b)',
         helpText: 'API key gratuita de Groq Cloud (gsk_...). Categorización ultrarrápida en milisegundos.',
         placeholder: 'Pega tu key de Groq (gsk_...)',
+        pricing: 'free-tier',
+        docsUrl: 'https://console.groq.com/docs/quickstart',
     },
 ];
 
