@@ -1,84 +1,56 @@
 ---
-description: Reglas de arquitectura, diseño y mobile-first para personal-buget-pwa
+description: Arquitectura, dominio y excepciones a la capa común para personal-buget-pwa
 globs: **/*
 ---
+
 # personal-buget-pwa — Arquitectura
 
 > Este repo es **offline-first (Dexie / IndexedDB)**. No uses Convex, Next.js ni reglas de Ecosistemas Platform.
+> Aquí va **solo lo propio de este producto**. La forma de trabajar, los principios de arquitectura, las librerías por defecto y la UX comunes están en `working-style.md` y `ux-principles.md` (fuente: <https://app.notion.com/p/3f3aa39f8dab81bc80fadd7c6515a087>).
 
-# Reglas de Arquitectura, Diseño y Mobile-First
+## Stack del proyecto
 
-## Stack y Convenciones del Proyecto
-
-- **React 19 + TypeScript** (con foco estricto en type-safety)
+- **React 19 + TypeScript** (strict)
 - **Vite 7**
-- **Tailwind CSS 4** para una UI mobile-first basada en utilidades
+- **Tailwind CSS 4** (mobile-first, ver `ux-principles.md`)
 - **Dexie.js (IndexedDB)** + `dexie-react-hooks` para persistencia y reactividad offline-first
 - **Zustand** para estado de UI transitorio (toasts, flags, confirm dialogs) y estado de licencia
 - **React Router** para navegación
-- **React Hook Form + Zod** para validación consistente en formularios, contratos de IA y backups
-- **TanStack Charts** (`@tanstack/charts`) para visualizaciones (optimizadas para móvil)
-- **Vitest** con 270+ pruebas unitarias y de integración
+- **React Hook Form + Zod** para formularios, contratos de IA y backups
+- **TanStack Charts** (`@tanstack/charts`) para las gráficas
+- **date-fns**, **Lucide**, **vite-plugin-pwa**
+- **Vitest** para pruebas unitarias y de integración
 
-### Convenciones Clave de Dominio:
-- Los cálculos “de verdad” deben derivarse de la historia de transacciones (no de “ajustes” implícitos).
-- Los cambios que alteran el saldo deben ser trazables como transacciones explícitas (`isAdjustment: true`).
-- Evitar lógica acoplada a la UI: separar “datos/DB” y “render” cuando sea práctico.
+## Excepciones del proyecto a la capa común
 
----
+Estas reglas comunes **no se aplican tal cual** aquí, por razones propias del producto. No se cambian sin pedirlo.
 
-## Principios de Diseño del Negocio
+| Regla común | En este proyecto | Por qué |
+|---|---|---|
+| Backend fuerte, autorización en servidor | No hay backend. El "backend" es la capa de dominio local (`src/lib`). Sin autorización de usuarios. | Offline-first y soberanía de datos |
+| Llamadas a IA y servicios externos en el backend | Directo desde el navegador con claves BYOK en `localStorage` | Sin servidor propio; costo cero |
+| Fechas: Temporal | `date-fns` | Ya instalado |
+| Auth: better-auth | No aplica | Sin cuentas ni backend |
+| Persistencia del repo común (Convex) | Dexie / IndexedDB | Offline-first |
+| Borrado lógico (`active: false`) | Solo donde ya existe; el resto de la historia es inmutable por la regla de reconciliación | No reescribir el pasado |
+| Flujo `develop` → `master` | Ramas nuevas desde `master`, PR y squash merge (ver `working-style.md`) | `master` despliega a producción en Vercel |
 
-Estos son los principios fundamentales que deben mantenerse en todo momento:
+## Convenciones clave de dominio
 
-- **La Reconciliación no corrige el pasado**: no borramos ni editamos transacciones antiguas; solo dejamos evidencia y snapshots del estado financiero.
-- **Trazabilidad Total**: cualquier ajuste al saldo debe ser una transacción explícita (`isAdjustment: true`).
-- **Offline-First**: los datos nunca salen del dispositivo; persistimos robustamente en IndexedDB.
-- **Saldos Atómicos**: el saldo calculado es la verdad absoluta derivada de la historia de transacciones.
-- **AI Multi-Provider BYOK (PRO/GOD)**: soporte directo en navegador para Google Gemini, Anthropic Claude, OpenAI y Groq con claves ingresadas por el usuario. No hay proxy ni backend intermediario. El gateway en `src/lib/ai/gateway/` y el orquestador `categorizer.ts` son los puntos de extensión.
-- **Licenciamiento Lemon Squeezy**: activación contra `api.lemonsqueezy.com` y validación criptográfica local con fallback offline.
+- Los cálculos "de verdad" se derivan de la historia de transacciones (no de "ajustes" implícitos).
+- Los cambios que alteran el saldo son trazables como transacciones explícitas (`isAdjustment: true`).
+- Separa "datos/DB" y "render" cuando sea práctico.
 
----
+## Principios de diseño del negocio
 
-## Mobile-First como Regla No Negociable
+No negociables:
 
-La app está diseñada para usarse principalmente en celular:
-
-- La navegación principal es una **barra inferior fija** (touch UI) y la jerarquía de pantallas prioriza lectura y entrada rápida.
-- El layout base debe funcionar fluidamente en pantallas pequeñas sin depender de `md:`/`lg:` para “verse bien”.
-- Breakpoints (`sm:`, `md:`, `lg:`) se usan exclusivamente como **mejora progresiva** (densidad, distribución), nunca como requisito para que la pantalla sea usable.
-- Evitar patrones “desktop-first” en móvil:
-  - Tablas horizontales sin fallback responsivo.
-  - Controles que dependan únicamente de estados hover.
-  - Anchos fijos que desborden el viewport.
-- Si una vista necesita overflow (cards/side scrollers), debe resolverse con scroll horizontal controlado (`overflow-x-auto`) sin bloquear la interacción vertical.
-
----
-
-## Contexto de Marca Personal
-
-Esta app es una **vitrina pública** de capacidades como desarrollador **Senior Frontend**:
-
-- Cada decisión técnica debe justificarse: por qué existe, qué problema resuelve y cómo impacta en UX, mantenibilidad o confiabilidad.
-- El código debe ser limpio, estructurado y fácil de auditar.
-- Nomenclatura clara, flujos consistentes, validaciones explícitas y manejo de errores predecible.
-- La filosofía offline-first/auditable debe reflejarse tanto en la arquitectura como en el estilo visual.
-
----
-
-## Buenas Prácticas Modernas
-
-- **Accesibilidad (a11y)**: foco visible, labels adecuados, roles/atributos de diálogos cuando aplique, y comportamiento correcto de teclado.
-- **Performance**: memoizar valores derivados cuando aporte valor real; evitar trabajo repetido innecesario en renders.
-- **PWA moderna**:
-  - Experiencia base (assets estáticos) funciona offline vía Service Worker (`registerType: 'autoUpdate'`).
-  - `manifest.webmanifest` consistente con la UX (tema, íconos, display standalone).
-  - Runtime caching: `NetworkOnly` para APIs de IA (`generativelanguage.googleapis.com`, `api.anthropic.com`, `api.openai.com`, `api.groq.com`) y Lemon Squeezy.
-- **Offline UX**: toda acción de persistencia debe funcionar sin conexión a red; mostrar feedback claro y no invasivo.
-- **Seguridad y Privacidad**: sin telemetría ni tracking; validación con Zod en fronteras de persistencia y backups.
-- **Calidad de Código**: suite de pruebas unitarias/integración con Vitest para lógica pura, validaciones, adaptadores de IA y acceso a DB.
-
----
+- **La reconciliación no corrige el pasado:** no borramos ni editamos transacciones antiguas; solo dejamos evidencia y snapshots del estado financiero.
+- **Trazabilidad total:** cualquier ajuste al saldo es una transacción explícita (`isAdjustment: true`).
+- **Offline-first:** los datos nunca salen del dispositivo; se persisten en IndexedDB.
+- **Saldos atómicos:** el saldo calculado es la verdad derivada de la historia de transacciones.
+- **IA multi-proveedor BYOK (PRO/GOD):** Google Gemini, Anthropic Claude, OpenAI y Groq directo desde el navegador con claves del usuario. Sin proxy ni backend. Puntos de extensión: `src/lib/ai/gateway/` y el orquestador `categorizer.ts`.
+- **Licenciamiento Lemon Squeezy:** activación contra `api.lemonsqueezy.com` y validación criptográfica local con fallback offline.
 
 ## PWA, Dexie y estado
 
@@ -87,18 +59,30 @@ Esta app es una **vitrina pública** de capacidades como desarrollador **Senior 
 - Totales: derivar de la historia; no guardar saldos stale.
 - Zustand solo para UI (toasts, modales, flags) y estado transitorio de licencias. No duplicar la DB en Zustand.
 - Formularios: React Hook Form + Zod.
-- Service Worker: `vite-plugin-pwa`, `registerType: 'autoUpdate'`. Core sin red.
-- BYOK Keys: NUNCA en `VITE_*`, Dexie ni backups. Almacenadas en `localStorage`.
+- Service Worker: `vite-plugin-pwa`, `registerType: 'autoUpdate'`. El core funciona sin red.
+- `manifest.webmanifest` consistente con la UX (tema, íconos, display standalone).
+- Runtime caching: `NetworkOnly` para APIs de IA (`generativelanguage.googleapis.com`, `api.anthropic.com`, `api.openai.com`, `api.groq.com`) y Lemon Squeezy.
+- Offline UX: toda acción de persistencia funciona sin red, con feedback claro y no invasivo.
+- Seguridad y privacidad: sin telemetría ni tracking; validación con Zod en fronteras de persistencia y backups.
+- BYOK keys: NUNCA en `VITE_*`, Dexie ni backups. Solo `localStorage`.
 - UI: español `es-CO`. Moneda COP con `formatCurrency()`. Iconos Lucide. Confirmaciones con `ConfirmDialog` del UI store.
 - LLM: no escribe a IndexedDB ni a UI sin Zod + grounding.
 
+## Contexto de marca personal
+
+Esta app es una **vitrina pública** de capacidades como desarrollador Senior Frontend:
+
+- Cada decisión técnica se justifica: por qué existe, qué problema resuelve y cómo impacta en UX, mantenibilidad o confiabilidad.
+- Código limpio, estructurado y fácil de auditar. Nomenclatura clara, validaciones explícitas, manejo de errores predecible.
+- La filosofía offline-first/auditable se refleja en la arquitectura y en el estilo visual.
+
 ## Versión de la app
 
-Al shippear cambios con significado (no typos/comentarios), bumpear `package.json` `"version"`:
+Al publicar cambios con significado (no typos/comentarios), bumpear `package.json` `"version"`:
 
-- **PATCH**: bugs, copy, tests, refactors sin cambio de comportamiento
-- **MINOR**: features, pantallas, PWA/offline, reglas del categorizador, nuevos proveedores
-- **MAJOR**: Dexie schema que pierde datos, backup incompatible, rutas rotas, lanzamiento de versión mayor
+- **PATCH:** bugs, copy, tests, refactors sin cambio de comportamiento
+- **MINOR:** features, pantallas, PWA/offline, reglas del categorizador, nuevos proveedores
+- **MAJOR:** Dexie schema que pierde datos, backup incompatible, rutas rotas, lanzamiento de versión mayor
 
 Dexie `version(n)` ≠ semver de la app. Si la UI/manifest muestran versión, alinear con `package.json`.
 Mencionar: `📦 VERSION: x.y.z → x.y.w (PATCH|MINOR|MAJOR — razón)`.
