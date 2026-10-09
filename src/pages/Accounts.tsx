@@ -63,15 +63,16 @@ export default function AccountsPage() {
                         <p className="text-sm text-slate-500">{t.accounts.subtitle}</p>
                     </div>
                 </div>
-                <Button size="sm" onClick={handleOpenNewAccount}>
+                <Button size="sm" onClick={handleOpenNewAccount} data-tour="new-account">
                     <Plus className="mr-2 h-4 w-4" /> {t.accounts.newAccountBtn}
                 </Button>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {accounts?.map((account) => (
+                {accounts?.map((account, index) => (
                     <AccountCard
                         key={account.id}
+                        isTourAnchor={index === 0}
                         account={account}
                         onEdit={(acc) => {
                             setEditingAccount(acc);

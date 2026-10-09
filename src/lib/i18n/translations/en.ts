@@ -591,6 +591,18 @@ export const en: TranslationSchema = {
                 title: 'Accounts',
                 description: 'Create your accounts (cash, bank, card), set aside reserves and reconcile the balance when it does not match.',
             },
+            newAccount: {
+                title: 'New account',
+                description: 'Create every place where you keep money here: cash, bank or card. Your balance is calculated from them.',
+            },
+            reconcile: {
+                title: 'Reconcile',
+                description: 'If the app balance does not match your bank, reconcile: enter the real balance and a visible adjustment is created. What is already logged is never changed.',
+            },
+            reserve: {
+                title: 'Reserves',
+                description: 'Set money aside for a goal or a future expense. It stays in your account but no longer counts as available.',
+            },
             budget: {
                 title: 'Budget',
                 description: 'Set how much you plan to spend per category and compare it with what you actually spend.',

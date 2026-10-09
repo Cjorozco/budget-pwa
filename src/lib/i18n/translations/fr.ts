@@ -591,6 +591,18 @@ export const fr: TranslationSchema = {
                 title: 'Comptes',
                 description: "Créez vos comptes (espèces, banque, carte), mettez des réserves de côté et rapprochez le solde quand il ne correspond pas.",
             },
+            newAccount: {
+                title: 'Nouveau compte',
+                description: 'Créez ici chaque endroit où vous gardez de l\'argent : espèces, banque ou carte. Votre solde en est calculé.',
+            },
+            reconcile: {
+                title: 'Rapprocher',
+                description: 'Si le solde de l\'app ne correspond pas à votre banque, rapprochez : saisissez le solde réel et un ajustement visible est créé. Ce qui est déjà enregistré n\'est jamais modifié.',
+            },
+            reserve: {
+                title: 'Réserves',
+                description: 'Mettez de l\'argent de côté pour un objectif ou une dépense future. Il reste sur votre compte mais ne compte plus comme disponible.',
+            },
             budget: {
                 title: 'Budget',
                 description: 'Définissez ce que vous prévoyez de dépenser par catégorie et comparez-le à vos dépenses réelles.',

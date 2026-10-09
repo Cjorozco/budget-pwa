@@ -572,7 +572,7 @@ export interface TranslationSchema {
         finish: string;
         replayTitle: string;
         replayDesc: string;
-        steps: Record<'welcome' | 'balance' | 'transactions' | 'newTransaction' | 'monthNavigator' | 'filters' | 'accounts' | 'budget' | 'reports' | 'settings', { title: string; description: string }>;
+        steps: Record<'welcome' | 'balance' | 'transactions' | 'newTransaction' | 'monthNavigator' | 'filters' | 'accounts' | 'newAccount' | 'reconcile' | 'reserve' | 'budget' | 'reports' | 'settings', { title: string; description: string }>;
     };
     userGuide: {
         modalBadge: string;
