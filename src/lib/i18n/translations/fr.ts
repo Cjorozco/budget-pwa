@@ -554,6 +554,45 @@ export const fr: TranslationSchema = {
             groqIncomplete: 'La clé semble incomplète. Collez-la en entier depuis console.groq.com.',
         },
     },
+    tour: {
+        progress: 'Étape {current} sur {total}',
+        skip: 'Passer',
+        back: 'Retour',
+        next: 'Suivant',
+        finish: 'Terminé !',
+        replayTitle: 'Visite de bienvenue',
+        replayDesc: "Revoyez les principales sections de l'application.",
+        steps: {
+            welcome: {
+                title: 'Bienvenue dans Personal Budget',
+                description: "Un tour d'une minute des fonctions essentielles. Vos données restent uniquement sur cet appareil.",
+            },
+            balance: {
+                title: 'Votre solde disponible',
+                description: "C'est ce que vous pouvez vraiment dépenser : vos comptes moins l'argent mis de côté en réserves.",
+            },
+            transactions: {
+                title: 'Transactions',
+                description: 'Enregistrez ici revenus et dépenses. Chacun met à jour le solde de son compte instantanément.',
+            },
+            accounts: {
+                title: 'Comptes',
+                description: "Créez vos comptes (espèces, banque, carte), mettez des réserves de côté et rapprochez le solde quand il ne correspond pas.",
+            },
+            budget: {
+                title: 'Budget',
+                description: 'Définissez ce que vous prévoyez de dépenser par catégorie et comparez-le à vos dépenses réelles.',
+            },
+            reports: {
+                title: 'Rapports',
+                description: "Des graphiques montrant où va votre argent, mois après mois.",
+            },
+            settings: {
+                title: 'Paramètres',
+                description: "Sauvegardes, catégories, modèles rapides, le guide complet et cette visite quand vous voulez la rejouer.",
+            },
+        },
+    },
     userGuide: {
         modalBadge: 'Manuel d’Utilisation',
         modalTitle: 'Guide d’Utilisation et Philosophie',

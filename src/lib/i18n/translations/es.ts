@@ -554,6 +554,45 @@ export const es: TranslationSchema = {
             groqIncomplete: 'La key parece incompleta. Pégala completa desde Groq Console.',
         },
     },
+    tour: {
+        progress: 'Paso {current} de {total}',
+        skip: 'Omitir',
+        back: 'Atrás',
+        next: 'Siguiente',
+        finish: '¡Listo!',
+        replayTitle: 'Tour de bienvenida',
+        replayDesc: 'Recorre de nuevo las secciones principales de la app.',
+        steps: {
+            welcome: {
+                title: 'Bienvenido a Personal Budget',
+                description: 'Un recorrido de 1 minuto por lo esencial. Tus datos viven solo en este dispositivo.',
+            },
+            balance: {
+                title: 'Tu saldo disponible',
+                description: 'Es lo que realmente puedes gastar: tus cuentas menos el dinero que apartaste en reservas.',
+            },
+            transactions: {
+                title: 'Movimientos',
+                description: 'Aquí registras ingresos y gastos. Cada movimiento actualiza el saldo de su cuenta al instante.',
+            },
+            accounts: {
+                title: 'Cuentas',
+                description: 'Crea tus cuentas (efectivo, banco, tarjeta), aparta reservas y concilia el saldo cuando no cuadre.',
+            },
+            budget: {
+                title: 'Presupuesto',
+                description: 'Define cuánto planeas gastar por categoría y compáralo con lo que gastas de verdad.',
+            },
+            reports: {
+                title: 'Informes',
+                description: 'Gráficas de a dónde se va tu dinero mes a mes.',
+            },
+            settings: {
+                title: 'Ajustes',
+                description: 'Copias de seguridad, categorías, plantillas rápidas, la guía completa y este tour cuando lo quieras repetir.',
+            },
+        },
+    },
     userGuide: {
         modalBadge: 'Manual de Usuario',
         modalTitle: 'Guía de Uso y Filosofía',
