@@ -1,30 +1,48 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { useTourStore } from '@/store/tour';
 import { useTranslation } from '@/lib/i18n';
 
-type TourStepId = 'welcome' | 'balance' | 'transactions' | 'accounts' | 'budget' | 'reports' | 'settings';
+type TourStepId =
+    | 'welcome'
+    | 'balance'
+    | 'transactions'
+    | 'newTransaction'
+    | 'monthNavigator'
+    | 'filters'
+    | 'accounts'
+    | 'budget'
+    | 'reports'
+    | 'settings';
 
 interface TourStep {
     id: TourStepId;
     /** Value of the `data-tour` attribute to spotlight; no target = centered card. */
     target?: string;
+    /** Page the step lives on; the tour navigates there when it differs from the current one. */
+    route: string;
 }
 
 const STEPS: TourStep[] = [
-    { id: 'welcome' },
-    { id: 'balance', target: 'balance' },
-    { id: 'transactions', target: 'nav-transactions' },
-    { id: 'accounts', target: 'nav-accounts' },
-    { id: 'budget', target: 'nav-budget' },
-    { id: 'reports', target: 'nav-reports' },
-    { id: 'settings', target: 'nav-settings' },
+    { id: 'welcome', route: '/' },
+    { id: 'balance', target: 'balance', route: '/' },
+    { id: 'transactions', target: 'nav-transactions', route: '/' },
+    { id: 'newTransaction', target: 'new-transaction', route: '/transactions' },
+    { id: 'monthNavigator', target: 'month-navigator', route: '/transactions' },
+    { id: 'filters', target: 'transaction-filters', route: '/transactions' },
+    { id: 'accounts', target: 'nav-accounts', route: '/transactions' },
+    { id: 'budget', target: 'nav-budget', route: '/transactions' },
+    { id: 'reports', target: 'nav-reports', route: '/transactions' },
+    { id: 'settings', target: 'nav-settings', route: '/transactions' },
 ];
 
 const AUTO_START_DELAY_MS = 600;
 const SPOTLIGHT_PADDING = 6;
 const CARD_GAP = 12;
+/** A freshly navigated page needs a moment to mount its targets. */
+const MEASURE_RETRY_MS = 50;
+const MEASURE_MAX_TRIES = 10;
 
 interface Rect {
     top: number;
@@ -65,6 +83,8 @@ export function AppTour() {
 /** Mounted only while the tour is open, so every run starts at step 1. A missing target degrades to a centered card. */
 function TourSteps() {
     const { t } = useTranslation();
+    const navigate = useNavigate();
+    const { pathname } = useLocation();
     const finish = useTourStore((s) => s.finish);
 
     const [stepIndex, setStepIndex] = useState(0);
@@ -74,20 +94,34 @@ function TourSteps() {
     const step = STEPS[stepIndex];
     const isLast = stepIndex === STEPS.length - 1;
 
+    useEffect(() => {
+        if (pathname !== step.route) navigate(step.route);
+    }, [pathname, step.route, navigate]);
+
     const update = useCallback(() => setRect(measure(step.target)), [step.target]);
 
     useEffect(() => {
         // scrollIntoView is missing in some environments (jsdom), hence the optional call.
-        document.querySelector(`[data-tour="${step.target}"]`)?.scrollIntoView?.({ block: 'center' });
-        const frame = window.requestAnimationFrame(update);
+        let tries = 0;
+        let timer = 0;
+        const locate = () => {
+            const el = document.querySelector(`[data-tour="${step.target}"]`);
+            if (el || !step.target || ++tries >= MEASURE_MAX_TRIES) {
+                el?.scrollIntoView?.({ block: 'center' });
+                update();
+                return;
+            }
+            timer = window.setTimeout(locate, MEASURE_RETRY_MS);
+        };
+        timer = window.setTimeout(locate, 0);
         window.addEventListener('resize', update);
         window.addEventListener('scroll', update, true);
         return () => {
-            window.cancelAnimationFrame(frame);
+            window.clearTimeout(timer);
             window.removeEventListener('resize', update);
             window.removeEventListener('scroll', update, true);
         };
-    }, [step.target, update]);
+    }, [step.target, pathname, update]);
 
     useEffect(() => {
         nextRef.current?.focus();

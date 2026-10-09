@@ -573,7 +573,19 @@ export const en: TranslationSchema = {
             },
             transactions: {
                 title: 'Transactions',
-                description: 'Log income and expenses here. Each one updates its account balance instantly.',
+                description: 'Log income and expenses here. We\'ll take you to Transactions to see how.',
+            },
+            newTransaction: {
+                title: 'New transaction',
+                description: 'Tap the + button to log an expense or income. Pick the account, category and amount; the balance updates instantly.',
+            },
+            monthNavigator: {
+                title: 'Browse by month',
+                description: 'Use the arrows to switch months and review past spending. The past is never rewritten: it stays as evidence.',
+            },
+            filters: {
+                title: 'Filter what you see',
+                description: 'Switch between all transactions, income only or expenses only.',
             },
             accounts: {
                 title: 'Accounts',

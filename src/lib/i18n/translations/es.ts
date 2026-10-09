@@ -573,7 +573,19 @@ export const es: TranslationSchema = {
             },
             transactions: {
                 title: 'Movimientos',
-                description: 'Aquí registras ingresos y gastos. Cada movimiento actualiza el saldo de su cuenta al instante.',
+                description: 'Aquí registras ingresos y gastos. Te llevamos a Movimientos para ver cómo.',
+            },
+            newTransaction: {
+                title: 'Nuevo movimiento',
+                description: 'Toca el botón + para registrar un gasto o ingreso. Elige cuenta, categoría y monto; el saldo se actualiza al instante.',
+            },
+            monthNavigator: {
+                title: 'Navega por meses',
+                description: 'Con las flechas cambias de mes para revisar lo que gastaste antes. No se borra ni se edita el pasado: queda como evidencia.',
+            },
+            filters: {
+                title: 'Filtra lo que ves',
+                description: 'Alterna entre todos los movimientos, solo ingresos o solo gastos.',
             },
             accounts: {
                 title: 'Cuentas',

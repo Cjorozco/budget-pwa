@@ -573,7 +573,19 @@ export const fr: TranslationSchema = {
             },
             transactions: {
                 title: 'Transactions',
-                description: 'Enregistrez ici revenus et dépenses. Chacun met à jour le solde de son compte instantanément.',
+                description: 'Enregistrez ici revenus et dépenses. Nous vous emmenons dans Transactions pour voir comment.',
+            },
+            newTransaction: {
+                title: 'Nouvelle transaction',
+                description: 'Touchez le bouton + pour enregistrer une dépense ou un revenu. Choisissez le compte, la catégorie et le montant ; le solde se met à jour instantanément.',
+            },
+            monthNavigator: {
+                title: 'Naviguer par mois',
+                description: 'Utilisez les flèches pour changer de mois et revoir vos dépenses passées. Le passé n\'est jamais réécrit : il reste comme preuve.',
+            },
+            filters: {
+                title: 'Filtrer l\'affichage',
+                description: 'Basculez entre toutes les transactions, les revenus seuls ou les dépenses seules.',
             },
             accounts: {
                 title: 'Comptes',

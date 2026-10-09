@@ -169,6 +169,7 @@ export default function TransactionsPage() {
                 <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t.transactions.title}</h1>
                 <Button
                     data-testid="new-transaction-button"
+                    data-tour="new-transaction"
                     aria-label={t.transactions.newTransaction}
                     size="sm"
                     className="rounded-full h-10 w-10 p-0"
@@ -182,7 +183,7 @@ export default function TransactionsPage() {
             </div>
 
             {/* Month Navigator */}
-            <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-2 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
+            <div data-tour="month-navigator" className="flex items-center justify-between bg-white dark:bg-slate-900 p-2 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
                 <button
                     type="button"
                     aria-label="Previous month"
@@ -222,6 +223,7 @@ export default function TransactionsPage() {
 
             {/* Filter Selector */}
             <div
+                data-tour="transaction-filters"
                 className="flex bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl gap-1"
                 role="tablist"
                 aria-label="Filter"
