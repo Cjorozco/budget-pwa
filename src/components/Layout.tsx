@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { useTranslation } from '@/lib/i18n';
+import { DemoBanner } from '@/components/DemoBanner';
 
 export default function Layout() {
     const location = useLocation();
@@ -20,6 +21,7 @@ export default function Layout() {
 
     return (
         <div className="flex flex-col min-h-dvh bg-slate-50 dark:bg-slate-950">
+            <DemoBanner />
             <main className="flex-1 overflow-y-auto pb-20">
                 <ErrorBoundary>
                     <Outlet />

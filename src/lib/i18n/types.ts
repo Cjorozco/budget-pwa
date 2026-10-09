@@ -629,4 +629,30 @@ export interface TranslationSchema {
         featureGodTeaserDesc: string;
         featureGodTeaserDiscount: string;
     };
+    demo: {
+        emptyTitle: string;
+        emptyDescription: string;
+        startFresh: string;
+        exploreDemo: string;
+        loadingDemo: string;
+        seedSuccess: string;
+        seedError: string;
+        bannerText: string;
+        bannerAction: string;
+        settingsTitle: string;
+        settingsDesc: string;
+        clearButton: string;
+        clearConfirmTitle: string;
+        clearConfirmMessage: string;
+        clearConfirmLabel: string;
+        clearSuccess: string;
+        clearError: string;
+    };
+    install: {
+        title: string;
+        description: string;
+        button: string;
+        iosSteps: string;
+        dismiss: string;
+    };
 }

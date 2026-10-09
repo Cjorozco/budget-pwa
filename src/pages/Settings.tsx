@@ -12,6 +12,8 @@ import { useLicenseStore, getTierDisplayName } from '@/store/licenseStore';
 import { useUIStore } from '@/store/ui';
 import { ProBadge } from '@/components/ui/ProBadge';
 import { useTranslation } from '@/lib/i18n';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { clearDemoData, hasDemoData } from '@/lib/db/demoMode';
 
 export default function SettingsPage() {
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -22,6 +24,29 @@ export default function SettingsPage() {
     const { addToast, confirm } = useUIStore();
     const { tier, isPro, isGod, openUpgradeModal } = useLicenseStore();
     const { t } = useTranslation();
+
+    const demoActive = useLiveQuery(() => hasDemoData());
+
+    const handleClearDemo = async () => {
+        const ok = await confirm({
+            title: t.demo.clearConfirmTitle,
+            message: t.demo.clearConfirmMessage,
+            confirmLabel: t.demo.clearConfirmLabel,
+            variant: 'danger',
+        });
+        if (!ok) return;
+
+        setIsLoading(true);
+        try {
+            await clearDemoData();
+            addToast(t.demo.clearSuccess, 'success');
+        } catch (error) {
+            console.error(error);
+            addToast(t.demo.clearError, 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const handleExportJSON = async () => {
         try {
@@ -165,6 +190,23 @@ export default function SettingsPage() {
             <section>
                 <LanguageSelector />
             </section>
+
+            {demoActive && (
+                <section className="space-y-3 p-4 rounded-2xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20">
+                    <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{t.demo.settingsTitle}</h2>
+                    <p className="text-xs text-slate-600 dark:text-slate-300">{t.demo.settingsDesc}</p>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        isLoading={isLoading}
+                        onClick={handleClearDemo}
+                        data-testid="clear-demo-button"
+                        className="w-full"
+                    >
+                        {t.demo.clearButton}
+                    </Button>
+                </section>
+            )}
 
             {import.meta.env.DEV && (
                 <section className="space-y-3 p-4 rounded-2xl border-2 border-dashed border-violet-300 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/30">
