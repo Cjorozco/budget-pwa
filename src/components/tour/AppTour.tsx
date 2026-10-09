@@ -12,6 +12,9 @@ type TourStepId =
     | 'monthNavigator'
     | 'filters'
     | 'accounts'
+    | 'newAccount'
+    | 'reconcile'
+    | 'reserve'
     | 'budget'
     | 'reports'
     | 'settings';
@@ -32,9 +35,12 @@ const STEPS: TourStep[] = [
     { id: 'monthNavigator', target: 'month-navigator', route: '/transactions' },
     { id: 'filters', target: 'transaction-filters', route: '/transactions' },
     { id: 'accounts', target: 'nav-accounts', route: '/transactions' },
-    { id: 'budget', target: 'nav-budget', route: '/transactions' },
-    { id: 'reports', target: 'nav-reports', route: '/transactions' },
-    { id: 'settings', target: 'nav-settings', route: '/transactions' },
+    { id: 'newAccount', target: 'new-account', route: '/accounts' },
+    { id: 'reconcile', target: 'account-reconcile', route: '/accounts' },
+    { id: 'reserve', target: 'account-reserve', route: '/accounts' },
+    { id: 'budget', target: 'nav-budget', route: '/accounts' },
+    { id: 'reports', target: 'nav-reports', route: '/accounts' },
+    { id: 'settings', target: 'nav-settings', route: '/accounts' },
 ];
 
 const AUTO_START_DELAY_MS = 600;

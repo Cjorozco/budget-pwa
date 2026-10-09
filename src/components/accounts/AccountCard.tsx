@@ -14,6 +14,8 @@ interface AccountCardProps {
     onViewHistory: (account: Account) => void;
     onAddReserve?: (account: Account) => void;
     onViewReserves?: (account: Account) => void;
+    /** Marks this card's action buttons as the guided tour's spotlight targets (first card only). */
+    isTourAnchor?: boolean;
 }
 
 function renderIcon(type: string, size: number) {
@@ -24,7 +26,7 @@ function renderIcon(type: string, size: number) {
     }
 }
 
-export function AccountCard({ account, onEdit, onReconcile, onViewHistory, onAddReserve, onViewReserves }: AccountCardProps) {
+export function AccountCard({ account, onEdit, onReconcile, onViewHistory, onAddReserve, onViewReserves, isTourAnchor }: AccountCardProps) {
     const { t, language } = useTranslation();
     const dateLocale = getDateFnsLocale(language);
 
@@ -102,6 +104,7 @@ export function AccountCard({ account, onEdit, onReconcile, onViewHistory, onAdd
                             onClick={() => onReconcile(account)}
                             title={t.accounts.reconcile}
                             data-testid="reconcile-button"
+                            data-tour={isTourAnchor ? 'account-reconcile' : undefined}
                             aria-label={`Reconcile ${account.name}`}
                         >
                             <History size={14} className="text-blue-600" />
@@ -112,6 +115,7 @@ export function AccountCard({ account, onEdit, onReconcile, onViewHistory, onAdd
                             className="h-8 w-8 p-0 hover:bg-amber-100 dark:hover:bg-amber-900/30 rounded-full"
                             onClick={() => onAddReserve?.(account)}
                             title={t.accounts.reserveName}
+                            data-tour={isTourAnchor ? 'account-reserve' : undefined}
                         >
                             <PiggyBank size={14} className="text-amber-600" />
                         </Button>

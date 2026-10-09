@@ -37,7 +37,7 @@ describe('AppTour', () => {
             vi.advanceTimersByTime(1000);
         });
         expect(screen.getByRole('dialog')).toBeInTheDocument();
-        expect(screen.getByText('Paso 1 de 10')).toBeInTheDocument();
+        expect(screen.getByText('Paso 1 de 13')).toBeInTheDocument();
     });
 
     it('does not auto-open outside the dashboard or after it was completed', () => {
@@ -59,9 +59,9 @@ describe('AppTour', () => {
         useTourStore.setState({ isOpen: true });
         renderTour();
         fireEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
-        expect(screen.getByText('Paso 2 de 10')).toBeInTheDocument();
+        expect(screen.getByText('Paso 2 de 13')).toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', { name: 'Atrás' }));
-        expect(screen.getByText('Paso 1 de 10')).toBeInTheDocument();
+        expect(screen.getByText('Paso 1 de 13')).toBeInTheDocument();
     });
 
     it('remembers skipping so it never auto-opens again', () => {
@@ -75,13 +75,13 @@ describe('AppTour', () => {
     it('finishes on the last step and restarts at step 1 when replayed', () => {
         useTourStore.setState({ isOpen: true });
         renderTour();
-        for (let i = 0; i < 9; i++) fireEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
-        expect(screen.getByText('Paso 10 de 10')).toBeInTheDocument();
+        for (let i = 0; i < 12; i++) fireEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
+        expect(screen.getByText('Paso 13 de 13')).toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', { name: '¡Listo!' }));
         expect(screen.queryByTestId('app-tour')).toBeNull();
 
         act(() => useTourStore.getState().start());
-        expect(screen.getByText('Paso 1 de 10')).toBeInTheDocument();
+        expect(screen.getByText('Paso 1 de 13')).toBeInTheDocument();
     });
 
     it('closes with Escape', () => {
@@ -95,10 +95,18 @@ describe('AppTour', () => {
         useTourStore.setState({ isOpen: true });
         renderTour();
         for (let i = 0; i < 3; i++) fireEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
-        expect(screen.getByText('Paso 4 de 10')).toBeInTheDocument();
+        expect(screen.getByText('Paso 4 de 13')).toBeInTheDocument();
         expect(screen.getByTestId('path')).toHaveTextContent('/transactions');
         fireEvent.click(screen.getByRole('button', { name: 'Atrás' }));
         expect(screen.getByTestId('path')).toHaveTextContent('/');
         expect(screen.getByTestId('path').textContent).not.toBe('/transactions');
+    });
+
+    it('moves on to Cuentas for its steps', () => {
+        useTourStore.setState({ isOpen: true });
+        renderTour();
+        for (let i = 0; i < 7; i++) fireEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
+        expect(screen.getByText('Paso 8 de 13')).toBeInTheDocument();
+        expect(screen.getByTestId('path')).toHaveTextContent('/accounts');
     });
 });

@@ -591,6 +591,18 @@ export const es: TranslationSchema = {
                 title: 'Cuentas',
                 description: 'Crea tus cuentas (efectivo, banco, tarjeta), aparta reservas y concilia el saldo cuando no cuadre.',
             },
+            newAccount: {
+                title: 'Nueva cuenta',
+                description: 'Crea aquí cada lugar donde tienes dinero: efectivo, banco o tarjeta. Con ellas se calcula tu saldo.',
+            },
+            reconcile: {
+                title: 'Reconciliar',
+                description: 'Si el saldo de la app no coincide con tu banco, concilia: ingresas el saldo real y se crea un ajuste visible. Lo ya registrado nunca se modifica.',
+            },
+            reserve: {
+                title: 'Reservas',
+                description: 'Aparta dinero para una meta o un gasto futuro. Sigue en tu cuenta, pero deja de contar como disponible.',
+            },
             budget: {
                 title: 'Presupuesto',
                 description: 'Define cuánto planeas gastar por categoría y compáralo con lo que gastas de verdad.',
