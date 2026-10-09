@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { db } from '@/lib/db';
 import { Button } from '@/components/ui/Button';
-import { Trash2, AlertTriangle, RefreshCw, FolderTree, Download, FileJson, FileSpreadsheet, Upload, Crown, Lock, BookOpen, Bot, Sparkles } from 'lucide-react';
+import { Trash2, AlertTriangle, RefreshCw, FolderTree, Download, FileJson, FileSpreadsheet, Upload, Crown, Lock, BookOpen, Bot, Sparkles, Compass } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { exportDatabase, downloadBackup, importDatabase, exportToCSV, downloadCSV } from '@/lib/db/backup';
 import { GeminiKeyCard } from '@/components/settings/GeminiKeyCard';
@@ -10,6 +10,7 @@ import { UserGuideModal } from '@/components/settings/UserGuideModal';
 import { LanguageSelector } from '@/components/settings/LanguageSelector';
 import { useLicenseStore, getTierDisplayName } from '@/store/licenseStore';
 import { useUIStore } from '@/store/ui';
+import { useTourStore } from '@/store/tour';
 import { ProBadge } from '@/components/ui/ProBadge';
 import { useTranslation } from '@/lib/i18n';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -24,6 +25,14 @@ export default function SettingsPage() {
     const { addToast, confirm } = useUIStore();
     const { tier, isPro, isGod, openUpgradeModal } = useLicenseStore();
     const { t } = useTranslation();
+    const navigate = useNavigate();
+    const tourStart = useTourStore((s) => s.start);
+
+    // The tour begins on the dashboard, where the balance card it points to lives.
+    const startTour = () => {
+        navigate('/');
+        tourStart();
+    };
 
     const demoActive = useLiveQuery(() => hasDemoData());
 
@@ -247,6 +256,22 @@ export default function SettingsPage() {
                                 </div>
                             </div>
                             <span className="text-blue-600 dark:text-blue-400 font-semibold text-xs">→</span>
+                        </div>
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={startTour}
+                        className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left w-full"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
+                                <Compass className="text-indigo-600 dark:text-indigo-400" size={20} />
+                            </div>
+                            <div>
+                                <h3 className="font-medium text-slate-900 dark:text-white text-sm">{t.tour.replayTitle}</h3>
+                                <p className="text-[10px] text-slate-500">{t.tour.replayDesc}</p>
+                            </div>
                         </div>
                     </button>
 

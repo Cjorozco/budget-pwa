@@ -564,6 +564,16 @@ export interface TranslationSchema {
             groqIncomplete: string;
         };
     };
+    tour: {
+        progress: string;
+        skip: string;
+        back: string;
+        next: string;
+        finish: string;
+        replayTitle: string;
+        replayDesc: string;
+        steps: Record<'welcome' | 'balance' | 'transactions' | 'accounts' | 'budget' | 'reports' | 'settings', { title: string; description: string }>;
+    };
     userGuide: {
         modalBadge: string;
         modalTitle: string;

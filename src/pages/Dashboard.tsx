@@ -178,7 +178,7 @@ export default function Dashboard() {
             )}
 
             {/* Total Balance Card */}
-            <div className={cn(
+            <div data-tour="balance" className={cn(
                 "p-6 rounded-3xl shadow-lg transition-colors border-2 relative",
                 isLoading ? "opacity-50 grayscale transition-all duration-500" : "",
                 totalAvailable < 0
