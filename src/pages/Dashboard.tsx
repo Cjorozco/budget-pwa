@@ -10,6 +10,7 @@ import { Modal } from '@/components/ui/Modal';
 import { TransactionForm } from '@/components/forms/TransactionForm';
 import { TransferForm } from '@/components/forms/TransferForm';
 import { useTranslation, getDateFnsLocale } from '@/lib/i18n';
+import { DemoEmptyState } from '@/components/DemoEmptyState';
 
 export default function Dashboard() {
     const { t, language } = useTranslation();
@@ -150,6 +151,8 @@ export default function Dashboard() {
                     </div>
                 </div>
             </header>
+
+            <DemoEmptyState />
 
             {/* AI Review Notice */}
             {ambiguousCount > 0 && (

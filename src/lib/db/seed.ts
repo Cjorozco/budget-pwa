@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 export const seedInitialData = async () => {
     // Use a transaction to ensure atomicity and prevent race conditions in React StrictMode
-    await db.transaction('rw', db.categories, db.accounts, db.tags, db.appConfig, async () => {
+    await db.transaction('rw', [db.categories, db.accounts, db.tags, db.appConfig, db.quickTemplates], async () => {
         const categoryCount = await db.categories.count();
 
         if (categoryCount === 0) {
