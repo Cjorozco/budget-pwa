@@ -64,7 +64,7 @@ La aplicación integra monetización y activación de licencias sin necesidad de
 - ✅ **Reportes Avanzados**: Desglose jerárquico por categorías padre y subcategorías, comparativa de ingresos y cumplimiento del presupuesto fijo.
 - ✅ **Categorización Inteligente**: Motor local instantáneo con reglas colombianas (Rappi, D1, Éxito, PSE, etc.) + IA Multi-proveedor (Gemini, Claude, OpenAI, Groq).
 - ✅ **Modo Demo**: Un visitante nuevo puede explorar la app con ~3 meses de datos de ejemplo en COP (ES/EN/FR). Los datos llevan el prefijo de id `demo-`, y "Borrar datos de ejemplo" en Ajustes elimina solo esos, nunca lo que crea el usuario.
-- ✅ **Tour de bienvenida**: 7 pasos con foco sobre el saldo y la navegación (sin librerías externas). Se abre una sola vez en el Resumen para usuarios nuevos y se repite desde Ajustes → "Tour de bienvenida".
+- ✅ **Tour de bienvenida**: 10 pasos con foco sobre el saldo, la navegación y la pantalla de Movimientos (sin librerías externas). Se abre una sola vez en el Resumen para usuarios nuevos y se repite desde Ajustes → "Tour de bienvenida".
 - ✅ **UI Mobile-First Accesible**: Diseñada para entrada rápida con touch bar inferior, modales seguros y dark mode.
 
 ---
