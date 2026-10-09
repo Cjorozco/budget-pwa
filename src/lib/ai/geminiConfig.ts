@@ -20,13 +20,11 @@ export const GEMINI_MODEL = 'gemini-3.1-flash-lite';
  * Modelos de respaldo ordenados de menor a mayor dentro del ecosistema Gemini Flash:
  * 1. Gemini 3.5 Flash Lite
  * 2. Gemini 3.6 Flash
- * 3. Gemini 3.7 Flash
- * 4. Gemini 3.8 Flash
+ * 3. Gemini 3.8 Flash
  */
 export const GEMINI_FALLBACK_MODELS = [
     'gemini-3.5-flash-lite',
     'gemini-3.6-flash',
-    'gemini-3.7-flash',
     'gemini-3.8-flash',
 ] as const;
 
@@ -46,7 +44,6 @@ export function getFriendlyModelName(model: string): string {
         'gemini-3.1-flash-lite': 'Gemini 3.1 Flash Lite',
         'gemini-3.5-flash-lite': 'Gemini 3.5 Flash Lite',
         'gemini-3.6-flash': 'Gemini 3.6 Flash',
-        'gemini-3.7-flash': 'Gemini 3.7 Flash',
         'gemini-3.8-flash': 'Gemini 3.8 Flash',
     };
     return map[model] ?? model;
@@ -58,5 +55,5 @@ export const GEMINI_KEY_HELP = {
     what: `API key de ${GEMINI_PROVIDER_LABEL}, creada en Google AI Studio. Sirve la gratuita o la de pago.`,
     whatNot:
         'Por ahora no sirven ChatGPT Plus, Claude.ai, ni keys de OpenAI (sk-…) o Anthropic: esta PWA no tiene servidor.',
-    model: `Modelo principal: ${GEMINI_MODEL} (con respaldo en Flash 3.5 → 3.6 → 3.7 → 3.8).`,
+    model: `Modelo principal: ${GEMINI_MODEL} (con respaldo en Flash 3.5 → 3.6 → 3.8).`,
 } as const;

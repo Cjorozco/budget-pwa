@@ -33,7 +33,7 @@ La app **no** requiere ni incluye API keys centralizadas en el servidor. El plan
 
 | Proveedor | Modelos Soportados | Endpoint / CORS | Costo de la API |
 |---|---|---|---|
-| **Google Gemini** | `gemini-flash-latest`, `gemini-1.5-pro` | Directo en navegador vía Google AI Studio | Capa gratuita con límites |
+| **Google Gemini** | `gemini-3.1-flash-lite`, `gemini-3.5-flash-lite`, `gemini-3.6-flash`, `gemini-3.8-flash` | Directo en navegador vía Google AI Studio | Capa gratuita con límites |
 | **Anthropic Claude** | `claude-haiku-5-5`, `claude-haiku-4-5`, `claude-sonnet-5-5` | Directo en navegador con rol de Asesor Financiero | De pago (créditos prepagados) |
 | **OpenAI** | `gpt-4o-mini`, `gpt-4o` | Directo en navegador vía OpenAI API | De pago (créditos prepagados) |
 | **Groq** | `llama-3.3-70b-versatile` | Inferencia de ultra-baja latencia | Capa gratuita con límites |
