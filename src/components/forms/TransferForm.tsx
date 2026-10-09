@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { db } from '@/lib/db';
 import { Button } from '@/components/ui/Button';
+import { MoneyInput } from '@/components/ui/MoneyInput';
 import { AccountSelect } from './AccountSelect';
 import { v4 as uuidv4 } from 'uuid';
 import { ArrowRight, Calendar } from 'lucide-react';
@@ -127,14 +128,10 @@ export function TransferForm({ onSuccess, onCancel }: TransferFormProps) {
                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300">{t.forms.transferAmount}</label>
                 <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-semibold">$</span>
-                    <input
-                        type="number"
-                        inputMode="decimal"
+                    <MoneyInput
                         required
-                        min="1"
-                        step="any"
-                        value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
+                        value={amount ? Number(amount) : undefined}
+                        onValueChange={(v) => setAmount(v === undefined ? '' : String(v))}
                         className="w-full bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-2xl px-8 py-4 text-2xl font-bold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all placeholder:text-slate-300"
                         placeholder="0.00"
                     />

@@ -1,4 +1,5 @@
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
+import { MoneyInput } from '@/components/ui/MoneyInput';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { db } from '@/lib/db';
@@ -34,6 +35,7 @@ export function ReserveForm({ account, onSuccess, onCancel, initialData }: Reser
     const addToast = useUIStore((s) => s.addToast);
     const {
         register,
+        control,
         handleSubmit,
         formState: { errors, isSubmitting },
     } = useForm<ReserveFormData>({
@@ -84,14 +86,22 @@ export function ReserveForm({ account, onSuccess, onCancel, initialData }: Reser
                 </div>
             </div>
 
-            <Input
-                label={t.forms.reserveAmountLabel}
-                type="number"
-                step="0.01"
-                placeholder="0"
-                autoFocus
-                error={errors.amount?.message}
-                {...register('amount', { valueAsNumber: true })}
+            <Controller
+                name="amount"
+                control={control}
+                render={({ field }) => (
+                    <MoneyInput
+                        label={t.forms.reserveAmountLabel}
+                        placeholder="0"
+                        autoFocus
+                        error={errors.amount?.message}
+                        name={field.name}
+                        ref={field.ref}
+                        onBlur={field.onBlur}
+                        value={field.value}
+                        onValueChange={(v) => field.onChange(v ?? NaN)}
+                    />
+                )}
             />
 
             <Input

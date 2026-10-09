@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { format, subMonths, addMonths } from 'date-fns';
 import { Modal } from '@/components/ui/Modal';
+import { MoneyInput } from '@/components/ui/MoneyInput';
 import type { BudgetItem } from '@/lib/types';
 import { useUIStore } from '@/store/ui';
 import { useTranslation, getDateFnsLocale } from '@/lib/i18n';
@@ -467,13 +468,10 @@ export default function Budget() {
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               {t.budget.itemAmountLabel}
             </label>
-            <input
-              type="number"
+            <MoneyInput
               required
-              min="1"
-              step="any"
-              value={newItemAmount}
-              onChange={e => setNewItemAmount(e.target.value)}
+              value={newItemAmount ? Number(newItemAmount) : undefined}
+              onValueChange={v => setNewItemAmount(v === undefined ? '' : String(v))}
               placeholder="0"
               className="w-full h-12 px-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-0 transition-colors"
             />

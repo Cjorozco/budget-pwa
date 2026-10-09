@@ -2,6 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { MoneyInput } from '@/components/ui/MoneyInput';
 import { useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { useUIStore } from '@/store/ui';
@@ -168,14 +169,9 @@ export default function TemplatesPage() {
 
                         <div>
                             <label className="block text-xs font-bold text-slate-500 mb-1">{t.templates.suggestedAmountLabel}</label>
-                            <Input
-                                type="number"
-                                inputMode="decimal"
-                                value={editingTemplate.amount === 0 ? '' : editingTemplate.amount}
-                                onChange={e => {
-                                    const val = e.target.value;
-                                    setEditingTemplate({ ...editingTemplate, amount: val === '' ? 0 : Number(val) });
-                                }}
+                            <MoneyInput
+                                value={editingTemplate.amount === 0 ? undefined : editingTemplate.amount}
+                                onValueChange={v => setEditingTemplate({ ...editingTemplate, amount: v ?? 0 })}
                                 placeholder="0"
                             />
                         </div>

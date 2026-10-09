@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
+import { MoneyInput } from '@/components/ui/MoneyInput';
 import { flushSync } from 'react-dom';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
@@ -46,6 +47,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
 
     const {
         register,
+        control,
         handleSubmit,
         watch,
         setValue,
@@ -383,14 +385,23 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                 </Button>
             </div>
 
-            <Input
-                label={t.forms.amount}
-                type="number"
-                placeholder="0"
-                autoFocus={!initialData}
-                error={errors.amount?.message}
-                {...register('amount', { valueAsNumber: true })}
-                data-testid="amount-input"
+            <Controller
+                name="amount"
+                control={control}
+                render={({ field }) => (
+                    <MoneyInput
+                        label={t.forms.amount}
+                        placeholder="0"
+                        autoFocus={!initialData}
+                        error={errors.amount?.message}
+                        name={field.name}
+                        ref={field.ref}
+                        onBlur={field.onBlur}
+                        value={field.value}
+                        onValueChange={(v) => field.onChange(v ?? NaN)}
+                        data-testid="amount-input"
+                    />
+                )}
             />
 
             <Input
