@@ -277,10 +277,10 @@ describe('Budget Page functionality', () => {
     });
 
     const nameInput = screen.getByDisplayValue('Arriendo');
-    const amountInput = screen.getByDisplayValue('1200000');
+    const amountInput = screen.getByDisplayValue('1.200.000');
 
     fireEvent.change(nameInput, { target: { value: 'Arriendo Apartamento' } });
-    fireEvent.change(amountInput, { target: { value: '1350000' } });
+    fireEvent.change(amountInput, { target: { value: '1.350.000' } });
 
     const submitBtn = screen.getByRole('button', { name: /Actualizar Gasto/i });
     fireEvent.click(submitBtn);

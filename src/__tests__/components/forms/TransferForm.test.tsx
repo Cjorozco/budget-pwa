@@ -25,7 +25,7 @@ describe('TransferForm', () => {
         const [fromSelect, toSelect] = Array.from(container.querySelectorAll('select'));
         await user.selectOptions(fromSelect, 'src');
         await user.selectOptions(toSelect, 'dst');
-        await user.type(container.querySelector('input[type="number"]')!, '30000');
+        await user.type(container.querySelector('input[inputmode="decimal"]')!, '30000');
         await user.click(container.querySelector('button[type="submit"]')!);
 
         await waitFor(() => expect(onSuccess).toHaveBeenCalled());
