@@ -638,4 +638,11 @@ export const en: TranslationSchema = {
         clearSuccess: 'Sample data deleted',
         clearError: 'Could not delete the sample data',
     },
+    install: {
+        title: "Install the app",
+        description: "Quick access, works offline too",
+        button: "Install",
+        iosSteps: "Tap Share, then “Add to Home Screen”",
+        dismiss: "Close",
+    },
 };

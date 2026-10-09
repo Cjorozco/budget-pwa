@@ -638,4 +638,11 @@ export const fr: TranslationSchema = {
         clearSuccess: "Données d'exemple supprimées",
         clearError: "Impossible de supprimer les données d'exemple",
     },
+    install: {
+        title: "Installer l'app",
+        description: "Accès rapide, même hors ligne",
+        button: "Installer",
+        iosSteps: "Touchez Partager puis « Sur l'écran d'accueil »",
+        dismiss: "Fermer",
+    },
 };

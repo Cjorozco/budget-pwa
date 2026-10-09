@@ -638,4 +638,11 @@ export const es: TranslationSchema = {
         clearSuccess: 'Datos de ejemplo eliminados',
         clearError: 'No se pudieron borrar los datos de ejemplo',
     },
+    install: {
+        title: "Instala la app",
+        description: "Acceso rápido, también sin conexión",
+        button: "Instalar",
+        iosSteps: "Toca Compartir y luego «Añadir a pantalla de inicio»",
+        dismiss: "Cerrar",
+    },
 };

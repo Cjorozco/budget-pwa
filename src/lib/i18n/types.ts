@@ -648,4 +648,11 @@ export interface TranslationSchema {
         clearSuccess: string;
         clearError: string;
     };
+    install: {
+        title: string;
+        description: string;
+        button: string;
+        iosSteps: string;
+        dismiss: string;
+    };
 }
