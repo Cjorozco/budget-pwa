@@ -16,7 +16,7 @@ import { useLicenseStore, type PlanType, getTierDisplayName } from '../../store/
 import { useUIStore } from '../../store/ui';
 import { useTranslation } from '../../lib/i18n';
 
-const LEMON_SQUEEZY_CHECKOUT_URL = 'https://orzixtech.lemonsqueezy.com/checkout/buy/c45c6116-d975-43d9-9995-cc8811d926f7';
+const LEMON_SQUEEZY_CHECKOUT_URL: string = import.meta.env.VITE_LEMON_CHECKOUT_URL;
 
 export const UpgradeModal: React.FC = () => {
     const {
