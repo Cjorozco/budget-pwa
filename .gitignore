@@ -25,5 +25,8 @@ dist-ssr
 
 .vercel
 
+# Manual AI evaluation reports (npm run eval:ai)
+eval-results/
+
 # Personal financial backups (never commit user data)
 budget-backup*.json
