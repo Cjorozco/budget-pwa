@@ -9,6 +9,7 @@ import {
 import { db } from '@/lib/db';
 import { setGeminiApiKey } from '@/lib/ai/geminiKey';
 import { suggestCategoryWithLlm } from '@/lib/ai/suggestWithLlm';
+import { suggestWithAiProvider } from '@/lib/ai/geminiSuggest';
 
 describe('parseLlmSuggestionJson', () => {
     it('parses a raw JSON object', () => {
@@ -265,7 +266,6 @@ describe('buildPrompt', () => {
 
         expect(prompt).toContain('Sofía');
         expect(prompt).toContain('Ruta escolar');
-        expect(prompt).toContain('PRIORIDAD TOTAL A CATEGORÍAS EXISTENTES');
         expect(prompt).toContain('Uber al jardín');
     });
 
@@ -406,3 +406,36 @@ describe('end-to-end resilience integration (fallback to local heuristic/regex e
     });
 });
 
+describe('suggestWithAiProvider request shape', () => {
+    beforeEach(async () => {
+        setGeminiApiKey('test-valid-api-key');
+        await db.categories.clear();
+        await db.transactions.clear();
+        await db.categories.bulkAdd([
+            { id: 'cat-diarios', name: 'Gastos diarios', type: 'expense', color: '#10b981', usageCount: 0, isActive: true },
+            { id: 'cat-super', name: 'Supermercado', type: 'expense', color: '#10b981', parentId: 'cat-diarios', usageCount: 0, isActive: true },
+        ]);
+    });
+
+    it('sends the stable rules as system prompt and a schema restricted to the user categories', async () => {
+        let body: Record<string, unknown> = {};
+        const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
+            body = JSON.parse(String((init as RequestInit).body));
+            return new Response(JSON.stringify({
+                candidates: [{ finishReason: 'STOP', content: { parts: [{ text: '{"match":"existing","categoryId":"cat-super","confidence":0.95,"reason":"Compra de mercado"}' }] } }],
+            }), { status: 200 });
+        });
+
+        const result = await suggestWithAiProvider('mercado Éxito', 'expense');
+
+        expect(result.status).toBe('success');
+        const system = (body.systemInstruction as { parts: Array<{ text: string }> }).parts[0].text;
+        expect(system).toContain('PRIORIDAD TOTAL A CATEGORÍAS EXISTENTES');
+        const schema = (body.generationConfig as { responseSchema: { properties: Record<string, { enum?: string[] }> } }).responseSchema;
+        expect(schema.properties.categoryId.enum).toEqual(expect.arrayContaining(['cat-diarios', 'cat-super']));
+        expect(schema.properties.parentName.enum).toEqual(['Gastos diarios']);
+        const userText = (body.contents as Array<{ parts: Array<{ text: string }> }>)[0].parts[0].text;
+        expect(userText).toContain('cat-super | Gastos diarios › Supermercado');
+        fetchSpy.mockRestore();
+    });
+});

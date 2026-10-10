@@ -61,6 +61,8 @@ export class GeminiProviderClient implements AiProviderClient {
         const perAttemptMs = options.timeoutMs ?? GEMINI_ATTEMPT_TIMEOUT_MS;
         const modelsToTry = [GEMINI_MODEL, ...GEMINI_FALLBACK_MODELS];
         let lastErrorMessage = 'Unknown network error';
+        // A rejected schema must never cost the whole suggestion: after one 400 we retry without it.
+        let schemaEnabled = Boolean(options.responseSchema);
 
         for (let i = 0; i < modelsToTry.length; i++) {
             if (options.signal?.aborted) {
@@ -103,6 +105,7 @@ export class GeminiProviderClient implements AiProviderClient {
                     generationConfig: {
                         maxOutputTokens: 8192,
                         responseMimeType: 'application/json',
+                        ...(schemaEnabled ? { responseSchema: options.responseSchema } : {}),
                         ...(thinkingLevel ? { thinkingConfig: { thinkingLevel } } : {}),
                     },
                 };
@@ -136,6 +139,14 @@ export class GeminiProviderClient implements AiProviderClient {
                     lastErrorMessage = envelope.success && envelope.data.error?.message
                         ? envelope.data.error.message
                         : `HTTP ${response.status}`;
+
+                    if (response.status === 400 && schemaEnabled) {
+                        schemaEnabled = false;
+                        attempts.pop();
+                        options.onProgress?.(currentAttempt, `${modelLabel}: esquema no aceptado → reintentando sin esquema…`);
+                        i--;
+                        continue;
+                    }
 
                     if (response.status === 401) {
                         options.onProgress?.(currentAttempt, `${modelLabel}: API Key no válida (401)`);

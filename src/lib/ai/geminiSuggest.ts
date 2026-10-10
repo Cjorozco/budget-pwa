@@ -8,12 +8,21 @@ import {
     categoryNamesAreSimilar,
     normalizeForMatch,
 } from './categoryRules';
+import {
+    CATEGORIZATION_SYSTEM_PROMPT,
+    buildPrompt,
+    buildResponseSchema,
+    sanitizePii,
+    type CatalogRow,
+    type RecentExample,
+} from './categorizationPrompt';
 import { getAiApiKey, getSelectedAiProvider } from './gateway/config';
 import { AiProviderError } from './gateway/errors';
 import { createAiClient } from './gateway/factory';
 import type { GeminiResult, LlmResult, ModelAttempt } from './types';
 
 export type { GeminiResult, LlmResult, ModelAttempt };
+export { buildPrompt, sanitizePii };
 export type SuggestionResult = GeminiResult;
 
 import {
@@ -32,11 +41,6 @@ export {
     extractJsonObject,
 };
 
-interface CatalogRow {
-    id: string;
-    path: string;
-    isLeaf: boolean;
-}
 
 export async function loadCategoryCatalog(
     type: 'income' | 'expense'
@@ -88,7 +92,7 @@ export function parseLlmSuggestionJson(text: string): LlmSuggestionPayload | nul
 export async function loadRecentTransactionExamples(
     type: 'income' | 'expense',
     limit = 10
-): Promise<Array<{ description: string; categoryPath: string }>> {
+): Promise<RecentExample[]> {
     try {
         const txs = await db.transactions
             .where('type')
@@ -102,7 +106,7 @@ export async function loadRecentTransactionExamples(
         const categories = await db.categories.toArray();
         const byId = new Map(categories.map((c) => [c.id, c]));
 
-        const examples: Array<{ description: string; categoryPath: string }> = [];
+        const examples: RecentExample[] = [];
         const seenDescriptions = new Set<string>();
 
         for (const tx of txs) {
@@ -127,52 +131,6 @@ export async function loadRecentTransactionExamples(
     } catch {
         return [];
     }
-}
-
-export function sanitizePii(text: string): string {
-    return text
-        // Email addresses
-        .replace(/[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+/g, '[EMAIL]')
-        // Numbers with 6 or more consecutive digits (IDs, account/card numbers, phones)
-        .replace(/\b\d{6,}\b/g, '[NUM]');
-}
-
-export function buildPrompt(
-    description: string,
-    type: 'income' | 'expense',
-    catalog: CatalogRow[],
-    recentExamples: Array<{ description: string; categoryPath: string }> = []
-): string {
-    const sanitizedDescription = sanitizePii(description);
-    const lines = catalog
-        .map((row) => `- ${row.id} | ${row.path}${row.isLeaf ? '' : ' (raíz)'}`)
-        .join('\n');
-
-    const historySection = recentExamples.length > 0
-        ? [
-            'historial de transacciones previas del usuario (aprende cómo categoriza este usuario en particular):',
-            ...recentExamples.map((ex) => `- "${sanitizePii(ex.description)}" → ${ex.categoryPath}`),
-        ].join('\n')
-        : '';
-
-    return [
-        'Eres un Asesor Financiero Senior y Estratega en Gestión de Presupuesto, Desendeudamiento, Ahorro e Inversiones para finanzas personales en Colombia.',
-        'Responde SOLO un objeto JSON con este esquema:',
-        '{"match":"existing"|"create"|"none","categoryId":string|null,"parentName":string|null,"subcategoryName":string|null,"confidence":number,"reason":string}',
-        'Reglas fundamentales:',
-        '- PRIORIDAD TOTAL A CATEGORÍAS EXISTENTES: Clasifica el gasto basándote estrictamente en las categorías que existen en el catálogo del usuario y en sus transacciones previas.',
-        '- Analiza el catálogo provisto: Si el usuario tiene categorías estándar (ej: "Niños › Transporte", "Educación", "Transporte › Taxis / Apps") o personalizadas (nombres de dependientes, mascotas o servicios específicos), selecciona la subcategoría más adecuada y específica.',
-        '- Si la descripción encaja semánticamente en una categoría existente del catálogo (o según los patrones aprendidos en su historial de transacciones), DEBES responder match=existing con el categoryId exacto del catálogo.',
-        '- match=create: SOLO si ninguna categoría existente del catálogo encaja para este gasto. En tal caso, parentName DEBE ser el nombre exacto de una categoría raíz que YA exista en el catálogo del usuario (ej: "Niños", "Transporte", "Educación", etc.); subcategoryName es la subcategoría nueva a crear.',
-        '- match=none: si la descripción no tiene relación o no hay contexto suficiente.',
-        '- reason: Una sola frase concisa y de alto valor (máx 130 caracteres) en español que justifique la categoría y dé un micro-consejo financiero experto según el tipo de movimiento (si es deuda/interés: enfoque avalancha/desendeudamiento; si es inversión/ahorro: interés compuesto/fondo de emergencia; si es gasto hormiga/prescindible: costo de oportunidad; si es ingreso/fijo: regla 50/30/20 u optimización).',
-        '- No inventes IDs. No uses montos ni cuentas.',
-        `tipo: ${type}`,
-        `descripción: ${sanitizedDescription}`,
-        'catálogo:',
-        lines || '(vacío)',
-        historySection,
-    ].filter(Boolean).join('\n');
 }
 
 export async function mapLlmPayloadToSuggestion(
@@ -318,6 +276,8 @@ export async function suggestWithAiProvider(
     try {
         const response = await client.generate({
             prompt: buildPrompt(description, type, catalog, recentExamples),
+            systemPrompt: CATEGORIZATION_SYSTEM_PROMPT,
+            responseSchema: buildResponseSchema(catalog.map((row) => row.id), rootCategories.map((c) => c.name)),
             signal,
             onProgress,
         });

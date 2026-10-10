@@ -8,6 +8,8 @@ export interface AiGenerateOptions {
     timeoutMs?: number;
     /** Overall budget across all fallback attempts (adapters that support it). */
     totalTimeoutMs?: number;
+    /** JSON schema for the answer. Only adapters that support structured output use it (Gemini today). */
+    responseSchema?: Record<string, unknown>;
     temperature?: number;
     maxTokens?: number;
     onProgress?: (attempt: ModelAttempt, friendlyMessage: string) => void;

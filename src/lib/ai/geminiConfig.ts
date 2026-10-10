@@ -30,7 +30,7 @@ export const GEMINI_GENERATE_URL = getGeminiGenerateUrl(GEMINI_MODEL);
 /** Overall budget for the whole Gemini chain; when it runs out the local engine takes over. */
 export const GEMINI_TOTAL_TIMEOUT_MS = 8000;
 export const GEMINI_TIMEOUT_MS = 6000;
-export const GEMINI_ATTEMPT_TIMEOUT_MS = 6000;
+export const GEMINI_ATTEMPT_TIMEOUT_MS = 4000;
 
 export function getFriendlyModelName(model: string): string {
     return getModelLabel('gemini', model);
