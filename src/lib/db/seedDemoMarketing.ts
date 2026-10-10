@@ -10,6 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { db } from './index';
 import { findOrCreateCategory } from '../ai/categoryResolver';
 import { normalizeForMatch } from '../ai/categoryRules';
+import { getRegion } from '../region/regionStore';
 import { formatCurrency } from '../utils';
 import type { Transaction } from '../types';
 
@@ -218,7 +219,7 @@ export async function seedDemoMarketing(): Promise<DemoSeedResult> {
                     account.calculatedBalance = bancolombia;
                     delete account.actualBalance;
                     delete account.lastReconciliationDate;
-                    account.currency = 'COP';
+                    account.currency = getRegion().currency;
                     account.isActive = true;
                 });
             } else {
@@ -228,7 +229,7 @@ export async function seedDemoMarketing(): Promise<DemoSeedResult> {
                     name: 'Bancolombia',
                     type: 'bank',
                     calculatedBalance: bancolombia,
-                    currency: 'COP',
+                    currency: getRegion().currency,
                     isActive: true,
                 });
             }
@@ -240,7 +241,7 @@ export async function seedDemoMarketing(): Promise<DemoSeedResult> {
                     account.calculatedBalance = efectivo;
                     delete account.actualBalance;
                     delete account.lastReconciliationDate;
-                    account.currency = 'COP';
+                    account.currency = getRegion().currency;
                     account.isActive = true;
                 });
             } else {
@@ -250,7 +251,7 @@ export async function seedDemoMarketing(): Promise<DemoSeedResult> {
                     name: 'Efectivo',
                     type: 'cash',
                     calculatedBalance: efectivo,
-                    currency: 'COP',
+                    currency: getRegion().currency,
                     isActive: true,
                 });
             }

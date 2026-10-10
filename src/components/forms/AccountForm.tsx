@@ -9,6 +9,7 @@ import { db } from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
 import { useUIStore } from '@/store/ui';
 import { useTranslation } from '@/lib/i18n';
+import { getRegion } from '@/lib/region/regionStore';
 
 interface AccountFormProps {
     onSuccess: () => void;
@@ -30,7 +31,7 @@ export function AccountForm({ onSuccess, onCancel, initialData }: AccountFormPro
             name: initialData?.name || '',
             type: initialData?.type || 'bank',
             calculatedBalance: initialData?.calculatedBalance || 0,
-            currency: 'COP',
+            currency: getRegion().currency,
         },
     });
 
@@ -51,7 +52,7 @@ export function AccountForm({ onSuccess, onCancel, initialData }: AccountFormPro
                     type: data.type,
                     calculatedBalance: Number(data.calculatedBalance),
                     actualBalance: Number(data.calculatedBalance), // Set initial actual balance
-                    currency: 'COP',
+                    currency: getRegion().currency,
                     isActive: true,
                 });
             }

@@ -1,3 +1,5 @@
+import type { CountryCode, CurrencyCode } from '@/lib/region/region';
+
 export interface Transaction {
     id: string;
     type: 'income' | 'expense' | 'transfer';
@@ -26,7 +28,7 @@ export interface Account {
     calculatedBalance: number;
     actualBalance?: number;
     lastReconciliationDate?: number;
-    currency: 'COP';
+    currency: CurrencyCode;
     isActive: boolean;
 }
 
@@ -76,7 +78,9 @@ export interface Reserve {
 
 export interface AppConfig {
     id: 'singleton';
-    defaultCurrency: 'COP';
+    defaultCurrency: CurrencyCode;
+    /** Region chosen by the user; mirrors the app-level region so backups carry it. */
+    country?: CountryCode;
     minConfidenceThreshold: number; // 0.7
     enableAISuggestions: boolean;
 }

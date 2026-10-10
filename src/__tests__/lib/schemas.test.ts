@@ -19,7 +19,12 @@ describe('TransactionSchema', () => {
     expect(result.success).toBe(true);
   });
 
-  it('rejects amount less than 1', () => {
+  it('accepts amounts with cents (CAD, USD) and rejects zero', () => {
+    expect(TransactionSchema.safeParse({ ...validTransaction, amount: 0.5 }).success).toBe(true);
+    expect(TransactionSchema.safeParse({ ...validTransaction, amount: 0 }).success).toBe(false);
+  });
+
+  it('rejects a zero amount', () => {
     const result = TransactionSchema.safeParse({ ...validTransaction, amount: 0 });
     expect(result.success).toBe(false);
     if (!result.success) {
@@ -138,9 +143,11 @@ describe('AccountSchema', () => {
     }
   });
 
-  it('rejects non-COP currency', () => {
-    const result = AccountSchema.safeParse({ ...validAccount, currency: 'USD' });
-    expect(result.success).toBe(false);
+  it('accepts the supported currencies (COP, CAD, USD) and rejects any other', () => {
+    for (const currency of ['COP', 'CAD', 'USD']) {
+      expect(AccountSchema.safeParse({ ...validAccount, currency }).success).toBe(true);
+    }
+    expect(AccountSchema.safeParse({ ...validAccount, currency: 'EUR' }).success).toBe(false);
   });
 
   it('accepts zero balance', () => {

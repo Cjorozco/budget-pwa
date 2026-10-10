@@ -509,6 +509,16 @@ export interface TranslationSchema {
         confirmRestoreTitle: string;
         confirmActionTitle: string;
     };
+    region: {
+        title: string;
+        description: string;
+        countries: Record<'CO' | 'CA' | 'US', string>;
+        currencyLine: string;
+        changeTitle: string;
+        changeMessage: string;
+        changeConfirm: string;
+        changed: string;
+    };
     aiProviders: {
         gemini: {
             label: string;

@@ -481,6 +481,16 @@ export const fr: TranslationSchema = {
         confirmRestoreTitle: 'Restaurer la sauvegarde ?',
         confirmActionTitle: 'Confirmer l’action',
     },
+    region: {
+        title: 'Région et devise',
+        description: 'Définit la devise de vos comptes et la façon d’écrire les nombres.',
+        countries: { CO: 'Colombie', CA: 'Canada', US: 'États-Unis' },
+        currencyLine: 'Devise : {currency}',
+        changeTitle: 'Changer de région ?',
+        changeMessage: 'La devise de {count} compte(s) passera de {from} à {to}. Les montants ne sont pas convertis : chacun garde sa valeur numérique. Si vous avez déjà saisi des données réelles, faites d’abord une sauvegarde.',
+        changeConfirm: 'Changer de région',
+        changed: 'Région changée en {country} ({currency})',
+    },
     aiProviders: {
         gemini: {
             label: 'Google Gemini',
