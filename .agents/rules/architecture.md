@@ -44,7 +44,7 @@ No negociables:
 - **Trazabilidad total:** cualquier ajuste al saldo es una transacción explícita (`isAdjustment: true`).
 - **Offline-first:** los datos nunca salen del dispositivo; se persisten en IndexedDB.
 - **Saldos atómicos:** el saldo calculado es la verdad derivada de la historia de transacciones.
-- **IA multi-proveedor BYOK (PRO/GOD):** Google Gemini, Anthropic Claude, OpenAI y Groq directo desde el navegador con claves del usuario. Sin proxy ni backend. Puntos de extensión: `src/lib/ai/gateway/` y el orquestador `categorizer.ts`.
+- **IA multi-proveedor BYOK (PRO/GOD):** Google Gemini, Anthropic Claude, OpenAI y Groq directo desde el navegador con claves del usuario. Sin proxy ni backend. Puntos de extensión: `src/lib/ai/gateway/` y el orquestador `categorizer.ts`. Los IDs de modelo y su orden de respaldo viven solo en `src/lib/ai/models.ts` (ver `docs/adr/0001-modelos-ia-centralizados.md`).
 - **Licenciamiento Lemon Squeezy:** activación contra `api.lemonsqueezy.com` y validación criptográfica local con fallback offline.
 
 ## PWA, Dexie y estado

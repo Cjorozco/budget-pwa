@@ -1,3 +1,5 @@
+import { getModelChain, getModelLabel, getModelSpec, type GeminiThinkingLevel } from './models';
+
 /**
  * First cloud provider for the optional categorizer.
  * There is no backend today, so the client can only call APIs that allow browser CORS.
@@ -10,23 +12,12 @@ export const GEMINI_PROVIDER_LABEL = 'Google Gemini';
 export const GEMINI_KEY_URL = 'https://aistudio.google.com/apikey';
 
 /**
- * Model id sent to generateContent.
- * Usamos gemini-3.1-flash-lite como modelo principal para velocidad máxima y bajo costo/cuota,
- * escalando a través de la familia Flash de menor a mayor.
+ * Model chain comes from models.ts (single source of truth).
+ * GEMINI_MODEL is tried first; GEMINI_FALLBACK_MODELS follow in order.
  */
-export const GEMINI_MODEL = 'gemini-3.1-flash-lite';
+export const GEMINI_MODEL = getModelChain('gemini')[0].id;
 
-/**
- * Modelos de respaldo ordenados de menor a mayor dentro del ecosistema Gemini Flash:
- * 1. Gemini 3.5 Flash Lite
- * 2. Gemini 3.6 Flash
- * 3. Gemini 3.8 Flash
- */
-export const GEMINI_FALLBACK_MODELS = [
-    'gemini-3.5-flash-lite',
-    'gemini-3.6-flash',
-    'gemini-3.8-flash',
-] as const;
+export const GEMINI_FALLBACK_MODELS = getModelChain('gemini').slice(1).map((m) => m.id);
 
 export const GEMINI_API_HOST = 'generativelanguage.googleapis.com';
 
@@ -36,17 +27,18 @@ export function getGeminiGenerateUrl(model: string = GEMINI_MODEL): string {
 
 export const GEMINI_GENERATE_URL = getGeminiGenerateUrl(GEMINI_MODEL);
 
+/** Overall budget for the whole Gemini chain; when it runs out the local engine takes over. */
+export const GEMINI_TOTAL_TIMEOUT_MS = 8000;
 export const GEMINI_TIMEOUT_MS = 6000;
 export const GEMINI_ATTEMPT_TIMEOUT_MS = 6000;
 
 export function getFriendlyModelName(model: string): string {
-    const map: Record<string, string> = {
-        'gemini-3.1-flash-lite': 'Gemini 3.1 Flash Lite',
-        'gemini-3.5-flash-lite': 'Gemini 3.5 Flash Lite',
-        'gemini-3.6-flash': 'Gemini 3.6 Flash',
-        'gemini-3.8-flash': 'Gemini 3.8 Flash',
-    };
-    return map[model] ?? model;
+    return getModelLabel('gemini', model);
+}
+
+/** thinkingLevel for a Gemini model, as declared in models.ts. */
+export function getGeminiThinkingLevel(model: string): GeminiThinkingLevel | undefined {
+    return getModelSpec('gemini', model)?.thinkingLevel;
 }
 
 export const GEMINI_KEY_STORAGE_KEY = 'budget_gemini_api_key';
@@ -55,5 +47,5 @@ export const GEMINI_KEY_HELP = {
     what: `API key de ${GEMINI_PROVIDER_LABEL}, creada en Google AI Studio. Sirve la gratuita o la de pago.`,
     whatNot:
         'Por ahora no sirven ChatGPT Plus, Claude.ai, ni keys de OpenAI (sk-…) o Anthropic: esta PWA no tiene servidor.',
-    model: `Modelo principal: ${GEMINI_MODEL} (con respaldo en Flash 3.5 → 3.6 → 3.8).`,
+    model: `Modelo principal: ${getFriendlyModelName(GEMINI_MODEL)} (con respaldo en Flash Lite 3.1 → Flash 3.6 → 3.8).`,
 } as const;

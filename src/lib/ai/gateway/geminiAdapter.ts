@@ -1,9 +1,12 @@
 import { z } from 'zod';
 import {
+    GEMINI_ATTEMPT_TIMEOUT_MS,
     GEMINI_FALLBACK_MODELS,
     GEMINI_MODEL,
+    GEMINI_TOTAL_TIMEOUT_MS,
     getFriendlyModelName,
     getGeminiGenerateUrl,
+    getGeminiThinkingLevel,
 } from '../geminiConfig';
 import type { ModelAttempt } from '../types';
 import type { AiGenerateOptions, AiGenerateResult, AiProviderClient, ConnectionTestResult } from './types';
@@ -43,7 +46,9 @@ export class GeminiProviderClient implements AiProviderClient {
             throw new Error('No API key provided for Google Gemini');
         }
 
-        const timeoutMs = options.timeoutMs ?? 8000;
+        const startedAt = Date.now();
+        const totalMs = options.totalTimeoutMs ?? GEMINI_TOTAL_TIMEOUT_MS;
+        const perAttemptMs = options.timeoutMs ?? GEMINI_ATTEMPT_TIMEOUT_MS;
         const modelsToTry = [GEMINI_MODEL, ...GEMINI_FALLBACK_MODELS];
         const attempts: ModelAttempt[] = [];
         let lastErrorMessage = 'Unknown network error';
@@ -52,6 +57,12 @@ export class GeminiProviderClient implements AiProviderClient {
             if (options.signal?.aborted) {
                 throw new DOMException('Aborted by caller', 'AbortError');
             }
+
+            const remainingMs = totalMs - (Date.now() - startedAt);
+            if (remainingMs <= 0) {
+                throw new Error(`Gemini request timeout: ${totalMs}ms budget exhausted`);
+            }
+            const timeoutMs = Math.min(perAttemptMs, remainingMs);
 
             const model = modelsToTry[i];
             const modelLabel = getFriendlyModelName(model);
@@ -76,16 +87,14 @@ export class GeminiProviderClient implements AiProviderClient {
             options.signal?.addEventListener('abort', onParentAbort);
 
             try {
-                // System instructions can be added to systemInstruction or prepended to prompt
+                // temperature/top_p/top_k are deprecated for Gemini 3+, so they are not sent.
+                const thinkingLevel = getGeminiThinkingLevel(model);
                 const bodyPayload: Record<string, unknown> = {
                     contents: [{ parts: [{ text: options.prompt }] }],
                     generationConfig: {
-                        temperature: options.temperature ?? 0.2,
                         maxOutputTokens: 8192,
                         responseMimeType: 'application/json',
-                        thinkingConfig: {
-                            thinkingBudget: 0,
-                        },
+                        ...(thinkingLevel ? { thinkingConfig: { thinkingLevel } } : {}),
                     },
                 };
 
@@ -139,7 +148,9 @@ export class GeminiProviderClient implements AiProviderClient {
                 const candidate = envelope.success ? envelope.data.candidates?.[0] : undefined;
                 const text = candidate?.content?.parts?.[0]?.text;
 
-                if (text && text.trim().length > 0) {
+                const isTruncated = candidate?.finishReason === 'MAX_TOKENS';
+
+                if (!isTruncated && text && text.trim().length > 0) {
                     currentAttempt.status = 'success';
                     attempts.push(currentAttempt);
                     options.onProgress?.(currentAttempt, `Respuesta recibida de ${modelLabel}`);
@@ -154,7 +165,7 @@ export class GeminiProviderClient implements AiProviderClient {
                 currentAttempt.status = 'failed';
                 currentAttempt.errorReason = 'invalid-json';
                 attempts.push(currentAttempt);
-                lastErrorMessage = 'Empty or invalid response structure';
+                lastErrorMessage = isTruncated ? 'Response truncated (MAX_TOKENS)' : 'Empty or invalid response structure';
 
                 if (i < modelsToTry.length - 1) {
                     continue;
@@ -170,7 +181,7 @@ export class GeminiProviderClient implements AiProviderClient {
                     attempts.push(currentAttempt);
                     lastErrorMessage = 'Timeout';
                     if (i < modelsToTry.length - 1) continue;
-                    throw new Error(`Gemini request timed out after ${timeoutMs}ms`);
+                    throw new Error(`Gemini request timeout after ${timeoutMs}ms`);
                 }
                 if (err instanceof Error && err.message.includes('401')) {
                     throw err;
@@ -195,6 +206,7 @@ export class GeminiProviderClient implements AiProviderClient {
                 prompt: 'Ping',
                 systemPrompt: 'Responde exclusivamente {"status":"ok"}',
                 timeoutMs: 8000,
+                totalTimeoutMs: 20000,
             });
             return {
                 ok: true,

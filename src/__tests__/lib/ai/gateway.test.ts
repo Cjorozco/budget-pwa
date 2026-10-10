@@ -98,7 +98,7 @@ describe('GeminiProviderClient (REST Adapter)', () => {
         vi.restoreAllMocks();
     });
 
-    it('sends REST request with thinkingBudget: 0 and json mime type', async () => {
+    it('sends REST request with thinkingLevel (no deprecated params) and json mime type', async () => {
         let capturedUrl = '';
         let capturedHeaders: Record<string, string> = {};
         let capturedBody: Record<string, unknown> = {};
@@ -138,9 +138,11 @@ describe('GeminiProviderClient (REST Adapter)', () => {
         expect(capturedHeaders['x-goog-api-key']).toBe(mockApiKey);
         expect(capturedHeaders['Content-Type']).toBe('application/json');
 
-        const genConfig = capturedBody.generationConfig as { responseMimeType: string; thinkingConfig: { thinkingBudget: number } };
+        const genConfig = capturedBody.generationConfig as { responseMimeType: string; thinkingConfig: { thinkingLevel: string; thinkingBudget?: number }; temperature?: number };
         expect(genConfig.responseMimeType).toBe('application/json');
-        expect(genConfig.thinkingConfig.thinkingBudget).toBe(0);
+        expect(genConfig.thinkingConfig.thinkingLevel).toBe('minimal');
+        expect(genConfig.thinkingConfig.thinkingBudget).toBeUndefined();
+        expect(genConfig.temperature).toBeUndefined();
 
         expect(result.provider).toBe('gemini');
         expect(result.text).toContain('"match":"existing"');
