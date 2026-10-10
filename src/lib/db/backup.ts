@@ -8,6 +8,8 @@ import type {
     Tag,
     Reserve,
     AppConfig,
+    QuickTemplate,
+    BudgetItem,
 } from '../types';
 
 // Row-level Zod schemas for backup validation
@@ -146,8 +148,8 @@ export interface BackupData {
         tags: Tag[];
         reserves: Reserve[];
         appConfig: AppConfig[];
-        quickTemplates?: any[];
-        budgetItems?: any[];
+        quickTemplates?: QuickTemplate[];
+        budgetItems?: BudgetItem[];
     };
 }
 
@@ -173,7 +175,7 @@ export async function exportDatabase(): Promise<string> {
 }
 
 export async function importDatabase(jsonString: string): Promise<void> {
-    let rawData: any;
+    let rawData: unknown;
     try {
         rawData = JSON.parse(jsonString);
     } catch {
@@ -188,6 +190,7 @@ export async function importDatabase(jsonString: string): Promise<void> {
         throw new Error(`El archivo de respaldo tiene un formato inválido o incompleto: ${missing}`);
     }
 
+    // Row schemas are lenient (legacy backups may lack timestamps); rows are validated above.
     const data = result.data;
 
     await db.transaction('rw', [
@@ -214,15 +217,15 @@ export async function importDatabase(jsonString: string): Promise<void> {
                 db.budgetItems.clear(),
             ]);
 
-            if (data.tables.transactions.length > 0) await db.transactions.bulkAdd(data.tables.transactions as any);
-            if (data.tables.accounts.length > 0) await db.accounts.bulkAdd(data.tables.accounts as any);
-            if (data.tables.reconciliations.length > 0) await db.reconciliations.bulkAdd(data.tables.reconciliations as any);
-            if (data.tables.categories.length > 0) await db.categories.bulkAdd(data.tables.categories as any);
-            if (data.tables.tags.length > 0) await db.tags.bulkAdd(data.tables.tags as any);
-            if (data.tables.reserves.length > 0) await db.reserves.bulkAdd(data.tables.reserves as any);
-            if (data.tables.appConfig.length > 0) await db.appConfig.bulkAdd(data.tables.appConfig as any);
-            if (data.tables.quickTemplates && data.tables.quickTemplates.length > 0) await db.quickTemplates.bulkAdd(data.tables.quickTemplates as any);
-            if (data.tables.budgetItems && data.tables.budgetItems.length > 0) await db.budgetItems.bulkAdd(data.tables.budgetItems as any);
+            if (data.tables.transactions.length > 0) await db.transactions.bulkAdd(data.tables.transactions as Transaction[]);
+            if (data.tables.accounts.length > 0) await db.accounts.bulkAdd(data.tables.accounts as Account[]);
+            if (data.tables.reconciliations.length > 0) await db.reconciliations.bulkAdd(data.tables.reconciliations as Reconciliation[]);
+            if (data.tables.categories.length > 0) await db.categories.bulkAdd(data.tables.categories as Category[]);
+            if (data.tables.tags.length > 0) await db.tags.bulkAdd(data.tables.tags as Tag[]);
+            if (data.tables.reserves.length > 0) await db.reserves.bulkAdd(data.tables.reserves as Reserve[]);
+            if (data.tables.appConfig.length > 0) await db.appConfig.bulkAdd(data.tables.appConfig as AppConfig[]);
+            if (data.tables.quickTemplates && data.tables.quickTemplates.length > 0) await db.quickTemplates.bulkAdd(data.tables.quickTemplates as QuickTemplate[]);
+            if (data.tables.budgetItems && data.tables.budgetItems.length > 0) await db.budgetItems.bulkAdd(data.tables.budgetItems as BudgetItem[]);
         } catch (error) {
             console.error('Error during bulk import:', error);
             throw new Error('Error al insertar los datos en la base de datos local');

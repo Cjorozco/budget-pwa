@@ -111,4 +111,53 @@ describe('GeminiKeyCard / Multi-Provider AI Settings', () => {
         expect(screen.getByText(/Créer une clé API sur Groq Console/i)).toBeInTheDocument();
         expect(screen.getByText(/Catégorisation ultra-rapide en quelques millisecondes/i)).toBeInTheDocument();
     });
+
+    describe('cost and tutorial guidance', () => {
+        const cases = [
+            { id: 'gemini', badge: 'Gratis', docs: 'https://ai.google.dev/gemini-api/docs/api-key' },
+            { id: 'groq', badge: 'Gratis', docs: 'https://console.groq.com/docs/quickstart' },
+            { id: 'openai', badge: 'De pago', docs: 'https://platform.openai.com/docs/quickstart' },
+            { id: 'anthropic', badge: 'De pago', docs: 'https://docs.anthropic.com/en/docs/get-started' },
+        ] as const;
+
+        it.each(cases)('shows pricing badge, subscription notice and tutorial for $id', ({ id, badge, docs }) => {
+            render(<GeminiKeyCard />);
+            fireEvent.click(screen.getByTestId(`ai-provider-select-${id}`));
+
+            expect(screen.getByTestId('ai-provider-pricing-badge')).toHaveTextContent(badge);
+            expect(screen.getByTestId('ai-provider-cost-note')).not.toBeEmptyDOMElement();
+            expect(screen.getByTestId('ai-subscription-notice')).toHaveTextContent(/no incluyen la API/i);
+
+            const tutorial = screen.getByTestId('ai-provider-tutorial');
+            expect(tutorial.querySelectorAll('li').length).toBeGreaterThanOrEqual(3);
+
+            const link = tutorial.querySelector('a') as HTMLAnchorElement;
+            expect(link.getAttribute('href')).toBe(docs);
+            expect(link.getAttribute('target')).toBe('_blank');
+            expect(link.getAttribute('rel')).toContain('noopener');
+        });
+
+        it('mentions workspace and credits for Anthropic', () => {
+            render(<GeminiKeyCard />);
+            fireEvent.click(screen.getByTestId('ai-provider-select-anthropic'));
+
+            expect(screen.getByTestId('ai-provider-tutorial')).toHaveTextContent(/workspace/i);
+            expect(screen.getByTestId('ai-provider-cost-note')).toHaveTextContent(/créditos prepagados/i);
+        });
+
+        it('localizes guidance to English and French', () => {
+            const { rerender } = render(<GeminiKeyCard />);
+            fireEvent.click(screen.getByTestId('ai-provider-select-anthropic'));
+
+            useI18nStore.setState({ language: 'en' });
+            rerender(<GeminiKeyCard />);
+            expect(screen.getByTestId('ai-provider-pricing-badge')).toHaveTextContent('Paid');
+            expect(screen.getByTestId('ai-subscription-notice')).toHaveTextContent(/don't include the API/i);
+
+            useI18nStore.setState({ language: 'fr' });
+            rerender(<GeminiKeyCard />);
+            expect(screen.getByTestId('ai-provider-pricing-badge')).toHaveTextContent('Payant');
+            expect(screen.getByTestId('ai-subscription-notice')).toHaveTextContent(/n'incluent pas l'API/i);
+        });
+    });
 });

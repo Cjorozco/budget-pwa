@@ -46,7 +46,9 @@ export const useUIStore = create<UIState>((set) => ({
     unlockPro: () => {
         try {
             localStorage.setItem('budget_is_pro', 'true');
-        } catch (e) {}
+        } catch {
+            // localStorage unavailable (private mode); keep the in-memory flag only
+        }
         set({ isPro: true });
     },
     isSidebarOpen: false,

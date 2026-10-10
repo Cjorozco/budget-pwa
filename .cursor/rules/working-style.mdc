@@ -1,53 +1,70 @@
 ---
-description: Forma de trabajar con agentes en este repo (capa com�n). Stack y negocio en architecture.
+description: Forma de trabajar con agentes (capa común). Stack, negocio y excepciones en architecture.
 alwaysApply: true
 ---
 
 # Cómo trabajar en este repo
 
-Eres el par de un Senior Frontend Engineer (banca/fintech, UI sin diseñador, mobile-first).
-Esta es la **capa común**: cómo se trabaja. El stack, la persistencia y las reglas de negocio están **solo** en `architecture` de **este** repositorio. No copies patrones de otros proyectos.
+> **Capa común** a todos los proyectos de José (director y desarrollador principal). Fuente: <https://app.notion.com/p/3f3aa39f8dab81bc80fadd7c6515a087>.
+> Aquí solo va lo común. Stack, persistencia, reglas de negocio y **excepciones propias de este proyecto** están en `architecture.md`.
 
-## Antes de tocar código
+## Cómo trabajar con José
 
-1. Lee `AGENTS.md` y `.agents/rules/architecture.md` (Cursor: `.cursor/rules/architecture.mdc`).
-2. Usa el stack de `package.json`. No migres framework, backend ni librerías salvo que se pida.
-3. No inventes alcance, tablas, sync ni features “por si acaso”.
-4. Si algo no está en architecture y no es obvio, pregunta.
+1. Antes de tocar código lee `AGENTS.md` y `.agents/rules/architecture.md` (Cursor: `.cursor/rules/architecture.mdc`).
+2. Usa el stack de `package.json`. No migres framework, backend ni librerías salvo que se pida. No copies patrones de otros proyectos.
+3. No inventes alcance, tablas, sync ni features "por si acaso". Si algo no está en architecture y no es obvio, pregunta.
+4. Sin sobreingeniería (factories, repositorios genéricos, event sourcing, etc.) salvo que el producto ya los use.
+5. **Confirma antes de acciones difíciles de revertir o visibles para otros:** cambios de schema, commit, push, merge, borrar ramas, cerrar PRs.
+6. Señala riesgos de arquitectura y de costo. No sugieras servicios de pago por defecto.
+7. Si cambia arquitectura, dependencias, API o UX, actualiza los docs de este repo.
+8. No edites otros repositorios. Esta sesión es de este repo.
+
+## Principios de arquitectura
+
+- **Dominio primero (DDD):** organiza por dominio de negocio, no por tipo de archivo. El código compartido no conoce términos de negocio.
+- **Backend fuerte / UI tonta:** las reglas de negocio, los permisos y los cálculos de dinero viven en la capa de dominio. La UI captura input, muestra estado y dispara acciones. Un cálculo sellado en el servidor no se recibe del cliente.
+- **Autorización siempre del lado del servidor.** Nunca confíes en el rol que muestra el cliente.
+- **Borrado lógico** (`active: false`) para registros con historial; los datos históricos son snapshots inmutables.
+- **Decisiones registradas como ADR** en `docs/adr/`.
+- **Salidas de IA son `unknown`:** valida con `zod` (`safeParse`), ten fallback determinista y no persistas ni renderices sin validar. Las llamadas a IA y a servicios externos van en el backend, no en el cliente.
+- **FinOps:** prefiere lo gratuito o ya instalado.
+
+> Cuando una de estas reglas choca con una razón propia del proyecto, no se cambia: queda como excepción en `architecture.md` (sección "Excepciones del proyecto").
 
 ## Código
 
 - TypeScript estricto. Evita `any` en código nuevo.
-- Copy de UI: español, directo, sin jerga. Código, variables y comentarios: inglés.
-- Reutiliza componentes y patrones del repo. No añadas una librería si el problema ya está resuelto.
-- Sin sobreingeniería (factories, repositorios genéricos, event sourcing, etc.) salvo que el producto ya los use.
-- La UI no decide negocio ni autorización: captura input, muestra estado, dispara acciones. Dónde vive la verdad lo dice architecture de este repo.
+- Código, variables y comentarios en inglés. Textos de UI en español, directos y sin jerga.
+- Reutiliza componentes y patrones del repo antes de añadir una librería.
 - Feedback inmediato: loading, `disabled` al enviar, empty, error. Toasts para acciones importantes.
 - Acciones destructivas: confirmación explícita (no `window.confirm` si el repo ya tiene diálogo).
-- Secretos: nunca commitear API keys. Keys de usuario (BYOK) solo en Ajustes/UI, nunca en el repo. Secretos de deploy se configuran fuera de git, según architecture.
-- Salidas de IA: tratar como `unknown`, validar con el esquema del repo, fallback determinista. No persistir ni `.map()` sin parseo.
+- Secretos: nunca commitear API keys. Los secretos de deploy se configuran fuera de git.
 
-## Librerías nuevas (solo si el repo no lo resuelve)
+## Flujo de ramas
+
+- `master` es producción. Cada cambio sale en una **rama nueva creada desde `master`**, se lleva con PR y squash merge.
+- Antes de ramificar: `git fetch origin master` (otras sesiones también publican).
+- Nada de push forzado. Push o merge solo cuando se pida.
+- Confirma el flujo de cada repo si cambia.
+
+## Librerías por defecto (solo si el repo no resuelve el problema)
 
 | Propósito | Default |
 |---|---|
 | Validaciones | zod |
 | Fechas | Temporal |
 | Tablas | tanstack-table |
+| Gráficas | @tanstack/charts (<https://tanstack.com/charts/latest>) |
 | Auth | better-auth |
 | Animaciones | motion |
 | Tipografías | fontsource |
-| Gráficas | chart.js |
 | Estado global | zustand |
 | Drag & drop | pragmatic-drag-and-drop |
 | Estado en la URL | nuqs |
 
-`package.json` manda. Lo ya instalado (validators de Convex, Dexie, date-fns, Recharts, etc.) no se reemplaza.
+`package.json` manda: lo ya instalado no se reemplaza.
 
 ## Cómo responder
 
-- Código listo para producción, paths y comandos exactos.
-- Señala riesgos de arquitectura o de costo (FinOps: no sugieras paid por defecto).
+- Código listo para producción, con rutas y comandos exactos.
 - Patrón viejo: `⚠️ OUTDATED: [old] → [new]. Reason: [why].`
-- Si cambia arquitectura, deps, API o UX: recuerda actualizar docs de **este** repo.
-- No edites otros repositorios. Esta sesión es de este repo.

@@ -507,6 +507,8 @@ export interface TranslationSchema {
             modelDescription: string;
             helpText: string;
             placeholder: string;
+            costNote: string;
+            tutorialSteps: string[];
         };
         openai: {
             label: string;
@@ -515,6 +517,8 @@ export interface TranslationSchema {
             modelDescription: string;
             helpText: string;
             placeholder: string;
+            costNote: string;
+            tutorialSteps: string[];
         };
         anthropic: {
             label: string;
@@ -523,6 +527,8 @@ export interface TranslationSchema {
             modelDescription: string;
             helpText: string;
             placeholder: string;
+            costNote: string;
+            tutorialSteps: string[];
         };
         groq: {
             label: string;
@@ -531,7 +537,14 @@ export interface TranslationSchema {
             modelDescription: string;
             helpText: string;
             placeholder: string;
+            costNote: string;
+            tutorialSteps: string[];
         };
+        tutorialTitle: string;
+        docsLinkLabel: string;
+        subscriptionNotice: string;
+        badgeFree: string;
+        badgePaid: string;
         keyReplaced: string;
         keySaved: string;
         keyDeleted: string;
@@ -550,6 +563,16 @@ export interface TranslationSchema {
             anthropicMustStartWithSkAnt: string;
             groqIncomplete: string;
         };
+    };
+    tour: {
+        progress: string;
+        skip: string;
+        back: string;
+        next: string;
+        finish: string;
+        replayTitle: string;
+        replayDesc: string;
+        steps: Record<'welcome' | 'balance' | 'transactions' | 'newTransaction' | 'monthNavigator' | 'filters' | 'accounts' | 'newAccount' | 'reconcile' | 'reserve' | 'budget' | 'reports' | 'settings', { title: string; description: string }>;
     };
     userGuide: {
         modalBadge: string;
@@ -615,5 +638,31 @@ export interface TranslationSchema {
         featureGodTeaserTitle: string;
         featureGodTeaserDesc: string;
         featureGodTeaserDiscount: string;
+    };
+    demo: {
+        emptyTitle: string;
+        emptyDescription: string;
+        startFresh: string;
+        exploreDemo: string;
+        loadingDemo: string;
+        seedSuccess: string;
+        seedError: string;
+        bannerText: string;
+        bannerAction: string;
+        settingsTitle: string;
+        settingsDesc: string;
+        clearButton: string;
+        clearConfirmTitle: string;
+        clearConfirmMessage: string;
+        clearConfirmLabel: string;
+        clearSuccess: string;
+        clearError: string;
+    };
+    install: {
+        title: string;
+        description: string;
+        button: string;
+        iosSteps: string;
+        dismiss: string;
     };
 }

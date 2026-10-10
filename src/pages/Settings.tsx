@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { db } from '@/lib/db';
 import { Button } from '@/components/ui/Button';
-import { Trash2, AlertTriangle, RefreshCw, FolderTree, Download, FileJson, FileSpreadsheet, Upload, Crown, Lock, BookOpen, Bot, Sparkles } from 'lucide-react';
+import { Trash2, AlertTriangle, RefreshCw, FolderTree, Download, FileJson, FileSpreadsheet, Upload, Crown, Lock, BookOpen, Bot, Sparkles, Compass } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { exportDatabase, downloadBackup, importDatabase, exportToCSV, downloadCSV } from '@/lib/db/backup';
 import { GeminiKeyCard } from '@/components/settings/GeminiKeyCard';
@@ -10,8 +10,11 @@ import { UserGuideModal } from '@/components/settings/UserGuideModal';
 import { LanguageSelector } from '@/components/settings/LanguageSelector';
 import { useLicenseStore, getTierDisplayName } from '@/store/licenseStore';
 import { useUIStore } from '@/store/ui';
+import { useTourStore } from '@/store/tour';
 import { ProBadge } from '@/components/ui/ProBadge';
 import { useTranslation } from '@/lib/i18n';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { clearDemoData, hasDemoData } from '@/lib/db/demoMode';
 
 export default function SettingsPage() {
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -22,13 +25,44 @@ export default function SettingsPage() {
     const { addToast, confirm } = useUIStore();
     const { tier, isPro, isGod, openUpgradeModal } = useLicenseStore();
     const { t } = useTranslation();
+    const navigate = useNavigate();
+    const tourStart = useTourStore((s) => s.start);
+
+    // The tour begins on the dashboard, where the balance card it points to lives.
+    const startTour = () => {
+        navigate('/');
+        tourStart();
+    };
+
+    const demoActive = useLiveQuery(() => hasDemoData());
+
+    const handleClearDemo = async () => {
+        const ok = await confirm({
+            title: t.demo.clearConfirmTitle,
+            message: t.demo.clearConfirmMessage,
+            confirmLabel: t.demo.clearConfirmLabel,
+            variant: 'danger',
+        });
+        if (!ok) return;
+
+        setIsLoading(true);
+        try {
+            await clearDemoData();
+            addToast(t.demo.clearSuccess, 'success');
+        } catch (error) {
+            console.error(error);
+            addToast(t.demo.clearError, 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const handleExportJSON = async () => {
         try {
             const json = await exportDatabase();
             downloadBackup(json);
             addToast(t.settings.backupDownloaded, 'success');
-        } catch (error) {
+        } catch {
             addToast(t.settings.backupExportError, 'error');
         }
     };
@@ -42,7 +76,7 @@ export default function SettingsPage() {
             const csv = await exportToCSV();
             downloadCSV(csv);
             addToast(t.settings.csvExportSuccess, 'success');
-        } catch (error) {
+        } catch {
             addToast(t.settings.csvExportError, 'error');
         }
     };
@@ -68,9 +102,9 @@ export default function SettingsPage() {
             await importDatabase(importJson);
             addToast(t.settings.backupRestoredSuccess, 'success');
             setTimeout(() => window.location.reload(), 1500);
-        } catch (error: any) {
+        } catch (error) {
             console.error(error);
-            addToast(error.message || t.settings.backupRestoreError, 'error');
+            addToast((error instanceof Error && error.message) || t.settings.backupRestoreError, 'error');
             setIsConfirmOpen(false);
         } finally {
             setIsLoading(false);
@@ -166,6 +200,23 @@ export default function SettingsPage() {
                 <LanguageSelector />
             </section>
 
+            {demoActive && (
+                <section className="space-y-3 p-4 rounded-2xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20">
+                    <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{t.demo.settingsTitle}</h2>
+                    <p className="text-xs text-slate-600 dark:text-slate-300">{t.demo.settingsDesc}</p>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        isLoading={isLoading}
+                        onClick={handleClearDemo}
+                        data-testid="clear-demo-button"
+                        className="w-full"
+                    >
+                        {t.demo.clearButton}
+                    </Button>
+                </section>
+            )}
+
             {import.meta.env.DEV && (
                 <section className="space-y-3 p-4 rounded-2xl border-2 border-dashed border-violet-300 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/30">
                     <h2 className="text-lg font-semibold text-violet-900 dark:text-violet-200">Grabación (solo localhost)</h2>
@@ -205,6 +256,22 @@ export default function SettingsPage() {
                                 </div>
                             </div>
                             <span className="text-blue-600 dark:text-blue-400 font-semibold text-xs">→</span>
+                        </div>
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={startTour}
+                        className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left w-full"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
+                                <Compass className="text-indigo-600 dark:text-indigo-400" size={20} />
+                            </div>
+                            <div>
+                                <h3 className="font-medium text-slate-900 dark:text-white text-sm">{t.tour.replayTitle}</h3>
+                                <p className="text-[10px] text-slate-500">{t.tour.replayDesc}</p>
+                            </div>
                         </div>
                     </button>
 

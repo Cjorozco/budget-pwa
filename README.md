@@ -13,7 +13,7 @@ El desarrollo del proyecto se ejecutó mediante un flujo de **co-creación y orq
 1. **Definición de Dominio & Arquitectura**: Modelado de entidades, invariantes financieras y fronteras de datos con tipado estricto (`TypeScript` + `Zod`) antes de la implementación de interfaces.
 2. **"UI Tonta, Dominio Fuerte"**: Separación radical de responsabilidades. La lógica de negocio, cálculos de saldos atómicos, reconciliaciones y persistencia residen en capas desacopladas de la UI, asegurando componentes de vista puramente presentacionales, testeables y predecibles.
 3. **Aislamiento e Invariantes de IA (Boundary Protection)**: Las respuestas de modelos de IA (LLMs) se tratan como entradas de red no confiables. Se interceptan y validan estrictamente con esquemas `Zod` (envoltorio HTTP, extracción resiliente de JSON, normalización y límites de longitud) y pasan por una capa de *grounding* (validación contra el catálogo en IndexedDB) antes de tocar la UI o la base de datos.
-4. **Iteración Guiada & Estándares Rigurosos**: El orquestador humano define directrices arquitectónicas, valida decisiones técnicas y supervisa la entrega de código asegurando altos estándares de resiliencia y suites de pruebas automatizadas (**Vitest** para lógica pura y persistencia IndexedDB mockeada con más de 270 tests automatizados).
+4. **Iteración Guiada & Estándares Rigurosos**: El orquestador humano define directrices arquitectónicas, valida decisiones técnicas y supervisa la entrega de código asegurando altos estándares de resiliencia y suites de pruebas automatizadas (**Vitest** para lógica pura y persistencia IndexedDB mockeada con más de 290 tests automatizados).
 5. **Resiliencia & FinOps**: Priorización de arquitecturas costo-cero (modelo BYOK para LLMs sin intermediarios, sin dependencias de backend centralizado ni costos fijos de servidor) y tolerancia total a fallos en entornos offline con fallback automático a motores heurísticos locales.
 
 ---
@@ -31,12 +31,14 @@ El desarrollo del proyecto se ejecutó mediante un flujo de **co-creación y orq
 
 La app **no** requiere ni incluye API keys centralizadas en el servidor. El plan PRO desbloquea ingresar **tu propia API key (Bring Your Own Key)** para máxima privacidad y costo cero de infraestructura:
 
-| Proveedor | Modelos Soportados | Endpoint / CORS |
-|---|---|---|
-| **Google Gemini** | `gemini-flash-latest`, `gemini-1.5-pro` | Directo en navegador vía Google AI Studio |
-| **Anthropic Claude** | `claude-3-5-haiku-latest`, `claude-3-5-sonnet-latest` | Directo en navegador con rol de Asesor Financiero |
-| **OpenAI** | `gpt-4o-mini`, `gpt-4o` | Directo en navegador vía OpenAI API |
-| **Groq** | `llama-3.3-70b-versatile` | Inferencia de ultra-baja latencia |
+| Proveedor | Modelos Soportados | Endpoint / CORS | Costo de la API |
+|---|---|---|---|
+| **Google Gemini** | `gemini-3.1-flash-lite`, `gemini-3.5-flash-lite`, `gemini-3.6-flash`, `gemini-3.8-flash` | Directo en navegador vía Google AI Studio | Capa gratuita con límites |
+| **Anthropic Claude** | `claude-haiku-5-5`, `claude-haiku-4-5`, `claude-sonnet-5-5` | Directo en navegador con rol de Asesor Financiero | De pago (créditos prepagados) |
+| **OpenAI** | `gpt-4o-mini`, `gpt-4o` | Directo en navegador vía OpenAI API | De pago (créditos prepagados) |
+| **Groq** | `llama-3.3-70b-versatile` | Inferencia de ultra-baja latencia | Capa gratuita con límites |
+
+> Las suscripciones de chat (ChatGPT Plus, Claude Pro, Claude Code) **no incluyen la API**: cada proveedor la factura aparte. La app explica esto y los pasos para obtener la key dentro de Ajustes.
 
 *Las API keys se almacenan exclusivamente en el `localStorage` del dispositivo y **nunca** se incluyen en los backups JSON ni viajan a servidores de terceros.*
 
@@ -61,6 +63,8 @@ La aplicación integra monetización y activación de licencias sin necesidad de
 - ✅ **Reservas por Cuenta**: Crea, edita y elimina montos apartados sin alterar el saldo real bancario.
 - ✅ **Reportes Avanzados**: Desglose jerárquico por categorías padre y subcategorías, comparativa de ingresos y cumplimiento del presupuesto fijo.
 - ✅ **Categorización Inteligente**: Motor local instantáneo con reglas colombianas (Rappi, D1, Éxito, PSE, etc.) + IA Multi-proveedor (Gemini, Claude, OpenAI, Groq).
+- ✅ **Modo Demo**: Un visitante nuevo puede explorar la app con ~3 meses de datos de ejemplo en COP (ES/EN/FR). Los datos llevan el prefijo de id `demo-`, y "Borrar datos de ejemplo" en Ajustes elimina solo esos, nunca lo que crea el usuario.
+- ✅ **Tour de bienvenida**: 13 pasos con foco sobre el saldo, la navegación y las pantallas de Movimientos y Cuentas (sin librerías externas). Se abre una sola vez en el Resumen para usuarios nuevos y se repite desde Ajustes → "Tour de bienvenida".
 - ✅ **UI Mobile-First Accesible**: Diseñada para entrada rápida con touch bar inferior, modales seguros y dark mode.
 
 ---
@@ -95,10 +99,10 @@ La app separa intencionalmente la **liquidez patrimonial acumulada** del **flujo
 - **Dexie.js 4** (IndexedDB wrapper reactivo con `dexie-react-hooks`)
 - **Zustand** (Estado transitorio de UI y licencias)
 - **React Hook Form** + **Zod** (Formularios, validación de schemas y contratos de IA)
-- **Recharts 3** (Visualización interactiva)
+- **TanStack Charts** (Visualización interactiva)
 - **Lucide React** (Iconografía)
 - **vite-plugin-pwa** (Progressive Web App con Service Worker de auto-actualización)
-- **Vitest** (270+ pruebas unitarias y de integración)
+- **Vitest** (290+ pruebas unitarias y de integración)
 
 ---
 

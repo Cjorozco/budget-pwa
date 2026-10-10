@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { TransactionForm } from '@/components/forms/TransactionForm';
 import { formatCurrency } from '@/lib/utils';
-import type { Transaction } from '@/lib/types';
+import type { Account, Transaction } from '@/lib/types';
 import { useUIStore } from '@/store/ui';
 import { useTranslation, getDateFnsLocale } from '@/lib/i18n';
 
@@ -61,7 +61,7 @@ export default function TransactionsPage() {
         });
     }, [currentDate, showAllHistory, language]);
 
-    const handleDelete = async (transaction: any) => {
+    const handleDelete = async (transaction: Transaction) => {
         const ok = await confirm({
             title: t.transactions.deleteConfirmTitle,
             message: t.transactions.deleteConfirmMsg,
@@ -85,7 +85,7 @@ export default function TransactionsPage() {
                         ? account.calculatedBalance - amount
                         : account.calculatedBalance + amount;
 
-                    const updateData: any = { calculatedBalance: reversedCalcBalance };
+                    const updateData: Partial<Account> = { calculatedBalance: reversedCalcBalance };
 
                     if (account.actualBalance !== undefined) {
                         updateData.actualBalance = isIncome
@@ -114,7 +114,14 @@ export default function TransactionsPage() {
                                 ? linkedAccount.calculatedBalance - linkedAmount
                                 : linkedAccount.calculatedBalance + linkedAmount;
 
-                            await db.accounts.update(linkedTx.accountId, { calculatedBalance: linkedReversedBalance });
+                            const linkedUpdate: Partial<Account> = { calculatedBalance: linkedReversedBalance };
+                            if (linkedAccount.actualBalance !== undefined) {
+                                linkedUpdate.actualBalance = isLinkedIncome
+                                    ? linkedAccount.actualBalance - linkedAmount
+                                    : linkedAccount.actualBalance + linkedAmount;
+                            }
+
+                            await db.accounts.update(linkedTx.accountId, linkedUpdate);
                         }
                         // Delete the linked transaction
                         await db.transactions.delete(linkedTx.id);
@@ -162,6 +169,7 @@ export default function TransactionsPage() {
                 <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t.transactions.title}</h1>
                 <Button
                     data-testid="new-transaction-button"
+                    data-tour="new-transaction"
                     aria-label={t.transactions.newTransaction}
                     size="sm"
                     className="rounded-full h-10 w-10 p-0"
@@ -175,7 +183,7 @@ export default function TransactionsPage() {
             </div>
 
             {/* Month Navigator */}
-            <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-2 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
+            <div data-tour="month-navigator" className="flex items-center justify-between bg-white dark:bg-slate-900 p-2 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
                 <button
                     type="button"
                     aria-label="Previous month"
@@ -215,6 +223,7 @@ export default function TransactionsPage() {
 
             {/* Filter Selector */}
             <div
+                data-tour="transaction-filters"
                 className="flex bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl gap-1"
                 role="tablist"
                 aria-label="Filter"
@@ -326,17 +335,21 @@ export default function TransactionsPage() {
                                     </p>
                                 </div>
                                 <div className="flex gap-1 ml-2">
-                                    <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        className="h-8 w-8 p-0"
-                                        onClick={() => {
-                                            setEditingTransaction(tx);
-                                            setIsModalOpen(true);
-                                        }}
-                                    >
-                                        <Pencil size={14} />
-                                    </Button>
+                                    {/* Las transferencias son dos movimientos enlazados: editarlas como gasto/ingreso desajustaría los saldos. Solo se pueden borrar. */}
+                                    {tx.type !== 'transfer' && (
+                                        <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="h-8 w-8 p-0"
+                                            aria-label={t.transactions.editTransaction}
+                                            onClick={() => {
+                                                setEditingTransaction(tx);
+                                                setIsModalOpen(true);
+                                            }}
+                                        >
+                                            <Pencil size={14} />
+                                        </Button>
+                                    )}
                                     <Button
                                         size="sm"
                                         variant="ghost"

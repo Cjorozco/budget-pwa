@@ -82,7 +82,8 @@ describe('cn', () => {
   });
 
   it('handles conditional classes', () => {
-    const result = cn('base', false && 'hidden', 'visible');
+    const isHidden = false as boolean;
+    const result = cn('base', isHidden && 'hidden', 'visible');
     expect(result).toContain('base');
     expect(result).toContain('visible');
     expect(result).not.toContain('hidden');
@@ -113,4 +114,16 @@ describe('toSentenceCase', () => {
   it('returns empty string unchanged', () => {
     expect(toSentenceCase('')).toBe('');
   });
+});
+
+describe('money input helpers', () => {
+    it('formats with thousands separators and decimal comma', async () => {
+        const { formatMoneyInput, parseMoneyInput, numberToMoneyInput } = await import('@/lib/utils');
+        expect(formatMoneyInput('1234567')).toBe('1.234.567');
+        expect(formatMoneyInput('1234,5678')).toBe('1.234,56');
+        expect(formatMoneyInput(',5')).toBe('0,5');
+        expect(parseMoneyInput('1.234,50')).toBe(1234.5);
+        expect(parseMoneyInput('')).toBeUndefined();
+        expect(numberToMoneyInput(1200000.5)).toBe('1.200.000,5');
+    });
 });

@@ -1,4 +1,5 @@
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
+import { MoneyInput } from '@/components/ui/MoneyInput';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AccountSchema, type AccountFormData } from '@/lib/schemas';
 import { Button } from '@/components/ui/Button';
@@ -20,6 +21,7 @@ export function AccountForm({ onSuccess, onCancel, initialData }: AccountFormPro
     const { confirm, addToast } = useUIStore();
     const {
         register,
+        control,
         handleSubmit,
         formState: { errors, isSubmitting },
     } = useForm<AccountFormData>({
@@ -79,13 +81,21 @@ export function AccountForm({ onSuccess, onCancel, initialData }: AccountFormPro
                 {...register('type')}
             />
 
-            <Input
-                label={t.forms.currentBalanceLabel}
-                type="number"
-                placeholder="0"
-                step="0.01"
-                error={errors.calculatedBalance?.message}
-                {...register('calculatedBalance', { valueAsNumber: true })}
+            <Controller
+                name="calculatedBalance"
+                control={control}
+                render={({ field }) => (
+                    <MoneyInput
+                        label={t.forms.currentBalanceLabel}
+                        placeholder="0"
+                        error={errors.calculatedBalance?.message}
+                        name={field.name}
+                        ref={field.ref}
+                        onBlur={field.onBlur}
+                        value={field.value}
+                        onValueChange={(v) => field.onChange(v ?? NaN)}
+                    />
+                )}
             />
 
             <div className="flex gap-3 pt-4 justify-between">

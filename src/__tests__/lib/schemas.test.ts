@@ -63,7 +63,8 @@ describe('TransactionSchema', () => {
   });
 
   it('defaults tagIds to empty array', () => {
-    const { tagIds, ...withoutTags } = validTransaction;
+    const withoutTags: Partial<typeof validTransaction> = { ...validTransaction };
+    delete withoutTags.tagIds;
     const result = TransactionSchema.safeParse(withoutTags);
     expect(result.success).toBe(true);
     if (result.success) {
@@ -84,7 +85,8 @@ describe('TransactionSchema', () => {
   });
 
   it('defaults date to current timestamp when omitted', () => {
-    const { date, ...withoutDate } = validTransaction;
+    const withoutDate: Partial<typeof validTransaction> = { ...validTransaction };
+    delete withoutDate.date;
     const before = Date.now();
     const result = TransactionSchema.safeParse(withoutDate);
     const after = Date.now();

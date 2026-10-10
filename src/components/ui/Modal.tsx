@@ -16,7 +16,9 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
     // Keep a stable ref so Esc works without re-running this effect on every parent render
     // (inline onClose callbacks would otherwise steal focus back to the close button).
     const onCloseRef = useRef(onClose);
-    onCloseRef.current = onClose;
+    useEffect(() => {
+        onCloseRef.current = onClose;
+    }, [onClose]);
 
     useEffect(() => {
         const handleEsc = (e: KeyboardEvent) => {

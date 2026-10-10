@@ -1,4 +1,5 @@
-import { useForm } from 'react-hook-form';
+import { useForm, Controller, useWatch } from 'react-hook-form';
+import { MoneyInput } from '@/components/ui/MoneyInput';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { db } from '@/lib/db';
@@ -31,7 +32,7 @@ export function ReconciliationForm({ account, onSuccess, onCancel }: Reconciliat
     const {
         register,
         handleSubmit,
-        watch,
+        control,
         formState: { errors, isSubmitting },
     } = useForm<ReconciliationFormData>({
         resolver: zodResolver(ReconciliationSchema),
@@ -41,7 +42,7 @@ export function ReconciliationForm({ account, onSuccess, onCancel }: Reconciliat
         },
     });
 
-    const declaredBalance = watch('declaredBalance') || 0;
+    const declaredBalance = useWatch({ control, name: 'declaredBalance' }) || 0;
     const difference = declaredBalance - account.calculatedBalance;
     const hasDifference = Math.abs(difference) > 0.01; // Tolerance for floating point
 
@@ -174,14 +175,22 @@ export function ReconciliationForm({ account, onSuccess, onCancel }: Reconciliat
                 </div>
             )}
 
-            <Input
-                label={account.type === 'cash' ? t.forms.reconcileRealActualCash : t.forms.reconcileRealActualAccount.replace('{name}', account.name)}
-                type="number"
-                step="0.01"
-                placeholder="0"
-                error={errors.declaredBalance?.message}
-                {...register('declaredBalance', { valueAsNumber: true })}
-                data-testid="declared-balance-input"
+            <Controller
+                name="declaredBalance"
+                control={control}
+                render={({ field }) => (
+                    <MoneyInput
+                        label={account.type === 'cash' ? t.forms.reconcileRealActualCash : t.forms.reconcileRealActualAccount.replace('{name}', account.name)}
+                        placeholder="0"
+                        error={errors.declaredBalance?.message}
+                        name={field.name}
+                        ref={field.ref}
+                        onBlur={field.onBlur}
+                        value={field.value}
+                        onValueChange={(v) => field.onChange(v ?? NaN)}
+                        data-testid="declared-balance-input"
+                    />
+                )}
             />
 
             {hasDifference && (

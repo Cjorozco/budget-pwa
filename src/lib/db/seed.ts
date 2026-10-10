@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 export const seedInitialData = async () => {
     // Use a transaction to ensure atomicity and prevent race conditions in React StrictMode
-    await db.transaction('rw', db.categories, db.accounts, db.tags, db.appConfig, async () => {
+    await db.transaction('rw', [db.categories, db.accounts, db.tags, db.appConfig, db.quickTemplates], async () => {
         const categoryCount = await db.categories.count();
 
         if (categoryCount === 0) {
@@ -308,7 +308,7 @@ export async function seedTags() {
         updatedAt: Date.now()
     }));
 
-    await db.tags.bulkAdd(tags as any);
+    await db.tags.bulkAdd(tags);
     console.log('✅ Tags iniciales creados');
 }
 
@@ -323,7 +323,7 @@ export async function seedQuickTemplates() {
             icon: '🛒',
             description: 'Compra semanal o diaria de víveres',
             amount: 50000,
-            type: 'expense',
+            type: 'expense' as const,
             createdAt: Date.now(),
             updatedAt: Date.now()
         },
@@ -333,7 +333,7 @@ export async function seedQuickTemplates() {
             icon: '🍽️',
             description: 'Almuerzo ejecutivo o corrientazo',
             amount: 20000,
-            type: 'expense',
+            type: 'expense' as const,
             createdAt: Date.now(),
             updatedAt: Date.now()
         },
@@ -343,12 +343,12 @@ export async function seedQuickTemplates() {
             icon: '🚗',
             description: 'Uber, Didi o transporte público',
             amount: 15000,
-            type: 'expense',
+            type: 'expense' as const,
             createdAt: Date.now(),
             updatedAt: Date.now()
         }
     ];
 
-    await db.quickTemplates.bulkAdd(templates as any);
+    await db.quickTemplates.bulkAdd(templates);
     console.log('✅ Plantillas rápidas iniciales creadas');
 }

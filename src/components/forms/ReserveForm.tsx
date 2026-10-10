@@ -1,4 +1,5 @@
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
+import { MoneyInput } from '@/components/ui/MoneyInput';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { db } from '@/lib/db';
@@ -6,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { v4 as uuidv4 } from 'uuid';
 import type { Account } from '@/lib/types';
+import { now } from '@/lib/utils';
 import { PiggyBank } from 'lucide-react';
 import { useUIStore } from '@/store/ui';
 import { useTranslation } from '@/lib/i18n';
@@ -33,6 +35,7 @@ export function ReserveForm({ account, onSuccess, onCancel, initialData }: Reser
     const addToast = useUIStore((s) => s.addToast);
     const {
         register,
+        control,
         handleSubmit,
         formState: { errors, isSubmitting },
     } = useForm<ReserveFormData>({
@@ -49,7 +52,7 @@ export function ReserveForm({ account, onSuccess, onCancel, initialData }: Reser
                 await db.reserves.update(initialData.id, {
                     amount: data.amount,
                     description: data.description,
-                    updatedAt: Date.now(),
+                    updatedAt: now(),
                 });
                 addToast(t.forms.reserveUpdated, 'success');
             } else {
@@ -59,8 +62,8 @@ export function ReserveForm({ account, onSuccess, onCancel, initialData }: Reser
                     amount: data.amount,
                     description: data.description,
                     isActive: true,
-                    createdAt: Date.now(),
-                    updatedAt: Date.now(),
+                    createdAt: now(),
+                    updatedAt: now(),
                 });
                 addToast(t.forms.reserveCreated, 'success');
             }
@@ -83,14 +86,22 @@ export function ReserveForm({ account, onSuccess, onCancel, initialData }: Reser
                 </div>
             </div>
 
-            <Input
-                label={t.forms.reserveAmountLabel}
-                type="number"
-                step="0.01"
-                placeholder="0"
-                autoFocus
-                error={errors.amount?.message}
-                {...register('amount', { valueAsNumber: true })}
+            <Controller
+                name="amount"
+                control={control}
+                render={({ field }) => (
+                    <MoneyInput
+                        label={t.forms.reserveAmountLabel}
+                        placeholder="0"
+                        autoFocus
+                        error={errors.amount?.message}
+                        name={field.name}
+                        ref={field.ref}
+                        onBlur={field.onBlur}
+                        value={field.value}
+                        onValueChange={(v) => field.onChange(v ?? NaN)}
+                    />
+                )}
             />
 
             <Input

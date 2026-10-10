@@ -165,7 +165,7 @@ describe('TransactionForm', () => {
         render(<TransactionForm onSuccess={mockOnSuccess} initialData={existingTx} />);
 
         await waitFor(() => {
-            expect(screen.getByTestId('amount-input')).toHaveValue(30000);
+            expect(screen.getByTestId('amount-input')).toHaveValue('30.000');
             expect(screen.getByTestId('description-input')).toHaveValue('Cena rápida');
             expect(screen.getByRole('button', { name: /Actualizar transacción/i })).toBeInTheDocument();
         });

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
+import { MoneyInput } from '@/components/ui/MoneyInput';
 import { flushSync } from 'react-dom';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
@@ -17,11 +18,12 @@ import { z } from 'zod';
 import { format } from 'date-fns';
 import { PiggyBank, Sparkles, AlertCircle, FolderPlus } from 'lucide-react';
 import { formatCurrency, toSentenceCase } from '@/lib/utils';
-import type { Category, Transaction } from '@/lib/types';
+import type { Account, Category, Reserve, Transaction } from '@/lib/types';
 import type { ModelAttempt } from '@/lib/ai/types';
 import { useTranslation } from '@/lib/i18n';
 
-type TransactionFormData = z.infer<typeof TransactionSchema>;
+type TransactionFormInput = z.input<typeof TransactionSchema>;
+type TransactionFormData = z.output<typeof TransactionSchema>;
 
 interface TransactionFormProps {
     onSuccess: () => void;
@@ -45,17 +47,18 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
 
     const {
         register,
+        control,
         handleSubmit,
         watch,
         setValue,
         reset,
         formState: { errors, isSubmitting },
-    } = useForm<TransactionFormData>({
-        resolver: zodResolver(TransactionSchema) as any,
+    } = useForm<TransactionFormInput, unknown, TransactionFormData>({
+        resolver: zodResolver(TransactionSchema),
         defaultValues: initialData ? {
             amount: initialData.amount,
             description: initialData.description,
-            type: initialData.type,
+            type: initialData.type === 'income' ? 'income' : 'expense',
             accountId: initialData.accountId,
             categoryId: initialData.categoryId,
             date: initialData.date,
@@ -65,7 +68,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
             type: 'expense',
             date: Date.now(),
             tagIds: [],
-        } as any,
+        },
     });
 
     const type = watch('type');
@@ -76,7 +79,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
     const activeReserves = useLiveQuery(
         () => accountId
             ? db.reserves.where('accountId').equals(accountId).and(r => r.isActive).toArray()
-            : Promise.resolve([] as any[]),
+            : Promise.resolve([] as Reserve[]),
         [accountId]
     ) || [];
 
@@ -309,7 +312,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                     };
 
                     // 1. Create Transaction
-                    await db.transactions.add(finalData as any);
+                    await db.transactions.add(finalData as Transaction);
 
                     // 2. Update Account Balance
                     const account = await db.accounts.get(data.accountId);
@@ -321,7 +324,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                             ? account.calculatedBalance + amount
                             : account.calculatedBalance - amount;
 
-                        const updateData: any = { calculatedBalance: newCalcBalance };
+                        const updateData: Partial<Account> = { calculatedBalance: newCalcBalance };
 
                         if (account.actualBalance !== undefined) {
                             updateData.actualBalance = isIncome
@@ -382,14 +385,23 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                 </Button>
             </div>
 
-            <Input
-                label={t.forms.amount}
-                type="number"
-                placeholder="0"
-                autoFocus={!initialData}
-                error={errors.amount?.message}
-                {...register('amount', { valueAsNumber: true })}
-                data-testid="amount-input"
+            <Controller
+                name="amount"
+                control={control}
+                render={({ field }) => (
+                    <MoneyInput
+                        label={t.forms.amount}
+                        placeholder="0"
+                        autoFocus={!initialData}
+                        error={errors.amount?.message}
+                        name={field.name}
+                        ref={field.ref}
+                        onBlur={field.onBlur}
+                        value={field.value}
+                        onValueChange={(v) => field.onChange(v ?? NaN)}
+                        data-testid="amount-input"
+                    />
+                )}
             />
 
             <Input

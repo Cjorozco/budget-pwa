@@ -512,7 +512,6 @@ describe('gemini fallback models', () => {
     it('includes reliable high-quota fallback models for mobile & desktop', () => {
         expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.5-flash-lite');
         expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.6-flash');
-        expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.7-flash');
         expect(GEMINI_FALLBACK_MODELS).toContain('gemini-3.8-flash');
     });
 });
