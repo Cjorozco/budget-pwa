@@ -1,16 +1,9 @@
 import { z } from 'zod';
+import { getModelChain, getModelLabel } from '../models';
 import type { ModelAttempt } from '../types';
 import type { AiGenerateOptions, AiGenerateResult, AiProviderClient, ConnectionTestResult } from './types';
 
-export const GROQ_MODELS = [
-    'openai/gpt-oss-120b',
-    'openai/gpt-oss-20b',
-    'groq/compound',
-    'qwen/qwen3.8-27b',
-    'openai/gpt-oss-safeguard-20b',
-    'meta-llama/llama-prompt-guard-2-86m',
-    'meta-llama/llama-prompt-guard-2-22m',
-] as const;
+export const GROQ_MODELS = getModelChain('groq').map((m) => m.id);
 
 export const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
@@ -59,7 +52,7 @@ export class GroqProviderClient implements AiProviderClient {
             }
 
             const model = modelsToTry[i];
-            const modelLabel = `Groq ${model}`;
+            const modelLabel = getModelLabel('groq', model);
 
             const currentAttempt: ModelAttempt = {
                 provider: 'groq',
@@ -86,15 +79,12 @@ export class GroqProviderClient implements AiProviderClient {
                 }
                 messages.push({ role: 'user', content: options.prompt });
 
-                const isGuardModel = model.includes('prompt-guard') || model.includes('safeguard');
-                const maxTokens = isGuardModel ? 256 : Math.min(options.maxTokens ?? 512, 512);
+                const maxTokens = Math.min(options.maxTokens ?? 512, 512);
 
                 const messagesToSend = [...messages];
-                if (!isGuardModel) {
-                    const hasJsonWord = messagesToSend.some((m) => /json/i.test(m.content));
-                    if (!hasJsonWord) {
-                        messagesToSend.push({ role: 'system', content: 'Formato de respuesta requerido: JSON válido.' });
-                    }
+                const hasJsonWord = messagesToSend.some((m) => /json/i.test(m.content));
+                if (!hasJsonWord) {
+                    messagesToSend.push({ role: 'system', content: 'Formato de respuesta requerido: JSON válido.' });
                 }
 
                 const requestBody: Record<string, unknown> = {
@@ -102,11 +92,8 @@ export class GroqProviderClient implements AiProviderClient {
                     messages: messagesToSend,
                     temperature: options.temperature ?? 0.1,
                     max_tokens: maxTokens,
+                    response_format: { type: 'json_object' },
                 };
-
-                if (!isGuardModel) {
-                    requestBody.response_format = { type: 'json_object' };
-                }
 
                 const response = await fetch(GROQ_API_URL, {
                     method: 'POST',

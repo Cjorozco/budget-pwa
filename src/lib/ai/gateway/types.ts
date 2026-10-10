@@ -4,7 +4,10 @@ export interface AiGenerateOptions {
     prompt: string;
     systemPrompt?: string;
     signal?: AbortSignal;
+    /** Per-attempt timeout. */
     timeoutMs?: number;
+    /** Overall budget across all fallback attempts (adapters that support it). */
+    totalTimeoutMs?: number;
     temperature?: number;
     maxTokens?: number;
     onProgress?: (attempt: ModelAttempt, friendlyMessage: string) => void;
