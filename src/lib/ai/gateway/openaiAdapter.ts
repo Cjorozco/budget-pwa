@@ -1,12 +1,9 @@
 import { z } from 'zod';
+import { getModelChain, getModelLabel } from '../models';
 import type { ModelAttempt } from '../types';
 import type { AiGenerateOptions, AiGenerateResult, AiProviderClient, ConnectionTestResult } from './types';
 
-export const OPENAI_MODELS = [
-    'gpt-4o-mini',
-    'gpt-4o',
-    'gpt-3.5-turbo',
-] as const;
+export const OPENAI_MODELS = getModelChain('openai').map((m) => m.id);
 
 export const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
 
@@ -55,11 +52,7 @@ export class OpenAiProviderClient implements AiProviderClient {
             }
 
             const model = modelsToTry[i];
-            const modelLabel = model === 'gpt-4o-mini'
-                ? 'GPT-4o Mini'
-                : model === 'gpt-4o'
-                ? 'GPT-4o'
-                : `OpenAI (${model})`;
+            const modelLabel = getModelLabel('openai', model);
 
             const currentAttempt: ModelAttempt = {
                 provider: 'openai',

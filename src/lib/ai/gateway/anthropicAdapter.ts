@@ -1,21 +1,9 @@
 import { z } from 'zod';
+import { getModelChain, getModelLabel, getModelSpec } from '../models';
 import type { ModelAttempt } from '../types';
 import type { AiGenerateOptions, AiGenerateResult, AiProviderClient, ConnectionTestResult } from './types';
 
-export const ANTHROPIC_MODELS = [
-    'claude-haiku-5-5',
-    'claude-haiku-4-5',
-    'claude-sonnet-5-5',
-] as const;
-
-// Claude 5.x models reject `temperature` with a 400 ("deprecated for this model").
-const MODELS_WITHOUT_TEMPERATURE: ReadonlySet<string> = new Set(['claude-haiku-5-5', 'claude-sonnet-5-5']);
-
-const ANTHROPIC_MODEL_LABELS: Record<(typeof ANTHROPIC_MODELS)[number], string> = {
-    'claude-haiku-5-5': 'Claude Haiku 5.5',
-    'claude-haiku-4-5': 'Claude Haiku 4.5',
-    'claude-sonnet-5-5': 'Claude Sonnet 5.5',
-};
+export const ANTHROPIC_MODELS = getModelChain('anthropic').map((m) => m.id);
 
 export const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 
@@ -64,7 +52,7 @@ export class AnthropicProviderClient implements AiProviderClient {
             }
 
             const model = modelsToTry[i];
-            const modelLabel = ANTHROPIC_MODEL_LABELS[model];
+            const modelLabel = getModelLabel('anthropic', model);
 
             const currentAttempt: ModelAttempt = {
                 provider: 'anthropic',
@@ -93,7 +81,7 @@ export class AnthropicProviderClient implements AiProviderClient {
                     ],
                 };
 
-                if (!MODELS_WITHOUT_TEMPERATURE.has(model)) {
+                if (!getModelSpec('anthropic', model)?.omitTemperature) {
                     requestBody.temperature = options.temperature ?? 0.2;
                 }
 

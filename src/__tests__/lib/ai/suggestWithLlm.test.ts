@@ -13,13 +13,12 @@ vi.mock('@/lib/ai/categorizer', async () => {
 });
 
 vi.mock('@/lib/ai/geminiSuggest', () => ({
-    suggestWithGemini: vi.fn(),
     suggestWithAiProvider: vi.fn(),
     sanitizePii: (t: string) => t,
 }));
 
 import { suggestCategory } from '@/lib/ai/categorizer';
-import { suggestWithGemini, suggestWithAiProvider } from '@/lib/ai/geminiSuggest';
+import { suggestWithAiProvider } from '@/lib/ai/geminiSuggest';
 
 const strongLocal: CategorySuggestion = {
     categoryId: 'luz',
@@ -72,7 +71,6 @@ describe('suggestCategoryWithLlm', () => {
         clearAiApiKey('groq');
         setSelectedAiProvider('gemini');
         vi.mocked(suggestCategory).mockReset();
-        vi.mocked(suggestWithGemini).mockReset();
         vi.mocked(suggestWithAiProvider).mockReset();
     });
 
