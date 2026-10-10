@@ -1,6 +1,8 @@
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '../db';
 import type { Category } from '../types';
+import { useI18nStore } from '../i18n/i18nStore';
+import { isCanonicalSeedName, seedNameFor } from '../db/seedNames';
 import { categoryNamesAreSimilar, normalizeForMatch } from './categoryRules';
 
 const DEFAULT_COLORS = {
@@ -12,15 +14,32 @@ function namesMatch(a: string, b: string): boolean {
     return normalizeForMatch(a) === normalizeForMatch(b);
 }
 
+/** A seeded category whose canonical Spanish path is exactly the one asked for (names may be translated). */
+function findBySeedKey(categories: Category[], canonicalPath: string): Category | undefined {
+    return categories.find((c) => c.seedKey !== undefined && namesMatch(c.seedKey, canonicalPath));
+}
+
+/** Parent lookup: canonical key first (it survives translation), then by name. */
+function findParent(categories: Category[], parentName: string): Category | undefined {
+    return (
+        categories.find((c) => !c.parentId && c.seedKey !== undefined && namesMatch(c.seedKey, parentName)) ??
+        categories.find((c) => !c.parentId && namesMatch(c.name, parentName)) ??
+        categories.find((c) => !c.parentId && categoryNamesAreSimilar(c.name, parentName))
+    );
+}
+
 export async function findCategoryByPath(
     type: 'income' | 'expense',
     parentName: string,
     subcategoryName?: string
 ): Promise<Category | null> {
     const categories = await db.categories.filter((c) => c.isActive && c.type === type).toArray();
-    const parent =
-        categories.find((c) => !c.parentId && namesMatch(c.name, parentName)) ??
-        categories.find((c) => !c.parentId && categoryNamesAreSimilar(c.name, parentName));
+
+    // Default categories seeded in another language are found through their canonical key.
+    const bySeedKey = findBySeedKey(categories, formatCategoryPath(parentName, subcategoryName));
+    if (bySeedKey) return bySeedKey;
+
+    const parent = findParent(categories, parentName);
     if (!parent) return null;
 
     if (!subcategoryName) return parent;
@@ -45,6 +64,17 @@ export async function resolveCategoryPathLabel(categoryId: string): Promise<stri
     return parent ? formatCategoryPath(parent.name, cat.name) : cat.name;
 }
 
+/**
+ * Name (and canonical key) for a category about to be created. A known canonical name (the local
+ * rules speak Spanish) is created in the user's language and keeps its Spanish key, so the next
+ * lookup finds it; anything else (for example an AI proposal) is created exactly as given.
+ */
+function localizedNew(name: string, parentKey?: string): { name: string; seedKey?: string } {
+    const language = useI18nStore.getState().language;
+    if (language === 'es' || !isCanonicalSeedName(name)) return { name };
+    return { name: seedNameFor(name, language), seedKey: parentKey ? `${parentKey} › ${name}` : name };
+}
+
 /** Busca o crea la categoría (y subcategoría). Retorna el id de la hoja a usar en transacciones. */
 export async function findOrCreateCategory(
     type: 'income' | 'expense',
@@ -57,16 +87,14 @@ export async function findOrCreateCategory(
 
     return db.transaction('rw', db.categories, async () => {
         const categories = await db.categories.filter((c) => c.isActive && c.type === type).toArray();
-        let parent =
-            categories.find((c) => !c.parentId && namesMatch(c.name, parentName)) ??
-            categories.find((c) => !c.parentId && categoryNamesAreSimilar(c.name, parentName));
+        let parent = findParent(categories, parentName);
 
         if (!parent) {
             const palette = DEFAULT_COLORS[type];
             const parentColor = color ?? palette[categories.filter((c) => !c.parentId).length % palette.length];
             parent = {
                 id: uuidv4(),
-                name: parentName,
+                ...localizedNew(parentName),
                 type,
                 color: parentColor,
                 usageCount: 0,
@@ -88,9 +116,10 @@ export async function findOrCreateCategory(
         if (child) return child.id;
 
         const childId = uuidv4();
+        const parentKey = parent.seedKey ?? parent.name;
         await db.categories.add({
             id: childId,
-            name: subcategoryName,
+            ...localizedNew(subcategoryName, parentKey),
             type,
             color: parent.color,
             parentId: parent.id,

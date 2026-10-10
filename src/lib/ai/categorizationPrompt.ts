@@ -6,6 +6,8 @@ export interface CatalogRow {
     id: string;
     path: string;
     isLeaf: boolean;
+    /** Canonical Spanish path of a default category whose name was translated (see seedKey). */
+    canonicalPath?: string;
 }
 
 export interface RecentExample {
@@ -70,12 +72,36 @@ export function buildSystemPrompt({ country = 'CO', language = 'es' }: PromptCon
 /** The default prompt (Colombia, Spanish). */
 export const CATEGORIZATION_SYSTEM_PROMPT = buildSystemPrompt();
 
-function catalogLine(row: CatalogRow): string {
-    const criteria = getCategoryCriteria(row.path);
+const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * The criteria are written with Spanish category names ("... (Gastos diarios › Ropa)"). When the
+ * user's categories were seeded in another language, those references are rewritten to the names
+ * the user actually has, so the prompt never points to a category that is not in the catalog.
+ */
+function makeNameLocalizer(catalog: CatalogRow[]): (text: string) => string {
+    const names = new Map<string, string>();
+    for (const row of catalog) {
+        if (row.canonicalPath && row.canonicalPath !== row.path) names.set(row.canonicalPath, row.path);
+    }
+    if (names.size === 0) return (text) => text;
+
+    const pattern = new RegExp(
+        [...names.keys()]
+            .sort((a, b) => b.length - a.length)
+            .map(escapeRegExp)
+            .join('|'),
+        'g'
+    );
+    return (text) => text.replace(pattern, (match) => names.get(match) ?? match);
+}
+
+function catalogLine(row: CatalogRow, localize: (text: string) => string): string {
+    const criteria = getCategoryCriteria(row.canonicalPath ?? row.path);
     const parts = [row.id, `${row.path}${row.isLeaf ? '' : ' (raíz)'}`];
     if (criteria) {
         parts.push(`cubre: ${criteria.what}`);
-        if (criteria.notFor) parts.push(`no: ${criteria.notFor}`);
+        if (criteria.notFor) parts.push(`no: ${localize(criteria.notFor)}`);
     }
     return `- ${parts.join(' | ')}`;
 }
@@ -87,6 +113,7 @@ export function buildPrompt(
     catalog: CatalogRow[],
     recentExamples: RecentExample[] = []
 ): string {
+    const localize = makeNameLocalizer(catalog);
     const historySection = recentExamples.length > 0
         ? [
             'historial del usuario (así categoriza él en particular):',
@@ -97,7 +124,7 @@ export function buildPrompt(
     return [
         `tipo: ${type}`,
         'catálogo (id | ruta | cubre | no):',
-        catalog.map(catalogLine).join('\n') || '(vacío)',
+        catalog.map((row) => catalogLine(row, localize)).join('\n') || '(vacío)',
         historySection,
         `descripción: ${sanitizePii(description)}`,
     ].filter(Boolean).join('\n');
