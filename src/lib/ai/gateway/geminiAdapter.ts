@@ -34,12 +34,23 @@ const GeminiApiEnvelopeSchema = z.object({
         .optional(),
 });
 
+/** Overrides for non-production uses such as the evaluation harness (one model, longer timeouts). */
+export interface GeminiClientConfig {
+    /** Replaces the default chain; the first model is tried first. */
+    models?: readonly string[];
+    timeoutMs?: number;
+    totalTimeoutMs?: number;
+}
+
 export class GeminiProviderClient implements AiProviderClient {
     readonly provider = 'gemini' as const;
     private apiKey: string;
 
-    constructor(apiKey: string) {
+    private readonly config: GeminiClientConfig;
+
+    constructor(apiKey: string, config: GeminiClientConfig = {}) {
         this.apiKey = apiKey.trim();
+        this.config = config;
     }
 
     async generate(options: AiGenerateOptions): Promise<AiGenerateResult> {
@@ -57,9 +68,9 @@ export class GeminiProviderClient implements AiProviderClient {
         }
 
         const startedAt = Date.now();
-        const totalMs = options.totalTimeoutMs ?? GEMINI_TOTAL_TIMEOUT_MS;
-        const perAttemptMs = options.timeoutMs ?? GEMINI_ATTEMPT_TIMEOUT_MS;
-        const modelsToTry = [GEMINI_MODEL, ...GEMINI_FALLBACK_MODELS];
+        const totalMs = options.totalTimeoutMs ?? this.config.totalTimeoutMs ?? GEMINI_TOTAL_TIMEOUT_MS;
+        const perAttemptMs = options.timeoutMs ?? this.config.timeoutMs ?? GEMINI_ATTEMPT_TIMEOUT_MS;
+        const modelsToTry = this.config.models ? [...this.config.models] : [GEMINI_MODEL, ...GEMINI_FALLBACK_MODELS];
         let lastErrorMessage = 'Unknown network error';
         // A rejected schema must never cost the whole suggestion: after one 400 we retry without it.
         let schemaEnabled = Boolean(options.responseSchema);

@@ -19,6 +19,7 @@ import {
 import { getAiApiKey, getSelectedAiProvider } from './gateway/config';
 import { AiProviderError } from './gateway/errors';
 import { createAiClient } from './gateway/factory';
+import type { AiProviderClient } from './gateway/types';
 import type { GeminiResult, LlmResult, ModelAttempt } from './types';
 
 export type { GeminiResult, LlmResult, ModelAttempt };
@@ -253,10 +254,11 @@ export async function suggestWithAiProvider(
     description: string,
     type: 'income' | 'expense',
     signal?: AbortSignal,
-    onProgress?: (attempt: ModelAttempt, friendlyMessage: string) => void
+    onProgress?: (attempt: ModelAttempt, friendlyMessage: string) => void,
+    overrides?: { client?: AiProviderClient }
 ): Promise<LlmResult> {
-    const provider = getSelectedAiProvider();
-    const apiKey = getAiApiKey(provider);
+    const provider = overrides?.client?.provider ?? getSelectedAiProvider();
+    const apiKey = overrides?.client ? 'client-override' : getAiApiKey(provider);
     if (!apiKey) {
         if (import.meta.env?.DEV) {
             console.debug(`[suggestWithAiProvider] Unavailable: no-api-key for ${provider}`);
@@ -270,7 +272,7 @@ export async function suggestWithAiProvider(
         db.categories.filter((c) => c.isActive && c.type === type && !c.parentId).toArray(),
     ]);
 
-    const client = createAiClient(provider, apiKey);
+    const client = overrides?.client ?? createAiClient(provider, apiKey);
     let genResult: { ok: true; text: string; modelUsed: string; attempts?: ModelAttempt[]; provider: typeof provider } | { ok: false; result: LlmResult };
 
     try {

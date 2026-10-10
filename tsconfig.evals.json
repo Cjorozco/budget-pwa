@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.evals.tsbuildinfo",
+    "types": ["vite/client", "vitest/globals", "node"]
+  },
+  "include": ["src/evals/**/*.eval.ts"],
+  "exclude": []
+}
