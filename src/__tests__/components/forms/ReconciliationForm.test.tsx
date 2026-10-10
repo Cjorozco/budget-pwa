@@ -40,10 +40,11 @@ describe('ReconciliationForm', () => {
             />
         );
 
+        expect(screen.getByText('¿Tu saldo no coincide con el del banco? Ajústalo sin borrar tu historial.')).toBeInTheDocument();
         expect(screen.getByText('Saldo Calculado:')).toBeInTheDocument();
         expect(screen.getByText(`Saldo Real (${mockAccount.name}):`)).toBeInTheDocument();
         expect(screen.getByTestId('declared-balance-input')).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /^Reconciliar$/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /^Cuadrar saldo$/i })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /Cancelar/i })).toBeInTheDocument();
     });
 
@@ -80,7 +81,7 @@ describe('ReconciliationForm', () => {
         // Verify difference warning appears
         expect(screen.getByText(/Diferencia:/i)).toBeInTheDocument();
 
-        const submitBtn = screen.getByRole('button', { name: /^Reconciliar$/i });
+        const submitBtn = screen.getByRole('button', { name: /^Cuadrar saldo$/i });
         await user.click(submitBtn);
 
         await waitFor(() => {
@@ -121,7 +122,7 @@ describe('ReconciliationForm', () => {
         // Balance already defaults to calculatedBalance (500000)
         expect(screen.getByText(/¡Perfecto! Los saldos coinciden/i)).toBeInTheDocument();
 
-        const submitBtn = screen.getByRole('button', { name: /^Reconciliar$/i });
+        const submitBtn = screen.getByRole('button', { name: /^Cuadrar saldo$/i });
         await user.click(submitBtn);
 
         await waitFor(() => {

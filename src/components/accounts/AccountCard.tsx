@@ -105,7 +105,7 @@ export function AccountCard({ account, onEdit, onReconcile, onViewHistory, onAdd
                             title={t.accounts.reconcile}
                             data-testid="reconcile-button"
                             data-tour={isTourAnchor ? 'account-reconcile' : undefined}
-                            aria-label={`Reconcile ${account.name}`}
+                            aria-label={t.accounts.reconcileWith.replace('{name}', account.name)}
                         >
                             <History size={14} className="text-blue-600" />
                         </Button>

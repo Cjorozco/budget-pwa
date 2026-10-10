@@ -128,6 +128,7 @@ export function ReconciliationForm({ account, onSuccess, onCancel }: Reconciliat
 
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <p className="text-sm text-slate-600 dark:text-slate-400">{t.accounts.reconcileDesc}</p>
             <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg space-y-3">
                 <div className="flex justify-between items-center">
                     <span className="text-sm text-slate-600 dark:text-slate-400">{t.forms.reconcileCalculated}</span>
