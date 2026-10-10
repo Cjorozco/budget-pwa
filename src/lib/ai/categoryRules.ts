@@ -1,3 +1,6 @@
+import { getRegion } from '@/lib/region/regionStore';
+import { CA_KEYWORD_RULES } from './categoryRulesCA';
+
 /**
  * Reglas de categorización por palabras clave en la descripción.
  * Extensible: agregar entradas para comida, deudas, regalos, etc.
@@ -13,6 +16,8 @@ export interface CategoryKeywordRule {
     matchMode?: CategoryRuleMatchMode;
     /** Palabras que anulan la regla si aparecen */
     excludeKeywordGroups?: string[][];
+    /** Match whole words only (so "bell" does not fire inside "bellota"). Default: substring. */
+    wholeWord?: boolean;
     parentName: string;
     subcategoryName?: string;
     confidence: number;
@@ -57,37 +62,65 @@ export function categoryNamesAreSimilar(a: string, b: string, parentName?: strin
     return false;
 }
 
-function groupMatches(desc: string, group: string[]): boolean {
-    return group.some((kw) => desc.includes(normalizeForMatch(kw)));
+const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+function containsWholeWord(desc: string, keyword: string): boolean {
+    return new RegExp(`(^|[^a-z0-9])${escapeRegExp(keyword)}($|[^a-z0-9])`).test(desc);
+}
+
+function groupMatches(desc: string, group: string[], wholeWord = false): boolean {
+    return group.some((kw) => {
+        const keyword = normalizeForMatch(kw);
+        return wholeWord ? containsWholeWord(desc, keyword) : desc.includes(keyword);
+    });
 }
 
 function ruleMatches(desc: string, rule: CategoryKeywordRule): boolean {
     const normalized = normalizeForMatch(desc);
+    const wholeWord = rule.wholeWord === true;
 
-    if (rule.excludeKeywordGroups?.some((g) => groupMatches(normalized, g))) {
+    if (rule.excludeKeywordGroups?.some((g) => groupMatches(normalized, g, wholeWord))) {
         return false;
     }
 
     if (rule.matchMode === 'all') {
-        return rule.keywordGroups.every((g) => groupMatches(normalized, g));
+        return rule.keywordGroups.every((g) => groupMatches(normalized, g, wholeWord));
     }
 
-    return rule.keywordGroups.some((g) => groupMatches(normalized, g));
+    return rule.keywordGroups.some((g) => groupMatches(normalized, g, wholeWord));
+}
+
+function findRule(
+    rules: CategoryKeywordRule[],
+    description: string,
+    type: 'income' | 'expense'
+): CategoryKeywordRule | null {
+    const sorted = rules
+        .filter((r) => r.type === type)
+        .sort((a, b) => {
+            const scoreA = (a.matchMode === 'all' ? 100 : 0) + a.keywordGroups.length;
+            const scoreB = (b.matchMode === 'all' ? 100 : 0) + b.keywordGroups.length;
+            return scoreB - scoreA;
+        });
+
+    for (const rule of sorted) {
+        if (ruleMatches(description, rule)) return rule;
+    }
+    return null;
+}
+
+/** Rule packs for the active region, in priority order. Colombia (the default) uses only the base rules. */
+function activeRulePacks(): CategoryKeywordRule[][] {
+    return getRegion().country === 'CA' ? [CA_KEYWORD_RULES, CATEGORY_KEYWORD_RULES] : [CATEGORY_KEYWORD_RULES];
 }
 
 export function matchCategoryRule(
     description: string,
     type: 'income' | 'expense'
 ): CategoryKeywordRule | null {
-    const rules = CATEGORY_KEYWORD_RULES.filter((r) => r.type === type);
-    const sorted = [...rules].sort((a, b) => {
-        const scoreA = (a.matchMode === 'all' ? 100 : 0) + a.keywordGroups.length;
-        const scoreB = (b.matchMode === 'all' ? 100 : 0) + b.keywordGroups.length;
-        return scoreB - scoreA;
-    });
-
-    for (const rule of sorted) {
-        if (ruleMatches(description, rule)) return rule;
+    for (const pack of activeRulePacks()) {
+        const rule = findRule(pack, description, type);
+        if (rule) return rule;
     }
     return null;
 }
