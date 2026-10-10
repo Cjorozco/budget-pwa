@@ -29,6 +29,10 @@ La capa gratuita de Gemini limita las peticiones por minuto: con ~57 casos × 4 
 - La key va solo a Google. No hay telemetría ni se sube nada.
 - Los reportes se guardan en `eval-results/` (ignorado por git).
 
+## Resultados
+
+Primera corrida (parcial, solo los dos modelos Lite con datos válidos): `docs/evals/2026-10-10-categorizacion-gemini.md`.
+
 ## Límites
 
 - Son ~57 casos: sirven para **comparar modelos entre sí**, no como métrica absoluta de calidad. Una sola corrida puede variar por la carga de la API.
