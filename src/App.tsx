@@ -16,9 +16,13 @@ import { Toaster } from '@/components/Toaster';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { UpgradeModal } from '@/components/ui/UpgradeModal';
+import { useRegionStore } from '@/lib/region/regionStore';
 
 
 function App() {
+  // formatCurrency() reads the active region directly, so changing it remounts the screens.
+  const country = useRegionStore((state) => state.country);
+
   useEffect(() => {
     // Run seeder on mount
     seedInitialData().catch(console.error);
@@ -26,7 +30,7 @@ function App() {
 
   return (
     <BrowserRouter>
-      <ErrorBoundary>
+      <ErrorBoundary key={country}>
         <Routes>
           <Route path="/" element={<Layout />}>
             <Route index element={<Dashboard />} />

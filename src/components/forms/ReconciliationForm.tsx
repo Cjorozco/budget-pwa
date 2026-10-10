@@ -1,3 +1,4 @@
+import { roundMoney } from '@/lib/money';
 import { useForm, Controller, useWatch } from 'react-hook-form';
 import { MoneyInput } from '@/components/ui/MoneyInput';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -43,8 +44,9 @@ export function ReconciliationForm({ account, onSuccess, onCancel }: Reconciliat
     });
 
     const declaredBalance = useWatch({ control, name: 'declaredBalance' }) || 0;
-    const difference = declaredBalance - account.calculatedBalance;
-    const hasDifference = Math.abs(difference) > 0.01; // Tolerance for floating point
+    // Rounded to cents, so float noise is gone and a one-cent difference (CAD, USD) is still a difference
+    const difference = roundMoney(declaredBalance - account.calculatedBalance);
+    const hasDifference = difference !== 0;
 
     const onSubmit = async (data: ReconciliationFormData) => {
         try {

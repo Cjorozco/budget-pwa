@@ -1,7 +1,27 @@
 import { db } from './index';
 import { v4 as uuidv4 } from 'uuid';
+import { useI18nStore } from '@/lib/i18n/i18nStore';
+import { getRegion, initRegionFromLocale } from '@/lib/region/regionStore';
+
+/** Default account names. Colombia keeps its historical names; elsewhere they follow the UI language. */
+function defaultAccountNames(): { cash: string; bank: string } {
+    if (getRegion().country === 'CO') return { cash: 'Efectivo', bank: 'Bancolombia' };
+    const names = {
+        es: { cash: 'Efectivo', bank: 'Banco' },
+        en: { cash: 'Cash', bank: 'Bank' },
+        fr: { cash: 'Espèces', bank: 'Banque' },
+    };
+    return names[useI18nStore.getState().language];
+}
 
 export const seedInitialData = async () => {
+    // First run only (empty database): pick the region from the browser locale. Existing users keep theirs.
+    if ((await db.accounts.count()) === 0 && (await db.categories.count()) === 0) {
+        initRegionFromLocale();
+    }
+    const { currency, country } = getRegion();
+    const accountNames = defaultAccountNames();
+
     // Use a transaction to ensure atomicity and prevent race conditions in React StrictMode
     await db.transaction('rw', [db.categories, db.accounts, db.tags, db.appConfig, db.quickTemplates], async () => {
         const categoryCount = await db.categories.count();
@@ -199,18 +219,18 @@ export const seedInitialData = async () => {
             await db.accounts.bulkAdd([
                 {
                     id: uuidv4(),
-                    name: 'Efectivo',
+                    name: accountNames.cash,
                     type: 'cash',
                     calculatedBalance: 0,
-                    currency: 'COP',
+                    currency,
                     isActive: true
                 },
                 {
                     id: uuidv4(),
-                    name: 'Bancolombia',
+                    name: accountNames.bank,
                     type: 'bank',
                     calculatedBalance: 0,
-                    currency: 'COP',
+                    currency,
                     isActive: true
                 }
             ]);
@@ -221,7 +241,8 @@ export const seedInitialData = async () => {
             // App Config
             await db.appConfig.add({
                 id: 'singleton',
-                defaultCurrency: 'COP',
+                defaultCurrency: currency,
+                country,
                 minConfidenceThreshold: 0.7,
                 enableAISuggestions: true
             });

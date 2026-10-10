@@ -1,6 +1,6 @@
 import { type InputHTMLAttributes, forwardRef, useState } from 'react';
 import { Input } from './Input';
-import { formatMoneyInput, numberToMoneyInput, parseMoneyInput } from '@/lib/utils';
+import { formatMoneyInput, moneyDecimalSeparator, numberToMoneyInput, parseMoneyInput } from '@/lib/utils';
 
 interface MoneyInputProps
     extends Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'type' | 'defaultValue'> {
@@ -10,7 +10,7 @@ interface MoneyInputProps
     onValueChange: (value: number | undefined) => void;
 }
 
-/** Campo de dinero con separador de miles (.) y decimales (,) automáticos, es-CO. */
+/** Campo de dinero con separador de miles y decimales automáticos según la región activa. */
 const MoneyInput = forwardRef<HTMLInputElement, MoneyInputProps>(
     ({ value, onValueChange, ...props }, ref) => {
         const [text, setText] = useState(() => numberToMoneyInput(value));
@@ -26,7 +26,9 @@ const MoneyInput = forwardRef<HTMLInputElement, MoneyInputProps>(
         const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
             const el = e.target;
             const caret = el.selectionStart ?? el.value.length;
-            const digitsBeforeCaret = el.value.slice(0, caret).replace(/[^\d,]/g, '').length;
+            const decimal = moneyDecimalSeparator();
+            const isSignificant = (ch: string) => (ch >= '0' && ch <= '9') || ch === decimal;
+            const digitsBeforeCaret = [...el.value.slice(0, caret)].filter(isSignificant).length;
             const formatted = formatMoneyInput(el.value);
             setText(formatted);
             const parsed = parseMoneyInput(formatted);
@@ -39,7 +41,7 @@ const MoneyInput = forwardRef<HTMLInputElement, MoneyInputProps>(
                 if (digitsBeforeCaret === 0) pos = 0;
                 else {
                     for (let i = 0; i < formatted.length; i++) {
-                        if (/[\d,]/.test(formatted[i])) seen++;
+                        if (isSignificant(formatted[i])) seen++;
                         if (seen === digitsBeforeCaret) { pos = i + 1; break; }
                     }
                 }

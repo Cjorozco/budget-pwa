@@ -8,6 +8,7 @@ import { exportDatabase, downloadBackup, importDatabase, exportToCSV, downloadCS
 import { GeminiKeyCard } from '@/components/settings/GeminiKeyCard';
 import { UserGuideModal } from '@/components/settings/UserGuideModal';
 import { LanguageSelector } from '@/components/settings/LanguageSelector';
+import { RegionSelector } from '@/components/settings/RegionSelector';
 import { useLicenseStore, getTierDisplayName } from '@/store/licenseStore';
 import { useUIStore } from '@/store/ui';
 import { useTourStore } from '@/store/tour';
@@ -198,6 +199,11 @@ export default function SettingsPage() {
             {/* Language Selector */}
             <section>
                 <LanguageSelector />
+            </section>
+
+            {/* Region and currency */}
+            <section>
+                <RegionSelector />
             </section>
 
             {demoActive && (

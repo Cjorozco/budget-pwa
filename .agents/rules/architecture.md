@@ -60,7 +60,7 @@ No negociables:
 - Offline UX: toda acción de persistencia funciona sin red, con feedback claro y no invasivo.
 - Seguridad y privacidad: sin telemetría ni tracking; validación con Zod en fronteras de persistencia y backups.
 - BYOK keys: NUNCA en `VITE_*`, Dexie ni backups. Solo `localStorage`.
-- UI: español `es-CO`. Moneda COP con `formatCurrency()`. Iconos Lucide. Confirmaciones con `ConfirmDialog` del UI store.
+- UI: español por defecto (también en/fr). Región y moneda en `src/lib/region/` (Colombia/COP por defecto; Canadá/CAD y Estados Unidos/USD): todo monto se muestra con `formatCurrency()` y se escribe con `MoneyInput`, nunca con formato fijo. Los saldos se redondean a centavos en la frontera de persistencia (hook de Dexie en `src/lib/db/index.ts`). Una sola moneda por app. Ver `docs/adr/0002-region-y-moneda.md`. Iconos Lucide. Confirmaciones con `ConfirmDialog` del UI store.
 - LLM: no escribe a IndexedDB ni a UI sin Zod + grounding.
 
 ## Contexto de marca personal

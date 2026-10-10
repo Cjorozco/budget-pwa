@@ -1,5 +1,9 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { useI18nStore } from '@/lib/i18n/i18nStore';
+import { getNumberSeparators } from '@/lib/money';
+import { currencyDigits, numberLocale, type CurrencyCode } from '@/lib/region/region';
+import { getRegion } from '@/lib/region/regionStore';
 
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
@@ -22,12 +26,18 @@ export function toSentenceCase(str: string) {
     return lower.charAt(0).toUpperCase() + lower.slice(1);
 }
 
-export function formatCurrency(amount: number) {
-    return new Intl.NumberFormat('es-CO', {
+/** Locale for numbers: from the active region and the UI language (Colombia stays es-CO). */
+function activeNumberLocale(): string {
+    return numberLocale(getRegion().country, useI18nStore.getState().language);
+}
+
+export function formatCurrency(amount: number, currency: CurrencyCode = getRegion().currency) {
+    const digits = currencyDigits(currency);
+    return new Intl.NumberFormat(activeNumberLocale(), {
         style: 'currency',
-        currency: 'COP',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
+        currency,
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits,
     }).format(amount);
 }
 
@@ -38,29 +48,43 @@ export function adjustColor(color: string, amount: number) {
     );
 }
 
-/**
- * Normaliza lo que escribe el usuario a formato es-CO mientras teclea:
- * puntos de miles en la parte entera y coma decimal (máx. 2 decimales).
- */
-export function formatMoneyInput(raw: string): string {
-    const cleaned = raw.replace(/[^\d,]/g, '');
-    const commaIdx = cleaned.indexOf(',');
-    const intRaw = (commaIdx === -1 ? cleaned : cleaned.slice(0, commaIdx)).replace(/^0+(?=\d)/, '');
-    const grouped = intRaw.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-    if (commaIdx === -1) return grouped;
-    const decimals = cleaned.slice(commaIdx + 1).replace(/,/g, '').slice(0, 2);
-    return `${grouped || '0'},${decimals}`;
+/** Decimal separator of the active region's number format ("," in Colombia, "." in en-CA). */
+export function moneyDecimalSeparator(): string {
+    return getNumberSeparators(activeNumberLocale()).decimal;
 }
 
-/** Convierte el texto es-CO ("1.234,50") a número; undefined si está vacío. */
+/** Keeps only digits and the given decimal separator. */
+function keepDigitsAndDecimal(text: string, decimal: string): string {
+    return [...text].filter((ch) => (ch >= '0' && ch <= '9') || ch === decimal).join('');
+}
+
+/**
+ * Normaliza lo que escribe el usuario al formato numérico de la región activa mientras teclea:
+ * separador de miles en la parte entera y el separador decimal del locale (máx. 2 decimales).
+ * Colombia: "1.234,50"; Canadá (en): "1,234.50"; Canadá (fr): "1 234,50".
+ */
+export function formatMoneyInput(raw: string): string {
+    const { group, decimal } = getNumberSeparators(activeNumberLocale());
+    const cleaned = keepDigitsAndDecimal(raw, decimal);
+    const decimalIdx = cleaned.indexOf(decimal);
+    const intRaw = (decimalIdx === -1 ? cleaned : cleaned.slice(0, decimalIdx)).replace(/^0+(?=\d)/, '');
+    const grouped = intRaw.replace(/\B(?=(\d{3})+(?!\d))/g, group);
+    if (decimalIdx === -1) return grouped;
+    const decimals = cleaned.slice(decimalIdx + decimal.length).split(decimal).join('').slice(0, 2);
+    return `${grouped || '0'}${decimal}${decimals}`;
+}
+
+/** Convierte el texto mostrado ("1.234,50" en Colombia, "1,234.50" en en-CA) a número; undefined si está vacío. */
 export function parseMoneyInput(display: string): number | undefined {
     if (!display.trim()) return undefined;
-    const n = Number(display.replace(/\./g, '').replace(',', '.'));
+    const { decimal } = getNumberSeparators(activeNumberLocale());
+    const n = Number(keepDigitsAndDecimal(display, decimal).replace(decimal, '.'));
     return Number.isFinite(n) ? n : undefined;
 }
 
-/** Número → texto editable es-CO (sin símbolo de moneda). */
+/** Número → texto editable en el formato de la región activa (sin símbolo de moneda). */
 export function numberToMoneyInput(value: number | undefined | null): string {
     if (value === undefined || value === null || Number.isNaN(value)) return '';
-    return formatMoneyInput(String(value).replace('.', ','));
+    const { decimal } = getNumberSeparators(activeNumberLocale());
+    return formatMoneyInput(String(value).replace('.', decimal));
 }

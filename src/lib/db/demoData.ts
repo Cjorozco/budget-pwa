@@ -9,6 +9,7 @@
  */
 import type { SupportedLanguage } from '../i18n/types';
 import { getTranslationDictionary } from '../i18n';
+import { getRegion } from '../region/regionStore';
 import type { Account, BudgetItem, QuickTemplate, Transaction } from '../types';
 
 export const DEMO_ID_PREFIX = 'demo-';
@@ -278,7 +279,7 @@ export function buildDemoData(options: {
         calculatedBalance: transactions
             .filter((tx) => tx.accountId === accountId(key))
             .reduce((sum, tx) => sum + signedAmount(tx), 0),
-        currency: 'COP',
+        currency: getRegion().currency,
         isActive: true,
     }));
 

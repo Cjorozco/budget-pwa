@@ -1,4 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie';
+import { roundMoney } from '../money';
 import {
     type Transaction,
     type Account,
@@ -74,3 +75,27 @@ export class PersonalBudgetDB extends Dexie {
 
 // Singleton instance
 export const db = new PersonalBudgetDB();
+
+/**
+ * Balances are sums of plain numbers, so with cents (CAD, USD) 0.1 + 0.2 would be stored as
+ * 0.30000000000000004 and reconciliation (which compares balances exactly) would see a phantom
+ * difference. Every write of an account balance is rounded to cents here, at the persistence
+ * boundary, so no call site can forget. For whole-peso amounts this changes nothing.
+ */
+const BALANCE_FIELDS = ['calculatedBalance', 'actualBalance'] as const;
+
+db.accounts.hook('creating', (_primKey, account) => {
+    for (const field of BALANCE_FIELDS) {
+        const value = account[field];
+        if (typeof value === 'number') account[field] = roundMoney(value);
+    }
+});
+
+db.accounts.hook('updating', (modifications) => {
+    const rounded: Record<string, number> = {};
+    for (const field of BALANCE_FIELDS) {
+        const value = (modifications as Record<string, unknown>)[field];
+        if (typeof value === 'number' && roundMoney(value) !== value) rounded[field] = roundMoney(value);
+    }
+    return Object.keys(rounded).length > 0 ? rounded : undefined;
+});

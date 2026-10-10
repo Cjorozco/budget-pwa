@@ -1,5 +1,7 @@
 import { db } from './index';
 import { z } from 'zod';
+import { COUNTRIES, CURRENCIES, countryForCurrency, isCountryCode } from '@/lib/region/region';
+import { getRegion, useRegionStore } from '@/lib/region/regionStore';
 import type {
     Transaction,
     Account,
@@ -41,7 +43,7 @@ export const BackupAccountSchema = z.object({
     calculatedBalance: z.number(),
     actualBalance: z.number().optional(),
     lastReconciliationDate: z.number().optional(),
-    currency: z.literal('COP').default('COP'),
+    currency: z.enum(CURRENCIES).default('COP'),
     isActive: z.boolean().default(true),
 }).passthrough();
 
@@ -91,7 +93,8 @@ export const BackupReserveSchema = z.object({
 
 export const BackupAppConfigSchema = z.object({
     id: z.literal('singleton'),
-    defaultCurrency: z.literal('COP').default('COP'),
+    defaultCurrency: z.enum(CURRENCIES).default('COP'),
+    country: z.enum(COUNTRIES).optional(),
     minConfidenceThreshold: z.number().optional(),
     enableAISuggestions: z.boolean().optional(),
 }).passthrough();
@@ -135,6 +138,18 @@ export const BackupSchema = z.object({
         quickTemplates: z.array(BackupQuickTemplateSchema).optional().default([]),
         budgetItems: z.array(BackupBudgetItemSchema).optional().default([]),
     })
+}).superRefine((data, ctx) => {
+    // Balances are summed, so one backup must use a single currency (the app's currency).
+    const appCurrency = data.tables.appConfig[0]?.defaultCurrency;
+    const accountCurrencies = new Set(data.tables.accounts.map((a) => a.currency));
+    const expected = appCurrency ?? [...accountCurrencies][0];
+    if (accountCurrencies.size > 1 || (expected && [...accountCurrencies].some((c) => c !== expected))) {
+        ctx.addIssue({
+            code: 'custom',
+            path: ['tables', 'accounts', 'currency'],
+            message: 'Las cuentas del respaldo usan monedas distintas',
+        });
+    }
 });
 
 export interface BackupData {
@@ -165,7 +180,8 @@ export async function exportDatabase(): Promise<string> {
             categories: await db.categories.toArray(),
             tags: await db.tags.toArray(),
             reserves: await db.reserves.toArray(),
-            appConfig: await db.appConfig.toArray(),
+            // The backup carries the region so it restores with the right currency and number format.
+            appConfig: (await db.appConfig.toArray()).map((config) => ({ ...config, country: getRegion().country })),
             quickTemplates: await db.quickTemplates.toArray(),
             budgetItems: await db.budgetItems.toArray(),
         }
@@ -231,6 +247,14 @@ export async function importDatabase(jsonString: string): Promise<void> {
             throw new Error('Error al insertar los datos en la base de datos local');
         }
     });
+
+    // The restored data defines the region: country from the backup, or the one implied by its currency.
+    const config = data.tables.appConfig[0];
+    const accountCurrency = data.tables.accounts[0]?.currency;
+    const restoredCountry = isCountryCode(config?.country)
+        ? config.country
+        : countryForCurrency(config?.defaultCurrency ?? accountCurrency ?? 'COP');
+    useRegionStore.getState().setCountry(restoredCountry);
 }
 
 export function downloadBackup(jsonString: string) {

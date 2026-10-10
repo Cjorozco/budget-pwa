@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
 import { Wallet } from 'lucide-react';
+import { formatCurrency } from '@/lib/utils';
 
 interface AccountSelectProps {
     value: string;
@@ -43,7 +44,7 @@ export function AccountSelect({ value, onChange, label = 'Cuenta', excludeId }: 
             {selectedAccount && (
                 <div className="px-1">
                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                        Saldo actual: <span className="font-medium text-slate-900 dark:text-slate-200">${selectedAccount.calculatedBalance.toLocaleString()}</span>
+                        Saldo actual: <span className="font-medium text-slate-900 dark:text-slate-200">{formatCurrency(selectedAccount.calculatedBalance)}</span>
                     </p>
                 </div>
             )}

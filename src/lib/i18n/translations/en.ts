@@ -481,6 +481,16 @@ export const en: TranslationSchema = {
         confirmRestoreTitle: 'Restore backup?',
         confirmActionTitle: 'Confirm action',
     },
+    region: {
+        title: 'Region and currency',
+        description: 'Sets the currency of your accounts and how numbers are written.',
+        countries: { CO: 'Colombia', CA: 'Canada', US: 'United States' },
+        currencyLine: 'Currency: {currency}',
+        changeTitle: 'Change the region?',
+        changeMessage: 'The currency of {count} account(s) will change from {from} to {to}. Amounts are not converted: each keeps its numeric value. If you already entered real data, make a backup first.',
+        changeConfirm: 'Change region',
+        changed: 'Region changed to {country} ({currency})',
+    },
     aiProviders: {
         gemini: {
             label: 'Google Gemini',
