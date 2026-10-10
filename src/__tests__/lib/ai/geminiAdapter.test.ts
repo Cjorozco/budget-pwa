@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { GeminiProviderClient } from '@/lib/ai/gateway';
+import { AiProviderError, GeminiProviderClient } from '@/lib/ai/gateway';
 import { GEMINI_FALLBACK_MODELS, GEMINI_MODEL } from '@/lib/ai/geminiConfig';
 
 const OK_JSON = '{"match":"none","categoryId":null,"confidence":0,"reason":"ok"}';
@@ -101,6 +101,47 @@ describe('GeminiProviderClient resilience & errors', () => {
 
         await expect(new GeminiProviderClient('bad-key').generate({ prompt: 'p' })).rejects.toThrow(/401/);
         expect(fetchSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('treats 400 API_KEY_INVALID as a rejected key: one call, typed http-401, no fallback or schema retry', async () => {
+        const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+            new Response(
+                JSON.stringify({
+                    error: {
+                        code: 400,
+                        status: 'INVALID_ARGUMENT',
+                        message: 'API key not valid. Please pass a valid API key.',
+                        details: [{ '@type': 'type.googleapis.com/google.rpc.ErrorInfo', reason: 'API_KEY_INVALID' }],
+                    },
+                }),
+                { status: 400 }
+            )
+        );
+
+        const error = await new GeminiProviderClient('bad-key')
+            .generate({ prompt: 'p', responseSchema: { type: 'OBJECT' } })
+            .catch((e: unknown) => e);
+
+        expect(fetchSpy).toHaveBeenCalledTimes(1);
+        expect(error).toBeInstanceOf(AiProviderError);
+        expect((error as AiProviderError).reason).toBe('http-401');
+        expect((error as AiProviderError).attempts[0].errorReason).toBe('http-401');
+    });
+
+    it('treats 403 permission errors as a rejected key too', async () => {
+        const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(errorResponse(403, 'API key restricted'));
+
+        const error = await new GeminiProviderClient('restricted-key').generate({ prompt: 'p' }).catch((e: unknown) => e);
+
+        expect(fetchSpy).toHaveBeenCalledTimes(1);
+        expect((error as AiProviderError).reason).toBe('http-401');
+    });
+
+    it('still falls back across models on a plain 400 that is not about the key', async () => {
+        const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => errorResponse(400, 'Unsupported parameter'));
+
+        await expect(new GeminiProviderClient('test-key').generate({ prompt: 'p' })).rejects.toThrow(/400/);
+        expect(fetchSpy).toHaveBeenCalledTimes(1 + GEMINI_FALLBACK_MODELS.length);
     });
 
     it('throws a 429 error when quota is exhausted on all models', async () => {

@@ -106,6 +106,8 @@ export interface ProviderMeta {
     pricing: 'free-tier' | 'paid';
     /** Official getting-started documentation. */
     docsUrl: string;
+    /** The provider we suggest first to new users (free, no card). */
+    recommended?: boolean;
 }
 
 export const SUPPORTED_AI_PROVIDERS: ProviderMeta[] = [
@@ -119,6 +121,7 @@ export const SUPPORTED_AI_PROVIDERS: ProviderMeta[] = [
         placeholder: 'Pega tu key de Google AI Studio (AIzaSy...)',
         pricing: 'free-tier',
         docsUrl: 'https://ai.google.dev/gemini-api/docs/api-key',
+        recommended: true,
     },
     {
         id: 'openai',
