@@ -1,4 +1,6 @@
 import { db } from '../db';
+import { useI18nStore } from '../i18n/i18nStore';
+import { getRegion } from '../region/regionStore';
 import {
     findCategoryByPath,
     formatCategoryPath,
@@ -9,8 +11,8 @@ import {
     normalizeForMatch,
 } from './categoryRules';
 import {
-    CATEGORIZATION_SYSTEM_PROMPT,
     buildPrompt,
+    buildSystemPrompt,
     buildResponseSchema,
     sanitizePii,
     type CatalogRow,
@@ -278,7 +280,7 @@ export async function suggestWithAiProvider(
     try {
         const response = await client.generate({
             prompt: buildPrompt(description, type, catalog, recentExamples),
-            systemPrompt: CATEGORIZATION_SYSTEM_PROMPT,
+            systemPrompt: buildSystemPrompt({ country: getRegion().country, language: useI18nStore.getState().language }),
             responseSchema: buildResponseSchema(catalog.map((row) => row.id), rootCategories.map((c) => c.name)),
             signal,
             onProgress,

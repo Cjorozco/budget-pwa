@@ -18,4 +18,6 @@ La app asumía Colombia en todas partes: moneda `COP` fija en tipos, esquemas y 
 - Es un cambio **MAJOR (2.0.0)**: un backup en CAD o USD no se abre en versiones anteriores (su esquema solo aceptaba `COP`). Los backups COP existentes se siguen abriendo.
 - Sin tipo de cambio, quien tenga dinero en dos monedas no puede reflejarlo en una misma app.
 - Cambiar de región con datos reales reetiqueta sin convertir; por eso la confirmación recomienda un respaldo.
-- Pendiente (HU-6b): el prompt de IA y las reglas locales todavía asumen Colombia y español; las categorías y cuentas iniciales siguen sembrándose en español.
+- **IA y reglas por región:** el prompt del categorizador recibe el país (Colombia, Canadá, EE. UU.) y escribe la `reason` en el idioma de la interfaz; con Colombia y español es exactamente el prompt de siempre (un test lo fija). En Canadá se añade una nota de que las descripciones pueden venir en español, inglés o francés.
+- **Reglas locales de Canadá** (`src/lib/ai/categoryRulesCA.ts`): comercios canadienses y palabras en inglés y francés, solo cuando la región es Canadá y evaluadas antes que las reglas base. Coinciden por palabra completa (`wholeWord`), para que "bell" o "cra" no disparen dentro de otras palabras, y apuntan a las categorías por defecto del seed.
+- Pendiente: las categorías y la cuenta inicial siguen sembrándose en español, y las razones del motor local (reglas, historial) siguen en español para todos los idiomas; un usuario canadiense en inglés las ve en español.

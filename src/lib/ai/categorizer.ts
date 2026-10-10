@@ -1,3 +1,5 @@
+import { getRegion } from '@/lib/region/regionStore';
+import { CA_KNOWN_ESTABLISHMENTS } from './categoryRulesCA';
 import { db } from '../db';
 import {
     categoryNamesAreSimilar,
@@ -38,6 +40,11 @@ const KNOWN_ESTABLISHMENTS = [
     'gases del caribe', 'gas natural', 'vanti', 'epm', 'enel', 'codensa', 'air-e', 'afinia',
     'triple a', 'claro', 'tigo', 'movistar', 'etb', 'wom',
 ];
+
+/** Known merchants for the active region (Canada adds its own). */
+function activeEstablishments(): string[] {
+    return getRegion().country === 'CA' ? [...KNOWN_ESTABLISHMENTS, ...CA_KNOWN_ESTABLISHMENTS] : KNOWN_ESTABLISHMENTS;
+}
 
 const STOP_WORDS = new Set([
     'el', 'la', 'los', 'las', 'un', 'una', 'unos', 'unas', 'de', 'del', 'al', 'en', 'y', 'o',
@@ -264,7 +271,7 @@ async function matchTransactionHistory(
 
     // 2. Establecimientos conocidos con transacciones previas
     let establishmentMatch: string | null = null;
-    for (const est of KNOWN_ESTABLISHMENTS) {
+    for (const est of activeEstablishments()) {
         if (lowerDesc.includes(est)) {
             establishmentMatch = est;
             break;
