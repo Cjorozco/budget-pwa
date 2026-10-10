@@ -9,7 +9,7 @@ import {
     getGeminiThinkingLevel,
 } from '../geminiConfig';
 import type { ModelAttempt } from '../types';
-import { toAiProviderError } from './errors';
+import { AiProviderError, toAiProviderError } from './errors';
 import type { AiGenerateOptions, AiGenerateResult, AiProviderClient, ConnectionTestResult } from './types';
 
 const GeminiApiEnvelopeSchema = z.object({
@@ -30,6 +30,7 @@ const GeminiApiEnvelopeSchema = z.object({
             message: z.string().optional(),
             code: z.number().optional(),
             status: z.string().optional(),
+            details: z.array(z.object({ reason: z.string().optional() }).passthrough()).optional(),
         })
         .optional(),
 });
@@ -142,16 +143,31 @@ export class GeminiProviderClient implements AiProviderClient {
                 const envelope = GeminiApiEnvelopeSchema.safeParse(json);
 
                 if (!response.ok) {
+                    // Gemini answers a bad key with 400 + API_KEY_INVALID (not 401), so look at the body too.
+                    const apiError = envelope.success ? envelope.data.error : undefined;
+                    const isInvalidKey =
+                        response.status === 401 ||
+                        response.status === 403 ||
+                        (response.status === 400 &&
+                            (Boolean(apiError?.details?.some((d) => d.reason === 'API_KEY_INVALID')) ||
+                                /API key not valid/i.test(apiError?.message ?? '')));
+
                     currentAttempt.status = 'failed';
                     currentAttempt.httpStatus = response.status;
-                    currentAttempt.errorReason = response.status === 401 ? 'http-401' : response.status === 429 ? 'http-429' : 'http-5xx';
+                    currentAttempt.errorReason = isInvalidKey
+                        ? 'http-401'
+                        : response.status === 429
+                        ? 'http-429'
+                        : response.status >= 500
+                        ? 'http-5xx'
+                        : `http-${response.status}`;
                     attempts.push(currentAttempt);
 
                     lastErrorMessage = envelope.success && envelope.data.error?.message
                         ? envelope.data.error.message
                         : `HTTP ${response.status}`;
 
-                    if (response.status === 400 && schemaEnabled) {
+                    if (response.status === 400 && schemaEnabled && !isInvalidKey) {
                         schemaEnabled = false;
                         attempts.pop();
                         options.onProgress?.(currentAttempt, `${modelLabel}: esquema no aceptado → reintentando sin esquema…`);
@@ -159,9 +175,9 @@ export class GeminiProviderClient implements AiProviderClient {
                         continue;
                     }
 
-                    if (response.status === 401) {
-                        options.onProgress?.(currentAttempt, `${modelLabel}: API Key no válida (401)`);
-                        throw new Error(`Gemini API 401 Unauthorized: ${lastErrorMessage}`);
+                    if (isInvalidKey) {
+                        options.onProgress?.(currentAttempt, `${modelLabel}: API Key no válida`);
+                        throw new AiProviderError(`Gemini API key rejected (${response.status}): ${lastErrorMessage}`, 'http-401', attempts);
                     }
 
                     const nextModel = i < modelsToTry.length - 1 ? getFriendlyModelName(modelsToTry[i + 1]) : null;
@@ -214,7 +230,7 @@ export class GeminiProviderClient implements AiProviderClient {
                     if (i < modelsToTry.length - 1) continue;
                     throw new Error(`Gemini request timeout after ${timeoutMs}ms`);
                 }
-                if (err instanceof Error && err.message.includes('401')) {
+                if (err instanceof AiProviderError || (err instanceof Error && err.message.includes('401'))) {
                     throw err;
                 }
                 currentAttempt.status = 'failed';

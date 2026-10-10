@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ExternalLink, KeyRound, Sparkles, Trash2, Cpu } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { CheckCircle2, Cpu, ExternalLink, HelpCircle, KeyRound, Loader2, Sparkles, Trash2, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import {
@@ -12,8 +12,10 @@ import {
     clearAiApiKey,
     SUPPORTED_AI_PROVIDERS,
     validateProviderKey,
+    type ProviderMeta,
 } from '@/lib/ai/gateway/config';
 import { createAiClient } from '@/lib/ai/gateway/factory';
+import { checkApiKey, type KeyCheckStatus } from '@/lib/ai/gateway/keyCheck';
 import type { AiProviderType } from '@/lib/ai/types';
 import { useUIStore } from '@/store/ui';
 import { useTranslation } from '@/lib/i18n';
@@ -42,6 +44,15 @@ export function GeminiKeyCard() {
     const [isReplacing, setIsReplacing] = useState(false);
     const [fieldError, setFieldError] = useState<string | undefined>();
     const [isTesting, setIsTesting] = useState(false);
+    const [check, setCheck] = useState<{ status: 'idle' | 'checking' | KeyCheckStatus }>({ status: 'idle' });
+    // Latest key typed or pasted: lets a slow check detect that the user already changed it.
+    const latestKey = useRef('');
+    const freeProviders = SUPPORTED_AI_PROVIDERS.filter((p) => p.pricing === 'free-tier');
+    const paidProviders = SUPPORTED_AI_PROVIDERS.filter((p) => p.pricing !== 'free-tier');
+    const [advancedOpen, setAdvancedOpen] = useState(
+        paidProviders.some((p) => p.id === getSelectedAiProvider() || Boolean(getAiApiKey(p.id)))
+    );
+    const [tutorialOpen, setTutorialOpen] = useState(!stored);
 
     const showEditor = !hasKey || isReplacing;
 
@@ -55,6 +66,9 @@ export function GeminiKeyCard() {
         setDraft('');
         setFieldError(undefined);
         setIsReplacing(false);
+        latestKey.current = '';
+        setCheck({ status: 'idle' });
+        setTutorialOpen(!newStored);
     };
 
     const persistAndRefresh = (key: string | null) => {
@@ -70,6 +84,8 @@ export function GeminiKeyCard() {
         setDraft('');
         setFieldError(undefined);
         setIsReplacing(false);
+        latestKey.current = '';
+        setCheck({ status: 'idle' });
     };
 
     const handleSave = () => {
@@ -83,6 +99,21 @@ export function GeminiKeyCard() {
             (hasKey ? t.aiProviders.keyReplaced : t.aiProviders.keySaved).replace('{provider}', providerLabel),
             'success'
         );
+    };
+
+    const verifyKey = async (candidate: string) => {
+        const key = candidate.trim();
+        if (!key) return;
+        const reason = validateProviderKey(selectedProvider, key, t.aiProviders.validations);
+        if (reason) {
+            setFieldError(reason);
+            return;
+        }
+        latestKey.current = key;
+        setCheck({ status: 'checking' });
+        const result = await checkApiKey(selectedProvider, key);
+        if (latestKey.current !== key) return;
+        setCheck({ status: result.status });
     };
 
     const handleTest = async () => {
@@ -127,6 +158,63 @@ export function GeminiKeyCard() {
         setIsReplacing(false);
     };
 
+    const renderProviderButton = (p: ProviderMeta) => {
+        const isSelected = p.id === selectedProvider;
+        const providerHasStoredKey = Boolean(getAiApiKey(p.id));
+        const pT = p.id in t.aiProviders
+            ? t.aiProviders[p.id as 'gemini' | 'openai' | 'anthropic' | 'groq']
+            : undefined;
+        const pLabel = pT?.label ?? p.label;
+        const pSubLabel = pT?.subLabel ?? (p.id === 'gemini' ? 'Google AI' : p.id === 'openai' ? 'ChatGPT' : p.id === 'groq' ? 'Llama 3 / Mixtral' : 'Claude 5.5');
+
+        return (
+            <button
+                key={p.id}
+                type="button"
+                onClick={() => handleProviderChange(p.id)}
+                className={`p-2.5 rounded-xl border text-left flex flex-col justify-between transition-all relative ${
+                    isSelected
+                        ? 'border-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/40 ring-2 ring-indigo-500/20 shadow-xs'
+                        : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40'
+                }`}
+                data-testid={`ai-provider-select-${p.id}`}
+            >
+                <div className="flex items-center justify-between gap-1 mb-1">
+                    <span className="p-1 rounded-md bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 border border-slate-200/60 dark:border-slate-700 shadow-2xs">
+                        <Cpu size={13} />
+                    </span>
+                    {providerHasStoredKey ? (
+                        <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100/80 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded-full">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            {t.settings.keyReady}
+                        </span>
+                    ) : (
+                        <span className="text-[9px] text-slate-600 dark:text-slate-300">
+                            {t.settings.noKey}
+                        </span>
+                    )}
+                </div>
+                <div>
+                    <p className={`text-xs font-bold truncate ${
+                        isSelected
+                            ? 'text-indigo-900 dark:text-indigo-200'
+                            : 'text-slate-800 dark:text-slate-200'
+                    }`}>
+                        {pLabel}
+                    </p>
+                    <p className="text-[10px] text-slate-600 dark:text-slate-300 truncate">
+                        {pSubLabel}
+                    </p>
+                    {p.recommended && (
+                        <p data-testid="ai-recommended-hint" className="mt-1 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400">
+                            {t.aiProviders.recommendedBadge} · {t.aiProviders.recommendedHint}
+                        </p>
+                    )}
+                </div>
+            </button>
+        );
+    };
+
     return (
         <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-4">
             {/* Header */}
@@ -144,65 +232,29 @@ export function GeminiKeyCard() {
                 </div>
             </div>
 
-            {/* Responsive Provider Selection Grid (2x2 on mobile, 4-col on tablet/desktop) */}
+            <p data-testid="ai-optional-notice" className="text-[11px] text-slate-600 dark:text-slate-400 -mt-1">
+                {t.aiProviders.worksWithoutAi}
+            </p>
+
+            {/* Free providers first (Gemini recommended); paid ones live under "advanced" */}
             <div className="space-y-1.5">
                 <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
                     {t.settings.activeProvider}
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {SUPPORTED_AI_PROVIDERS.map((p) => {
-                        const isSelected = p.id === selectedProvider;
-                        const providerHasStoredKey = Boolean(getAiApiKey(p.id));
-                        const pT = p.id in t.aiProviders
-                            ? t.aiProviders[p.id as 'gemini' | 'openai' | 'anthropic' | 'groq']
-                            : undefined;
-                        const pLabel = pT?.label ?? p.label;
-                        const pSubLabel = pT?.subLabel ?? (p.id === 'gemini' ? 'Google AI' : p.id === 'openai' ? 'ChatGPT' : p.id === 'groq' ? 'Llama 3 / Mixtral' : 'Claude 5.5');
-
-                        return (
-                            <button
-                                key={p.id}
-                                type="button"
-                                onClick={() => handleProviderChange(p.id)}
-                                className={`p-2.5 rounded-xl border text-left flex flex-col justify-between transition-all relative ${
-                                    isSelected
-                                        ? 'border-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/40 ring-2 ring-indigo-500/20 shadow-xs'
-                                        : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40'
-                                }`}
-                                data-testid={`ai-provider-select-${p.id}`}
-                            >
-                                <div className="flex items-center justify-between gap-1 mb-1">
-                                    <span className="p-1 rounded-md bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 border border-slate-200/60 dark:border-slate-700 shadow-2xs">
-                                        <Cpu size={13} />
-                                    </span>
-                                    {providerHasStoredKey ? (
-                                        <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100/80 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded-full">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                            {t.settings.keyReady}
-                                        </span>
-                                    ) : (
-                                        <span className="text-[9px] text-slate-600 dark:text-slate-300">
-                                            {t.settings.noKey}
-                                        </span>
-                                    )}
-                                </div>
-                                <div>
-                                    <p className={`text-xs font-bold truncate ${
-                                        isSelected
-                                            ? 'text-indigo-900 dark:text-indigo-200'
-                                            : 'text-slate-800 dark:text-slate-200'
-                                    }`}>
-                                        {pLabel}
-                                    </p>
-                                    <p className="text-[10px] text-slate-600 dark:text-slate-300 truncate">
-                                        {pSubLabel}
-                                    </p>
-                                </div>
-                            </button>
-                        );
-                    })}
-                </div>
+                <div className="grid grid-cols-2 gap-2">{freeProviders.map(renderProviderButton)}</div>
             </div>
+
+            <details
+                data-testid="ai-advanced-providers"
+                open={advancedOpen}
+                onToggle={(e) => setAdvancedOpen(e.currentTarget.open)}
+                className="rounded-xl border border-slate-200 dark:border-slate-800 px-3"
+            >
+                <summary className="min-h-[44px] flex items-center cursor-pointer text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    {t.aiProviders.advancedTitle}
+                </summary>
+                <div className="grid grid-cols-2 gap-2 pb-3">{paidProviders.map(renderProviderButton)}</div>
+            </details>
 
             {/* Provider Details */}
             <div className="flex items-start gap-3">
@@ -241,7 +293,12 @@ export function GeminiKeyCard() {
             </div>
 
             {activeProviderT && (
-                <details data-testid="ai-provider-tutorial" className="rounded-xl bg-slate-50 dark:bg-slate-800/60 px-3">
+                <details
+                    data-testid="ai-provider-tutorial"
+                    open={tutorialOpen}
+                    onToggle={(e) => setTutorialOpen(e.currentTarget.open)}
+                    className="rounded-xl bg-slate-50 dark:bg-slate-800/60 px-3"
+                >
                     <summary className="min-h-[44px] flex items-center cursor-pointer text-xs font-semibold text-slate-700 dark:text-slate-300">
                         {t.aiProviders.tutorialTitle}
                     </summary>
@@ -300,9 +357,52 @@ export function GeminiKeyCard() {
                     onChange={(e) => {
                         setDraft(e.target.value);
                         setFieldError(undefined);
+                        latestKey.current = e.target.value.trim();
+                        setCheck({ status: 'idle' });
+                    }}
+                    onPaste={(e) => {
+                        // Read the value after the paste landed in the field.
+                        const field = e.currentTarget;
+                        setTimeout(() => void verifyKey(field.value), 0);
+                    }}
+                    onBlur={(e) => {
+                        if (check.status === 'idle') void verifyKey(e.currentTarget.value);
                     }}
                     data-testid="gemini-api-key-input"
                 />
+            )}
+
+            {showEditor && check.status !== 'idle' && (
+                <p
+                    data-testid="ai-key-check"
+                    data-status={check.status}
+                    role="status"
+                    aria-live="polite"
+                    className={`flex items-start gap-1.5 text-[11px] font-medium ${
+                        check.status === 'valid'
+                            ? 'text-emerald-700 dark:text-emerald-400'
+                            : check.status === 'invalid'
+                            ? 'text-red-600 dark:text-red-400'
+                            : 'text-slate-600 dark:text-slate-400'
+                    }`}
+                >
+                    {check.status === 'checking' && <Loader2 size={14} className="shrink-0 mt-px animate-spin" />}
+                    {check.status === 'valid' && <CheckCircle2 size={14} className="shrink-0 mt-px" />}
+                    {check.status === 'invalid' && <XCircle size={14} className="shrink-0 mt-px" />}
+                    {check.status === 'unknown' && <HelpCircle size={14} className="shrink-0 mt-px" />}
+                    <span>
+                        {check.status === 'checking' && t.aiProviders.keyChecking}
+                        {check.status === 'valid' && t.aiProviders.keyValid.replace('{provider}', providerLabel)}
+                        {check.status === 'invalid' && t.aiProviders.keyInvalid.replace('{provider}', providerLabel)}
+                        {check.status === 'unknown' && t.aiProviders.keyUnknown}
+                    </span>
+                </p>
+            )}
+
+            {showEditor && (
+                <p className="text-[10px] text-slate-500">
+                    {t.aiProviders.keyCheckNote.replace('{provider}', providerLabel)}
+                </p>
             )}
 
             <p className="text-[10px] text-slate-500">

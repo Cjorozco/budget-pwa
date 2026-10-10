@@ -555,6 +555,15 @@ export interface TranslationSchema {
         subscriptionNotice: string;
         badgeFree: string;
         badgePaid: string;
+        worksWithoutAi: string;
+        recommendedBadge: string;
+        recommendedHint: string;
+        advancedTitle: string;
+        keyChecking: string;
+        keyValid: string;
+        keyInvalid: string;
+        keyUnknown: string;
+        keyCheckNote: string;
         keyReplaced: string;
         keySaved: string;
         keyDeleted: string;
