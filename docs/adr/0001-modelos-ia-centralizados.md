@@ -9,7 +9,7 @@ Los IDs de modelo vivían repartidos entre cada adaptador, `geminiConfig.ts`, lo
 - `src/lib/ai/models.ts` es la única fuente de IDs, etiquetas, orden de respaldo y `thinkingLevel` por modelo.
 - Cadena Gemini: `gemini-3.5-flash-lite` → `gemini-3.1-flash-lite` → `gemini-3.6-flash` → `gemini-3.8-flash`.
 - No se envían `temperature`, `top_p`, `top_k` ni `candidateCount` a Gemini.
-- Plazo total de 8 s para la cadena Gemini (6 s por intento); al agotarse, actúa el motor local.
+- Plazo total de 8 s para la cadena Gemini (4 s por intento, para que quepa al menos un respaldo); al agotarse, actúa el motor local.
 - Se elimina el flujo Gemini duplicado; sus tests de resiliencia pasaron a `geminiAdapter.test.ts`.
 - Se retiran de las cadenas los modelos guard de Groq y `gpt-3.5-turbo`.
 

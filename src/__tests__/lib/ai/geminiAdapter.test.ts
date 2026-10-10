@@ -149,3 +149,61 @@ describe('GeminiProviderClient resilience & errors', () => {
         expect(result.attempts?.map((a) => a.status)).toEqual(['failed', 'success']);
     });
 });
+
+describe('GeminiProviderClient structured output', () => {
+    afterEach(() => vi.restoreAllMocks());
+
+    const schema = { type: 'OBJECT', properties: { match: { type: 'STRING' } } };
+
+    it('sends responseSchema when provided', async () => {
+        let body: Record<string, unknown> = {};
+        vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
+            body = JSON.parse(String((init as RequestInit).body));
+            return okResponse(OK_JSON);
+        });
+
+        await new GeminiProviderClient('test-key').generate({ prompt: 'p', responseSchema: schema });
+
+        expect((body.generationConfig as Record<string, unknown>).responseSchema).toEqual(schema);
+    });
+
+    it('does not send responseSchema when none is provided', async () => {
+        let body: Record<string, unknown> = {};
+        vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
+            body = JSON.parse(String((init as RequestInit).body));
+            return okResponse(OK_JSON);
+        });
+
+        await new GeminiProviderClient('test-key').generate({ prompt: 'p' });
+
+        expect(body.generationConfig as Record<string, unknown>).not.toHaveProperty('responseSchema');
+    });
+
+    it('retries the same model once without the schema when the API rejects it with 400', async () => {
+        const urls: string[] = [];
+        const bodies: Array<Record<string, unknown>> = [];
+        vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
+            urls.push(String(url));
+            bodies.push(JSON.parse(String((init as RequestInit).body)));
+            return bodies.length === 1 ? errorResponse(400, 'Invalid schema') : okResponse(OK_JSON);
+        });
+
+        const result = await new GeminiProviderClient('test-key').generate({ prompt: 'p', responseSchema: schema });
+
+        expect(urls[0]).toBe(urls[1]);
+        expect((bodies[0].generationConfig as Record<string, unknown>)).toHaveProperty('responseSchema');
+        expect((bodies[1].generationConfig as Record<string, unknown>)).not.toHaveProperty('responseSchema');
+        expect(result.text).toBe(OK_JSON);
+        // the internal retry is not reported as a failed attempt
+        expect(result.attempts?.map((a) => a.status)).toEqual(['success']);
+    });
+
+    it('does not loop: a second 400 moves on to the next model', async () => {
+        const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => errorResponse(400, 'bad request'));
+
+        await expect(
+            new GeminiProviderClient('test-key').generate({ prompt: 'p', responseSchema: schema })
+        ).rejects.toThrow();
+        expect(fetchSpy).toHaveBeenCalledTimes(1 + 1 + GEMINI_FALLBACK_MODELS.length);
+    });
+});
