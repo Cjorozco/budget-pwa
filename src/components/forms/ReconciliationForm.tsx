@@ -1,4 +1,6 @@
 import { roundMoney } from '@/lib/money';
+import { seedNameFor } from '@/lib/db/seedNames';
+import { useI18nStore } from '@/lib/i18n/i18nStore';
 import { useForm, Controller, useWatch } from 'react-hook-form';
 import { MoneyInput } from '@/components/ui/MoneyInput';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -12,6 +14,9 @@ import type { Account } from '@/lib/types';
 import { AlertTriangle, CheckCircle } from 'lucide-react';
 import { useUIStore } from '@/store/ui';
 import { useTranslation } from '@/lib/i18n';
+
+/** Canonical (Spanish) name of the category that receives balance adjustments. */
+const ADJUSTMENT_KEY = 'Ajuste de Reconciliación';
 
 const ReconciliationSchema = z.object({
     declaredBalance: z.number(),
@@ -51,16 +56,20 @@ export function ReconciliationForm({ account, onSuccess, onCancel }: Reconciliat
     const onSubmit = async (data: ReconciliationFormData) => {
         try {
             await db.transaction('rw', db.reconciliations, db.accounts, db.transactions, db.categories, async () => {
-                // 1. Find or create "Ajuste de Reconciliación" category
+                // 1. Find or create the adjustment category. Found by its canonical key, so it is the same
+                // category whatever language it was created in (legacy ones are found by name).
+                const language = useI18nStore.getState().language;
+                const adjustmentName = seedNameFor(ADJUSTMENT_KEY, language);
                 let adjustmentCategory = await db.categories
-                    .filter(c => c.name === 'Ajuste de Reconciliación' && c.type === 'expense')
+                    .filter(c => c.type === 'expense' && (c.seedKey === ADJUSTMENT_KEY || c.name === ADJUSTMENT_KEY || c.name === adjustmentName))
                     .first();
 
                 if (!adjustmentCategory) {
                     const catId = uuidv4();
                     await db.categories.add({
                         id: catId,
-                        name: 'Ajuste de Reconciliación',
+                        name: adjustmentName,
+                        seedKey: ADJUSTMENT_KEY,
                         type: 'expense',
                         color: '#64748b',
                         usageCount: 0,
@@ -81,7 +90,7 @@ export function ReconciliationForm({ account, onSuccess, onCancel }: Reconciliat
                     await db.transactions.add({
                         id: txId,
                         amount: txAmount,
-                        description: `Ajuste de reconciliación - ${account.name}`,
+                        description: `${language === 'es' ? 'Ajuste de reconciliación' : adjustmentName} - ${account.name}`,
                         type: txType,
                         accountId: account.id,
                         categoryId: adjustmentCategory.id,

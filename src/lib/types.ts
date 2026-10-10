@@ -50,6 +50,8 @@ export interface Category {
     color: string;
     icon?: string;
     parentId?: string; // For subcategories
+    /** Canonical Spanish path of a default category ("Gastos diarios › Supermercado"), kept when its name is translated. */
+    seedKey?: string;
     usageCount: number;
     isActive: boolean;
 }

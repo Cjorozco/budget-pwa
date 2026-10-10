@@ -58,6 +58,7 @@ export async function loadCategoryCatalog(
             ? `${byId.get(c.parentId)!.name} › ${c.name}`
             : c.name,
         isLeaf: !parentIds.has(c.id),
+        ...(c.seedKey ? { canonicalPath: c.seedKey } : {}),
     }));
 }
 

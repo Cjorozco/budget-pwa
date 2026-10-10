@@ -1,7 +1,9 @@
 import { db } from './index';
 import { v4 as uuidv4 } from 'uuid';
 import { useI18nStore } from '@/lib/i18n/i18nStore';
-import { getRegion, initRegionFromLocale } from '@/lib/region/regionStore';
+import { applyFirstRunRegion, getRegion } from '@/lib/region/regionStore';
+import type { Category } from '../types';
+import { localizeSeedCategories, quickTemplateDefaults } from './seedNames';
 
 /** Default account names. Colombia keeps its historical names; elsewhere they follow the UI language. */
 function defaultAccountNames(): { cash: string; bank: string } {
@@ -17,7 +19,7 @@ function defaultAccountNames(): { cash: string; bank: string } {
 export const seedInitialData = async () => {
     // First run only (empty database): pick the region from the browser locale. Existing users keep theirs.
     if ((await db.accounts.count()) === 0 && (await db.categories.count()) === 0) {
-        initRegionFromLocale();
+        applyFirstRunRegion();
     }
     const { currency, country } = getRegion();
     const accountNames = defaultAccountNames();
@@ -49,7 +51,7 @@ export const seedInitialData = async () => {
             const viajesId = uuidv4();
             const serviciosBasicosId = uuidv4();
 
-            await db.categories.bulkAdd([
+            const defaultCategories: Category[] = [
                 // ===== INCOME PARENTS =====
                 { id: salarioId, name: 'Salario', type: 'income', color: '#10b981', usageCount: 0, isActive: true },
                 { id: freelanceId, name: 'Freelance', type: 'income', color: '#8b5cf6', usageCount: 0, isActive: true },
@@ -210,7 +212,10 @@ export const seedInitialData = async () => {
                 { id: uuidv4(), name: 'Electricidad', type: 'expense', color: '#64748b', parentId: serviciosBasicosId, usageCount: 0, isActive: true },
                 { id: uuidv4(), name: 'Teléfono/Celular', type: 'expense', color: '#64748b', parentId: serviciosBasicosId, usageCount: 0, isActive: true },
                 { id: uuidv4(), name: 'Otros', type: 'expense', color: '#64748b', parentId: serviciosBasicosId, usageCount: 0, isActive: true },
-            ]);
+            ];
+
+            // Seeded in the UI language of the first run; seedKey keeps the canonical Spanish path.
+            await db.categories.bulkAdd(localizeSeedCategories(defaultCategories, useI18nStore.getState().language));
         }
 
         const accountCount = await db.accounts.count();
@@ -337,38 +342,14 @@ export async function seedQuickTemplates() {
     const existingTemplates = await db.quickTemplates.count();
     if (existingTemplates > 0) return;
 
-    const templates = [
-        {
-            id: uuidv4(),
-            name: 'Supermercado',
-            icon: '🛒',
-            description: 'Compra semanal o diaria de víveres',
-            amount: 50000,
-            type: 'expense' as const,
-            createdAt: Date.now(),
-            updatedAt: Date.now()
-        },
-        {
-            id: uuidv4(),
-            name: 'Almuerzo',
-            icon: '🍽️',
-            description: 'Almuerzo ejecutivo o corrientazo',
-            amount: 20000,
-            type: 'expense' as const,
-            createdAt: Date.now(),
-            updatedAt: Date.now()
-        },
-        {
-            id: uuidv4(),
-            name: 'Transporte',
-            icon: '🚗',
-            description: 'Uber, Didi o transporte público',
-            amount: 15000,
-            type: 'expense' as const,
-            createdAt: Date.now(),
-            updatedAt: Date.now()
-        }
-    ];
+    const now = Date.now();
+    const templates = quickTemplateDefaults(useI18nStore.getState().language, getRegion().currency).map((template) => ({
+        id: uuidv4(),
+        ...template,
+        type: 'expense' as const,
+        createdAt: now,
+        updatedAt: now,
+    }));
 
     await db.quickTemplates.bulkAdd(templates);
     console.log('✅ Plantillas rápidas iniciales creadas');
