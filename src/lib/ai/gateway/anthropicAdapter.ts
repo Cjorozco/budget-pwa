@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { getModelChain, getModelLabel, getModelSpec } from '../models';
 import type { ModelAttempt } from '../types';
+import { toAiProviderError } from './errors';
 import type { AiGenerateOptions, AiGenerateResult, AiProviderClient, ConnectionTestResult } from './types';
 
 export const ANTHROPIC_MODELS = getModelChain('anthropic').map((m) => m.id);
@@ -37,13 +38,21 @@ export class AnthropicProviderClient implements AiProviderClient {
     }
 
     async generate(options: AiGenerateOptions): Promise<AiGenerateResult> {
+        const attempts: ModelAttempt[] = [];
+        try {
+            return await this.run(options, attempts);
+        } catch (err) {
+            throw toAiProviderError(err, attempts);
+        }
+    }
+
+    private async run(options: AiGenerateOptions, attempts: ModelAttempt[]): Promise<AiGenerateResult> {
         if (!this.apiKey) {
             throw new Error('No API key provided for Anthropic Claude');
         }
 
         const timeoutMs = options.timeoutMs ?? 8000;
         const modelsToTry = [...ANTHROPIC_MODELS];
-        const attempts: ModelAttempt[] = [];
         let lastErrorMessage = 'Unknown network error';
 
         for (let i = 0; i < modelsToTry.length; i++) {

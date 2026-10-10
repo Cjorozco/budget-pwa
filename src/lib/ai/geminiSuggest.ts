@@ -9,6 +9,7 @@ import {
     normalizeForMatch,
 } from './categoryRules';
 import { getAiApiKey, getSelectedAiProvider } from './gateway/config';
+import { AiProviderError } from './gateway/errors';
 import { createAiClient } from './gateway/factory';
 import type { GeminiResult, LlmResult, ModelAttempt } from './types';
 
@@ -330,6 +331,9 @@ export async function suggestWithAiProvider(
     } catch (err: unknown) {
         if (signal?.aborted) {
             return { status: 'error', reason: 'network-error' };
+        }
+        if (err instanceof AiProviderError) {
+            return { status: 'error', reason: err.reason, attempts: err.attempts };
         }
         const errorReason = err instanceof Error && err.message.includes('401')
             ? 'http-401'

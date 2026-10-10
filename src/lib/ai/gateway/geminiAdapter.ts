@@ -9,6 +9,7 @@ import {
     getGeminiThinkingLevel,
 } from '../geminiConfig';
 import type { ModelAttempt } from '../types';
+import { toAiProviderError } from './errors';
 import type { AiGenerateOptions, AiGenerateResult, AiProviderClient, ConnectionTestResult } from './types';
 
 const GeminiApiEnvelopeSchema = z.object({
@@ -42,6 +43,15 @@ export class GeminiProviderClient implements AiProviderClient {
     }
 
     async generate(options: AiGenerateOptions): Promise<AiGenerateResult> {
+        const attempts: ModelAttempt[] = [];
+        try {
+            return await this.run(options, attempts);
+        } catch (err) {
+            throw toAiProviderError(err, attempts);
+        }
+    }
+
+    private async run(options: AiGenerateOptions, attempts: ModelAttempt[]): Promise<AiGenerateResult> {
         if (!this.apiKey) {
             throw new Error('No API key provided for Google Gemini');
         }
@@ -50,7 +60,6 @@ export class GeminiProviderClient implements AiProviderClient {
         const totalMs = options.totalTimeoutMs ?? GEMINI_TOTAL_TIMEOUT_MS;
         const perAttemptMs = options.timeoutMs ?? GEMINI_ATTEMPT_TIMEOUT_MS;
         const modelsToTry = [GEMINI_MODEL, ...GEMINI_FALLBACK_MODELS];
-        const attempts: ModelAttempt[] = [];
         let lastErrorMessage = 'Unknown network error';
 
         for (let i = 0; i < modelsToTry.length; i++) {

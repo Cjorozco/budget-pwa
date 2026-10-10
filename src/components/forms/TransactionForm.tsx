@@ -11,7 +11,8 @@ import { Input } from '@/components/ui/Input';
 import { type CategorySuggestion } from '@/lib/ai/categorizer';
 import { findOrCreateCategory } from '@/lib/ai/categoryResolver';
 import { suggestCategoryWithLlm } from '@/lib/ai/suggestWithLlm';
-import { getSelectedAiProvider, hasAiApiKey } from '@/lib/ai/gateway/config';
+import { formatAiNotice, getAiNotice } from '@/lib/ai/aiNotice';
+import { getProviderMeta, getSelectedAiProvider, hasAiApiKey } from '@/lib/ai/gateway/config';
 import { useUIStore } from '@/store/ui';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
@@ -19,7 +20,6 @@ import { format } from 'date-fns';
 import { PiggyBank, Sparkles, AlertCircle, FolderPlus } from 'lucide-react';
 import { formatCurrency, toSentenceCase } from '@/lib/utils';
 import type { Account, Category, Reserve, Transaction } from '@/lib/types';
-import type { ModelAttempt } from '@/lib/ai/types';
 import { useTranslation } from '@/lib/i18n';
 
 type TransactionFormInput = z.input<typeof TransactionSchema>;
@@ -101,7 +101,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
         const timer = setTimeout(async () => {
             const activeProvider = getSelectedAiProvider();
             const mayCallAi = isPro && hasAiApiKey(activeProvider);
-            const providerName = activeProvider === 'groq' ? 'Groq' : activeProvider === 'anthropic' ? 'Claude' : activeProvider === 'gemini' ? 'Gemini' : 'AI';
+            const providerName = getProviderMeta(activeProvider).label;
             setAiPending(mayCallAi);
             setAiProgressMessage(mayCallAi ? t.forms.consultingProvider.replace('{provider}', providerName) : null);
             try {
@@ -119,22 +119,8 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                     setAiSuggestion(suggestion);
                     setShowAiSuggestion(true);
 
-                    // Si se usó un modelo de respaldo tras fallo de otros
-                    const attempts: ModelAttempt[] = result.aiDiagnosis?.attempts || result.geminiDiagnosis?.attempts || [];
-                    const failedAttempts = attempts.filter((a: ModelAttempt) => a.status === 'failed');
-                    if (result.source !== 'local' && failedAttempts.length > 0) {
-                        const failedNames = failedAttempts.map((a: ModelAttempt) => `${a.modelLabel} (${a.httpStatus ?? a.errorReason})`).join(', ');
-                        const successAttempt = attempts.find((a: ModelAttempt) => a.status === 'success');
-                        const usedLabel = successAttempt?.modelLabel || 'backup model';
-                        setAiDiagnosticNotice(`${failedNames} unavailable. Resolved via ${usedLabel}.`);
-                    } else if (result.source === 'local' && failedAttempts.length > 0) {
-                        const failedNames = failedAttempts.map((a: ModelAttempt) => `${a.modelLabel} (${a.httpStatus ?? a.errorReason})`).join(', ');
-                        setAiDiagnosticNotice(`AI unavailable (${failedNames}). Local rules used.`);
-                    } else if (result.aiDiagnosis?.status === 'error' && result.aiDiagnosis.reason === 'http-429') {
-                        setAiDiagnosticNotice(`Daily quota reached for ${providerName}. Local rules used.`);
-                    } else {
-                        setAiDiagnosticNotice(null);
-                    }
+                    const notice = getAiNotice(result);
+                    setAiDiagnosticNotice(notice ? formatAiNotice(notice, providerName, t.forms.aiNotice) : null);
 
                     if (
                         !categoryTouchedRef.current &&
@@ -148,7 +134,8 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                 } else {
                     setAiSuggestion(null);
                     setShowAiSuggestion(false);
-                    setAiDiagnosticNotice(null);
+                    const notice = getAiNotice(result);
+                    setAiDiagnosticNotice(notice ? formatAiNotice(notice, providerName, t.forms.aiNotice) : null);
                 }
             } finally {
                 if (!controller.signal.aborted) {
