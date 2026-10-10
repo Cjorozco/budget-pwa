@@ -135,5 +135,7 @@ describe('summarize and renderReport', () => {
         expect(report).toContain('## Fallos de model-x (4)');
         expect(report).toContain('"b" → root-only: obtuvo Niños › Juguetes; esperado Niños › Ropa');
         expect(report).toContain('esperado ninguna');
+        // one record has an error, so the report must warn that the numbers are not comparable
+        expect(report).toContain('Las cifras de acierto no son comparables');
     });
 });

@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { describe, it } from 'vitest';
 import { db } from '@/lib/db';
 import { seedInitialData } from '@/lib/db/seed';
@@ -31,33 +31,60 @@ const models = (process.env.AI_EVAL_MODELS ?? AI_MODEL_CHAINS.gemini.map((m) => 
     .filter(Boolean);
 const limit = Number(process.env.AI_EVAL_LIMIT ?? GOLDEN_ITEMS.length);
 const concurrency = Math.max(1, Number(process.env.AI_EVAL_CONCURRENCY ?? 2));
-const delayMs = Number(process.env.AI_EVAL_DELAY_MS ?? 400);
+// The free tier throttles requests per minute; stay under it so quota errors do not pollute the results.
+const requestsPerMinute = Math.max(1, Number(process.env.AI_EVAL_RPM ?? 10));
+const minIntervalMs = 60_000 / requestsPerMinute;
+const MAX_QUOTA_RETRIES = 3;
+const QUOTA_BACKOFF_MS = 20_000;
 // Generous limits so latency is measured honestly; the report flags answers slower than production allows.
 const EVAL_TIMEOUT_MS = 30_000;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const out = (text: string) => process.stdout.write(text + '\n');
 
+// Vitest buffers worker output; a progress file shows what is happening during a long run.
+const progress = (text: string) => {
+    mkdirSync('eval-results', { recursive: true });
+    appendFileSync('eval-results/progress.log', `${new Date().toISOString().slice(11, 19)} ${text}\n`);
+};
+
+let nextSlot = 0;
+async function waitForSlot(): Promise<void> {
+    const now = Date.now();
+    const start = Math.max(now, nextSlot);
+    nextSlot = start + minIntervalMs;
+    if (start > now) await sleep(start - now);
+}
+
 async function runModel(model: string, apiKey: string): Promise<EvalRecord[]> {
     const client = new GeminiProviderClient(apiKey, { models: [model], timeoutMs: EVAL_TIMEOUT_MS, totalTimeoutMs: EVAL_TIMEOUT_MS });
     const items = GOLDEN_ITEMS.slice(0, limit);
     const records: EvalRecord[] = new Array(items.length);
     let next = 0;
+    let done = 0;
 
     const worker = async () => {
         while (next < items.length) {
             const index = next++;
             const item = items[index];
-            const started = Date.now();
-            let record: EvalRecord;
-            try {
-                const result = await suggestWithAiProvider(item.text, item.type, undefined, undefined, { client });
-                record = { item, latencyMs: Date.now() - started, ...classifyOutcome(item, result) };
-            } catch (err) {
-                record = { item, latencyMs: Date.now() - started, outcome: 'error', got: err instanceof Error ? err.message : String(err) };
+            let record!: EvalRecord;
+            for (let attempt = 0; attempt <= MAX_QUOTA_RETRIES; attempt++) {
+                await waitForSlot();
+                const started = Date.now();
+                try {
+                    const result = await suggestWithAiProvider(item.text, item.type, undefined, undefined, { client });
+                    record = { item, latencyMs: Date.now() - started, ...classifyOutcome(item, result) };
+                } catch (err) {
+                    record = { item, latencyMs: Date.now() - started, outcome: 'error', got: err instanceof Error ? err.message : String(err) };
+                }
+                const quotaHit = record.outcome === 'error' && record.got === 'http-429';
+                if (!quotaHit || attempt === MAX_QUOTA_RETRIES) break;
+                progress(`${model} cuota (429) en "${item.text.slice(0, 30)}": espero ${(QUOTA_BACKOFF_MS * (attempt + 1)) / 1000}s y reintento`);
+                await sleep(QUOTA_BACKOFF_MS * (attempt + 1));
             }
             records[index] = record;
-            if (delayMs > 0) await sleep(delayMs);
+            done++;
+            progress(`${model} ${done}/${items.length} ${record.outcome} ${record.latencyMs}ms "${item.text.slice(0, 40)}"`);
         }
     };
 
@@ -73,6 +100,7 @@ describe('AI categorizer evaluation', () => {
         const results = [];
         for (const model of models) {
             out(`Evaluando ${model}…`);
+            progress(`== ${model}: inicio`);
             const records = await runModel(model, key!);
             results.push({ model, records, summary: summarize(records, GEMINI_ATTEMPT_TIMEOUT_MS) });
         }

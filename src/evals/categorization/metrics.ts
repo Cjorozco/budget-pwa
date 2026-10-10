@@ -142,6 +142,11 @@ export function renderReport(
             `| ${model} | ${pct(s.accuracy)} (${s.counts.correct}/${s.answerable}) | ${pct(s.rootAccuracy)} | ${pct(s.noneRecall)} (${s.counts['none-correct']}/${s.expectedNone}) | ${s.counts.error + s.counts.rejected} | ${s.latency.p50} ms | ${s.latency.p95} ms | ${s.latency.max} ms | ${pct(s.latency.overCapPct)} | ${conf(s.confidence.whenCorrect)} | ${conf(s.confidence.whenWrong)} |`
         );
     }
+    const failed = results.filter((r) => r.summary.counts.error + r.summary.counts.rejected > 0);
+    if (failed.length > 0) {
+        lines.push('');
+        lines.push(`> ⚠ Hubo respuestas sin resultado (cuota, red o validación) en: ${failed.map((r) => `${r.model} (${r.summary.counts.error + r.summary.counts.rejected})`).join(', ')}. Las cifras de acierto no son comparables entre modelos mientras haya errores; baja AI_EVAL_RPM y repite.`);
+    }
     lines.push('');
     lines.push('## Por tipo de caso (aciertos / total)');
     lines.push('');
