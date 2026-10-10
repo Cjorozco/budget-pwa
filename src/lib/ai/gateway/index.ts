@@ -7,3 +7,4 @@ export * from './openaiAdapter';
 export * from './factory';
 export * from './orchestrator';
 export * from './useAiClient';
+export * from './errors';

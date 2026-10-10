@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { getModelChain, getModelLabel } from '../models';
 import type { ModelAttempt } from '../types';
+import { toAiProviderError } from './errors';
 import type { AiGenerateOptions, AiGenerateResult, AiProviderClient, ConnectionTestResult } from './types';
 
 export const GROQ_MODELS = getModelChain('groq').map((m) => m.id);
@@ -37,13 +38,21 @@ export class GroqProviderClient implements AiProviderClient {
     }
 
     async generate(options: AiGenerateOptions): Promise<AiGenerateResult> {
+        const attempts: ModelAttempt[] = [];
+        try {
+            return await this.run(options, attempts);
+        } catch (err) {
+            throw toAiProviderError(err, attempts);
+        }
+    }
+
+    private async run(options: AiGenerateOptions, attempts: ModelAttempt[]): Promise<AiGenerateResult> {
         if (!this.apiKey) {
             throw new Error('No API key provided for Groq');
         }
 
         const timeoutMs = options.timeoutMs ?? 8000;
         const modelsToTry = [...GROQ_MODELS];
-        const attempts: ModelAttempt[] = [];
         let lastErrorMessage = 'Unknown network error';
 
         for (let i = 0; i < modelsToTry.length; i++) {

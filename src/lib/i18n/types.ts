@@ -364,6 +364,16 @@ export interface TranslationSchema {
         descriptionPlaceholder: string;
         consultingAi: string;
         consultingProvider: string;
+        aiNotice: {
+            invalidKey: string;
+            quota: string;
+            network: string;
+            timeout: string;
+            server: string;
+            noMatch: string;
+            backupModel: string;
+            usedLocal: string;
+        };
         geminiSuggestion: string;
         claudeSuggestion: string;
         groqSuggestion: string;
