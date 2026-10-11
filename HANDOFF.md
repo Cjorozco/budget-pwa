@@ -30,7 +30,7 @@ PWA offline-first (React 19, Vite 7, Dexie, Zustand, TanStack Charts). Desde el 
 - **Razones del motor local** (reglas e historial): siguen en español para todos los idiomas. Tampoco hay botón para traducir categorías ya creadas.
 - **IA, fuera de alcance por ahora:** las preguntas "¿es recurrente?" (→ plantilla) y "¿es transferencia propia?" (→ transferencia) de HU-5. Además `3.6-flash` y `3.8-flash` casi no sirven como respaldo dentro del plazo de 8 s ni con key gratuita.
 - Chunk principal grande (~1,1 MiB de precache en el build actual); considerar `import()` dinámico si afecta la carga.
-- Ramas: `develop` va dos commits atrás de `master` (`469e47c` vs `eae9456`); ponerla al día con `master`. Queda `claude/determined-davinci-36tnp1` en el remoto, con un `docs/HANDOFF.md` antiguo (v1.4.2); se puede borrar al mergear este documento.
+- Ramas: `develop` está al día con `master` (`eae9456`). Queda `claude/determined-davinci-36tnp1` en el remoto, con un `docs/HANDOFF.md` antiguo (v1.4.2); se puede borrar al mergear este documento.
 
 ## Cómo operar
 
