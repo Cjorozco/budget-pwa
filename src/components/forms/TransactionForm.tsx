@@ -14,6 +14,7 @@ import { suggestCategoryWithLlm } from '@/lib/ai/suggestWithLlm';
 import { formatAiNotice, getAiNotice } from '@/lib/ai/aiNotice';
 import { getProviderMeta, getSelectedAiProvider, hasAiApiKey } from '@/lib/ai/gateway/config';
 import { useUIStore } from '@/store/ui';
+import { useLicenseStore } from '@/store/licenseStore';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 import { format } from 'date-fns';
@@ -35,7 +36,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
     const accounts = useLiveQuery(() => db.accounts.filter(a => a.isActive).toArray()) || [];
     const allCategories = useLiveQuery(() => db.categories.filter(c => c.isActive).toArray()) || [];
 
-    const isPro = useUIStore((s) => s.isPro);
+    const isPro = useLicenseStore((s) => s.isPro);
     const addToast = useUIStore((s) => s.addToast);
     const [aiSuggestion, setAiSuggestion] = useState<CategorySuggestion | null>(null);
     const [showAiSuggestion, setShowAiSuggestion] = useState(false);

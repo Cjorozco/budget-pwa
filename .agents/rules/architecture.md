@@ -45,7 +45,7 @@ No negociables:
 - **Offline-first:** los datos nunca salen del dispositivo; se persisten en IndexedDB.
 - **Saldos atómicos:** el saldo calculado es la verdad derivada de la historia de transacciones.
 - **IA multi-proveedor BYOK (PRO/GOD):** Google Gemini, Anthropic Claude, OpenAI y Groq directo desde el navegador con claves del usuario. Sin proxy ni backend. Puntos de extensión: `src/lib/ai/gateway/` y el orquestador `categorizer.ts`. Los IDs de modelo y su orden de respaldo viven solo en `src/lib/ai/models.ts` (ver `docs/adr/0001-modelos-ia-centralizados.md`).
-- **Licenciamiento Lemon Squeezy:** activación contra `api.lemonsqueezy.com` y validación criptográfica local con fallback offline.
+- **Licenciamiento Lemon Squeezy:** solo una licencia real de nuestra tienda (store y producto verificados con IDs de configuración) activa PRO/GOD, y siempre en línea contra `api.lemonsqueezy.com`. Se revalida cada 24 h, hay 14 días de gracia sin conexión y no existe ningún formato de clave que se acepte sin Lemon Squeezy. Ver `docs/adr/0004-licencias.md`.
 
 ## PWA, Dexie y estado
 

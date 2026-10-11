@@ -17,6 +17,7 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { UpgradeModal } from '@/components/ui/UpgradeModal';
 import { useRegionStore } from '@/lib/region/regionStore';
+import { startLicenseLifecycle } from '@/store/licenseStore';
 
 
 function App() {
@@ -26,6 +27,8 @@ function App() {
   useEffect(() => {
     // Run seeder on mount
     seedInitialData().catch(console.error);
+    // Verify the stored license with Lemon Squeezy (throttled, offline-tolerant)
+    startLicenseLifecycle();
   }, []);
 
   return (

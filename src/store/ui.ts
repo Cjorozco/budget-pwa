@@ -29,28 +29,9 @@ interface UIState {
     confirmDialog: ActiveConfirmDialog | null;
     confirm: (options: ConfirmDialogOptions) => Promise<boolean>;
     closeConfirmDialog: (result: boolean) => void;
-    isPro: boolean;
-    unlockPro: () => void;
 }
 
-const getInitialIsPro = () => {
-    try {
-        return localStorage.getItem('budget_is_pro') === 'true';
-    } catch {
-        return false;
-    }
-};
-
 export const useUIStore = create<UIState>((set) => ({
-    isPro: getInitialIsPro(),
-    unlockPro: () => {
-        try {
-            localStorage.setItem('budget_is_pro', 'true');
-        } catch {
-            // localStorage unavailable (private mode); keep the in-memory flag only
-        }
-        set({ isPro: true });
-    },
     isSidebarOpen: false,
     toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
     toasts: [],
