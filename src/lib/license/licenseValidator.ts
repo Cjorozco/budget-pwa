@@ -5,21 +5,10 @@
  * There is no offline key format: a UUID-shaped string is NOT a license by itself.
  */
 
-import { type Tier, type PlanType } from '../../store/licenseStore';
-import {
-    LEMON_STORE_ID,
-    isLicenseConfigured,
-    PRO_PRODUCT_IDS,
-    PRO_VARIANT_IDS,
-    GOD_PRODUCT_IDS,
-    GOD_VARIANT_IDS,
-    MONTHLY_VARIANT_IDS,
-    ANNUAL_VARIANT_IDS,
-    LIFETIME_VARIANT_IDS,
-} from './licenseConfig';
+import { type Tier } from '../../store/licenseStore';
+import { LEMON_STORE_ID, isLicenseConfigured, PRO_PRODUCT_IDS, PRO_VARIANT_IDS } from './licenseConfig';
 
 const LEMON_API = 'https://api.lemonsqueezy.com/v1/licenses';
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 export const NEEDS_INTERNET_MESSAGE = 'Necesitas internet para activar tu licencia.';
 export const NOT_CONFIGURED_MESSAGE = 'La activación de licencias no está configurada en esta versión de la app.';
@@ -36,7 +25,6 @@ export type LicenseFailureReason = 'invalid' | 'expired' | 'network';
 export interface LicenseValidationResult {
     valid: boolean;
     tier?: Tier;
-    planType?: PlanType;
     expiresAt?: number | null;
     instanceId?: string | null;
     error?: string;
@@ -89,28 +77,8 @@ async function postLicense(
 const inList = (list: readonly string[], id: unknown): boolean =>
     id !== undefined && id !== null && list.includes(String(id));
 
-function resolveTier(meta: NonNullable<LemonLicenseResponse['meta']>): Tier | null {
-    if (inList(GOD_PRODUCT_IDS, meta.product_id) || inList(GOD_VARIANT_IDS, meta.variant_id)) return 'god';
-    if (inList(PRO_PRODUCT_IDS, meta.product_id) || inList(PRO_VARIANT_IDS, meta.variant_id)) return 'pro';
-    return null;
-}
-
-function resolvePlan(meta: NonNullable<LemonLicenseResponse['meta']>, expiresAt: number | null): PlanType {
-    if (inList(MONTHLY_VARIANT_IDS, meta.variant_id)) return 'monthly';
-    if (inList(ANNUAL_VARIANT_IDS, meta.variant_id)) return 'annual';
-    if (inList(LIFETIME_VARIANT_IDS, meta.variant_id)) return 'lifetime';
-
-    // Secondary fallback: variant name, then expiry horizon.
-    const name = (meta.variant_name || '').toLowerCase();
-    if (/month|mensual|\bmes\b/.test(name)) return 'monthly';
-    if (/year|annual|anual|año/.test(name)) return 'annual';
-    if (expiresAt) {
-        const days = (expiresAt - Date.now()) / DAY_MS;
-        if (days <= 45) return 'monthly';
-        if (days <= 380) return 'annual';
-    }
-    return 'lifetime';
-}
+const grantsPro = (meta: NonNullable<LemonLicenseResponse['meta']>): boolean =>
+    inList(PRO_PRODUCT_IDS, meta.product_id) || inList(PRO_VARIANT_IDS, meta.variant_id);
 
 /** Applies status / store / product checks shared by activate and validate. */
 function interpret(data: LemonLicenseResponse, ok: boolean): LicenseValidationResult {
@@ -129,8 +97,7 @@ function interpret(data: LemonLicenseResponse, ok: boolean): LicenseValidationRe
         return { valid: false, reason: 'invalid', error: 'Esta licencia no pertenece a Personal Budget.' };
     }
 
-    const tier = resolveTier(meta);
-    if (!tier) {
+    if (!grantsPro(meta)) {
         return { valid: false, reason: 'invalid', error: 'Esta licencia no corresponde a un plan de Personal Budget.' };
     }
 
@@ -151,8 +118,7 @@ function interpret(data: LemonLicenseResponse, ok: boolean): LicenseValidationRe
 
     return {
         valid: true,
-        tier,
-        planType: resolvePlan(meta, expiresAt),
+        tier: 'pro',
         expiresAt,
         instanceId: data.instance?.id !== undefined ? String(data.instance.id) : null,
         customerEmail: meta.customer_email,

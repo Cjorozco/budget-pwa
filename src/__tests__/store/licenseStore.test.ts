@@ -4,11 +4,6 @@ vi.mock('@/lib/license/licenseConfig', () => ({
     LEMON_STORE_ID: '111',
     PRO_PRODUCT_IDS: ['200'],
     PRO_VARIANT_IDS: ['300', '301', '302'],
-    GOD_PRODUCT_IDS: ['900'],
-    GOD_VARIANT_IDS: ['999'],
-    MONTHLY_VARIANT_IDS: ['301'],
-    ANNUAL_VARIANT_IDS: ['302'],
-    LIFETIME_VARIANT_IDS: ['300'],
     OFFLINE_GRACE_DAYS: 14,
     REVALIDATE_INTERVAL_HOURS: 24,
     isLicenseConfigured: () => true,
@@ -38,7 +33,6 @@ const seedLicense = (over: Record<string, unknown> = {}) =>
         STORAGE_KEY,
         JSON.stringify({
             tier: 'pro',
-            planType: 'lifetime',
             licenseKey: UUID,
             activatedAt: NOW - DAY,
             expiresAt: null,
@@ -75,7 +69,6 @@ describe('licenseStore', () => {
         const state = useLicenseStore.getState();
         expect(state.tier).toBe('free');
         expect(state.isPro).toBe(false);
-        expect(state.isGod).toBe(false);
         expect(state.canCreateAccount(1)).toBe(true);
         expect(state.canCreateAccount(2)).toBe(false);
         expect(state.canCreateReserve(0)).toBe(true);
@@ -96,7 +89,6 @@ describe('licenseStore', () => {
             const state = useLicenseStore.getState();
             expect(state.tier).toBe('pro');
             expect(state.isPro).toBe(true);
-            expect(state.isGod).toBe(false);
             expect(state.instanceId).toBe('inst-1');
             expect(state.lastValidatedAt).toBe(NOW);
             expect(state.canCreateAccount(10)).toBe(true);
@@ -104,20 +96,12 @@ describe('licenseStore', () => {
             expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).instanceId).toBe('inst-1');
         });
 
-        it('activates GOD with the GOD variant', async () => {
-            vi.stubGlobal('fetch', respond(lemonOk({}, { variant_id: 999 })));
-            const { useLicenseStore } = await loadStore();
-            await useLicenseStore.getState().activateLicense(UUID);
-            expect(useLicenseStore.getState().tier).toBe('god');
-            expect(useLicenseStore.getState().isGod).toBe(true);
-        });
-
-        it('stores monthly plan with the expiration returned by Lemon', async () => {
+        it('stores the expiration of a legacy subscription license', async () => {
             const expires = new Date(NOW + 20 * DAY).toISOString();
             vi.stubGlobal('fetch', respond(lemonOk({ license_key: { status: 'active', expires_at: expires } }, { variant_id: 301 })));
             const { useLicenseStore } = await loadStore();
             await useLicenseStore.getState().activateLicense(UUID);
-            expect(useLicenseStore.getState().planType).toBe('monthly');
+            expect(useLicenseStore.getState().tier).toBe('pro');
             expect(useLicenseStore.getState().expiresAt).toBe(NOW + 20 * DAY);
         });
 
@@ -197,7 +181,7 @@ describe('licenseStore', () => {
             seedLicense({ tier: 'god', licenseKey: 'VIP-GOD-ORZIX', instanceId: null, lastValidatedAt: null });
             const first = await loadStore();
             expect(first.useLicenseStore.getState().tier).toBe('free');
-            expect(first.useLicenseStore.getState().isGod).toBe(false);
+            expect(first.useLicenseStore.getState().isPro).toBe(false);
             first.startLicenseLifecycle();
             expect(toasts(first.ui)).toHaveLength(1);
             expect(toasts(first.ui)[0]).toContain('Reactívala con la clave de tu compra');
@@ -215,6 +199,14 @@ describe('licenseStore', () => {
             expect(useLicenseStore.getState().licenseKey).toBeNull();
         });
 
+        it('folds a stored GOD license into PRO and ignores the old planType', async () => {
+            seedLicense({ tier: 'god', planType: 'lifetime' });
+            const { useLicenseStore } = await loadStore();
+            expect(useLicenseStore.getState().tier).toBe('pro');
+            expect(useLicenseStore.getState().isPro).toBe(true);
+            expect(useLicenseStore.getState()).not.toHaveProperty('planType');
+        });
+
         it('keeps a stored UUID license without instanceId/lastValidatedAt and starts the grace from now', async () => {
             seedLicense({ instanceId: null, lastValidatedAt: null });
             const { useLicenseStore } = await loadStore();
@@ -225,7 +217,7 @@ describe('licenseStore', () => {
 
     describe('revalidation', () => {
         it('updates lastValidatedAt and expiration when Lemon says valid', async () => {
-            seedLicense({ planType: 'monthly', lastValidatedAt: NOW - 2 * DAY, expiresAt: NOW + 3 * DAY });
+            seedLicense({ lastValidatedAt: NOW - 2 * DAY, expiresAt: NOW + 3 * DAY });
             const newExpiry = new Date(NOW + 30 * DAY).toISOString();
             vi.stubGlobal('fetch', respond(lemonOk({ license_key: { status: 'active', expires_at: newExpiry } }, { variant_id: 301 })));
             const { useLicenseStore } = await loadStore();
@@ -310,8 +302,8 @@ describe('licenseStore', () => {
             expect(useLicenseStore.getState().licenseKey).toBeNull();
         });
 
-        it('drops an expired monthly plan even inside the grace window', async () => {
-            seedLicense({ planType: 'monthly', expiresAt: NOW - DAY, lastValidatedAt: NOW - 2 * DAY });
+        it('drops an expired legacy subscription even inside the grace window', async () => {
+            seedLicense({ expiresAt: NOW - DAY, lastValidatedAt: NOW - 2 * DAY });
             const { useLicenseStore } = await loadStore();
             expect(useLicenseStore.getState().isPro).toBe(false);
         });
@@ -321,7 +313,6 @@ describe('licenseStore', () => {
         const { getTierDisplayName } = await loadStore();
         expect(getTierDisplayName('free')).toBe('Plan Básico (Free)');
         expect(getTierDisplayName('pro')).toBe('Personal Budget PRO');
-        expect(getTierDisplayName('god')).toBe('Personal Budget GOD');
     });
 
     it('opens and closes upgrade modal with reason', async () => {

@@ -9,10 +9,10 @@ import { LEMON_STORE_ID, isLicenseConfigured } from '@/lib/license/licenseConfig
  * This test goes red until they are filled in, so a build without them cannot be merged by mistake.
  */
 describe('release gate: Lemon Squeezy IDs are configured', () => {
-    it('has the store id and at least one product or variant that grants a tier', () => {
+    it('has the store id and at least one product or variant that grants PRO', () => {
         expect(
             isLicenseConfigured(),
-            'Faltan los IDs de Lemon Squeezy en .env (VITE_LEMON_STORE_ID y los productos/variantes PRO o GOD). ' +
+            'Faltan los IDs de Lemon Squeezy en .env (VITE_LEMON_STORE_ID y los productos/variantes PRO). ' +
                 'Sin ellos no se puede activar ninguna licencia.'
         ).toBe(true);
     });

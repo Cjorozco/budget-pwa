@@ -17,8 +17,6 @@ describe('licenseConfig reads the Lemon Squeezy IDs from the environment', () =>
             VITE_LEMON_STORE_ID: '',
             VITE_LEMON_PRO_PRODUCT_IDS: '',
             VITE_LEMON_PRO_VARIANT_IDS: '',
-            VITE_LEMON_GOD_PRODUCT_IDS: '',
-            VITE_LEMON_GOD_VARIANT_IDS: '',
         });
         expect(config.LEMON_STORE_ID).toBe('');
         expect(config.PRO_PRODUCT_IDS).toEqual([]);
@@ -30,22 +28,15 @@ describe('licenseConfig reads the Lemon Squeezy IDs from the environment', () =>
             VITE_LEMON_STORE_ID: ' 123 ',
             VITE_LEMON_PRO_PRODUCT_IDS: '10, 11 ,,',
             VITE_LEMON_PRO_VARIANT_IDS: '20,21,22',
-            VITE_LEMON_GOD_PRODUCT_IDS: '',
-            VITE_LEMON_GOD_VARIANT_IDS: '30',
-            VITE_LEMON_MONTHLY_VARIANT_IDS: '21',
-            VITE_LEMON_ANNUAL_VARIANT_IDS: '22',
-            VITE_LEMON_LIFETIME_VARIANT_IDS: '20',
         });
         expect(config.LEMON_STORE_ID).toBe('123');
         expect(config.PRO_PRODUCT_IDS).toEqual(['10', '11']);
         expect(config.PRO_VARIANT_IDS).toEqual(['20', '21', '22']);
-        expect(config.GOD_VARIANT_IDS).toEqual(['30']);
-        expect(config.MONTHLY_VARIANT_IDS).toEqual(['21']);
         expect(config.isLicenseConfigured()).toBe(true);
     });
 
-    it('needs the store AND at least one product or variant that grants a tier', async () => {
-        const onlyStore = await load({ VITE_LEMON_STORE_ID: '123', VITE_LEMON_PRO_PRODUCT_IDS: '', VITE_LEMON_PRO_VARIANT_IDS: '', VITE_LEMON_GOD_PRODUCT_IDS: '', VITE_LEMON_GOD_VARIANT_IDS: '' });
+    it('needs the store AND at least one product or variant that grants PRO', async () => {
+        const onlyStore = await load({ VITE_LEMON_STORE_ID: '123', VITE_LEMON_PRO_PRODUCT_IDS: '', VITE_LEMON_PRO_VARIANT_IDS: '' });
         expect(onlyStore.isLicenseConfigured()).toBe(false);
 
         const onlyProduct = await load({ VITE_LEMON_STORE_ID: '', VITE_LEMON_PRO_PRODUCT_IDS: '10' });

@@ -9,12 +9,11 @@ import {
 import { OFFLINE_GRACE_DAYS, REVALIDATE_INTERVAL_HOURS } from '../lib/license/licenseConfig';
 import { useUIStore } from './ui';
 
-export type Tier = 'free' | 'pro' | 'god';
-export type PlanType = 'monthly' | 'annual' | 'lifetime';
+/** Single paid tier, unlocked by a one-time supporter purchase. */
+export type Tier = 'free' | 'pro';
 
 export interface StoredLicense {
     tier: Tier;
-    planType: PlanType | null;
     licenseKey: string | null;
     activatedAt: number | null;
     expiresAt: number | null;
@@ -31,18 +30,17 @@ export const FREE_LIMITS = {
 
 interface LicenseState extends StoredLicense {
     isPro: boolean;
-    isGod: boolean;
     isUpgradeModalOpen: boolean;
     upgradeModalReason?: string;
-    
+
     // Actions
-    activateLicense: (key: string) => Promise<{ success: boolean; message: string; tier?: Tier; planType?: PlanType }>;
+    activateLicense: (key: string) => Promise<{ success: boolean; message: string; tier?: Tier }>;
     deactivateLicense: () => void;
     /** Online revalidation. Without `force` it runs at most once every REVALIDATE_INTERVAL_HOURS. */
     revalidateLicense: (options?: { force?: boolean }) => Promise<void>;
     openUpgradeModal: (reason?: string) => void;
     closeUpgradeModal: () => void;
-    
+
     // Feature checks
     canCreateAccount: (currentCount: number) => boolean;
     canCreateReserve: (currentCount: number) => boolean;
@@ -59,7 +57,6 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 const EMPTY_LICENSE: StoredLicense = {
     tier: 'free',
-    planType: null,
     licenseKey: null,
     activatedAt: null,
     expiresAt: null,
@@ -68,7 +65,7 @@ const EMPTY_LICENSE: StoredLicense = {
 };
 
 const MSG_REACTIVATE = 'Tu licencia anterior ya no es válida. Reactívala con la clave de tu compra de Lemon Squeezy.';
-const MSG_EXPIRED = 'Tu licencia expiró. Renuévala para recuperar tus funciones PRO.';
+const MSG_EXPIRED = 'Tu licencia expiró. Puedes apoyar el proyecto con un pago único para recuperar las funciones PRO.';
 const MSG_GRACE = 'Conéctate a internet para verificar tu licencia.';
 
 interface Notice {
@@ -87,18 +84,17 @@ const saveState = (license: StoredLicense) => {
     }
 };
 
-const isPaidTier = (tier: Tier) => tier === 'pro' || tier === 'god';
+const isPaidTier = (tier: Tier) => tier === 'pro';
 
 /** Free tier that keeps the key, so a later successful revalidation can restore it. */
 const suspend = (license: StoredLicense): StoredLicense => ({
     ...license,
     tier: 'free',
-    planType: null,
     expiresAt: null,
 });
 
 /**
- * Applies local-only rules to a paid license: plan expiry and offline grace period.
+ * Applies local-only rules to a paid license: expiry (legacy subscriptions) and offline grace period.
  * Returns the license unchanged when it is still allowed to run.
  */
 const applyLocalLimits = (license: StoredLicense, now: number): { license: StoredLicense; notice?: Notice } => {
@@ -139,8 +135,8 @@ const getInitialState = (): StoredLicense => {
         }
 
         let license: StoredLicense = {
-            tier: parsed.tier === 'god' || parsed.tier === 'pro' ? parsed.tier : 'free',
-            planType: parsed.planType || null,
+            // The retired GOD tier folds into PRO; the old planType field is ignored.
+            tier: parsed.tier === 'god' || parsed.tier === 'pro' ? 'pro' : 'free',
             licenseKey,
             activatedAt: parsed.activatedAt || null,
             expiresAt: parsed.expiresAt || null,
@@ -168,17 +164,8 @@ const getInitialState = (): StoredLicense => {
     return { ...EMPTY_LICENSE };
 };
 
-export const getTierDisplayName = (tier: Tier): string => {
-    switch (tier) {
-        case 'god':
-            return 'Personal Budget GOD';
-        case 'pro':
-            return 'Personal Budget PRO';
-        case 'free':
-        default:
-            return 'Plan Básico (Free)';
-    }
-};
+export const getTierDisplayName = (tier: Tier): string =>
+    tier === 'pro' ? 'Personal Budget PRO' : 'Plan Básico (Free)';
 
 const notify = (notice: Notice) => useUIStore.getState().addToast(notice.message, notice.type);
 
@@ -195,14 +182,12 @@ export const useLicenseStore = create<LicenseState>((set, get) => {
         set({
             ...license,
             isPro: isPaidTier(license.tier),
-            isGod: license.tier === 'god',
             ...extra,
         });
     };
 
     const licenseOf = (state: LicenseState): StoredLicense => ({
         tier: state.tier,
-        planType: state.planType,
         licenseKey: state.licenseKey,
         activatedAt: state.activatedAt,
         expiresAt: state.expiresAt,
@@ -213,7 +198,6 @@ export const useLicenseStore = create<LicenseState>((set, get) => {
     return {
         ...initial,
         isPro: isPaidTier(initial.tier),
-        isGod: initial.tier === 'god',
         isUpgradeModalOpen: false,
         upgradeModalReason: undefined,
 
@@ -228,13 +212,11 @@ export const useLicenseStore = create<LicenseState>((set, get) => {
             }
 
             const tier = validation.tier;
-            const planType = validation.planType || 'lifetime';
             const now = Date.now();
 
             commit(
                 {
                     tier,
-                    planType,
                     licenseKey: rawKey.trim(),
                     activatedAt: now,
                     expiresAt: validation.expiresAt ?? null,
@@ -244,13 +226,10 @@ export const useLicenseStore = create<LicenseState>((set, get) => {
                 { isUpgradeModalOpen: false, upgradeModalReason: undefined },
             );
 
-            const planLabel = planType === 'monthly' ? ' (Suscripción Mensual)' : planType === 'annual' ? ' (Suscripción Anual)' : ' (Vitalicio / Lifetime)';
-
             return {
                 success: true,
-                message: `¡Licencia activada con éxito! Nivel: ${getTierDisplayName(tier)}${tier !== 'god' ? planLabel : ''}`,
+                message: '¡Gracias por tu apoyo! Personal Budget PRO quedó activado.',
                 tier,
-                planType,
             };
         },
 
@@ -283,7 +262,6 @@ export const useLicenseStore = create<LicenseState>((set, get) => {
                 commit({
                     ...licenseOf(current),
                     tier: result.tier,
-                    planType: result.planType ?? current.planType ?? 'lifetime',
                     expiresAt: result.expiresAt ?? null,
                     instanceId: result.instanceId ?? current.instanceId,
                     activatedAt: current.activatedAt ?? Date.now(),
@@ -370,7 +348,6 @@ export function startLicenseLifecycle(): void {
         const { license, notice } = applyLocalLimits(
             {
                 tier: state.tier,
-                planType: state.planType,
                 licenseKey: state.licenseKey,
                 activatedAt: state.activatedAt,
                 expiresAt: state.expiresAt,
@@ -381,7 +358,7 @@ export function startLicenseLifecycle(): void {
         );
         if (!notice) return;
         saveState(license);
-        useLicenseStore.setState({ ...license, isPro: false, isGod: false });
+        useLicenseStore.setState({ ...license, isPro: false });
         notify(notice);
     };
 

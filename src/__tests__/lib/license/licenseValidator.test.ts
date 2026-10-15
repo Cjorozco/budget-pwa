@@ -4,11 +4,6 @@ vi.mock('@/lib/license/licenseConfig', () => ({
     LEMON_STORE_ID: '111',
     PRO_PRODUCT_IDS: ['200'],
     PRO_VARIANT_IDS: ['300', '301', '302'],
-    GOD_PRODUCT_IDS: ['900'],
-    GOD_VARIANT_IDS: ['999'],
-    MONTHLY_VARIANT_IDS: ['301'],
-    ANNUAL_VARIANT_IDS: ['302'],
-    LIFETIME_VARIANT_IDS: ['300'],
     OFFLINE_GRACE_DAYS: 14,
     REVALIDATE_INTERVAL_HOURS: 24,
     isLicenseConfigured: () => true,
@@ -61,9 +56,9 @@ describe('licenseValidator', () => {
         expect(r.error).toBe(NEEDS_INTERNET_MESSAGE);
     });
 
-    it('activates a license from our store and product as PRO lifetime', async () => {
+    it('activates a license from our store and product as PRO without expiry', async () => {
         const r = await activateLicenseKey(UUID);
-        expect(r).toMatchObject({ valid: true, tier: 'pro', planType: 'lifetime', expiresAt: null, instanceId: 'inst-1' });
+        expect(r).toMatchObject({ valid: true, tier: 'pro', expiresAt: null, instanceId: 'inst-1' });
         const [url, init] = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
         expect(url).toBe('https://api.lemonsqueezy.com/v1/licenses/activate');
         expect(String(init.body)).toContain(`license_key=${UUID}`);
@@ -88,19 +83,19 @@ describe('licenseValidator', () => {
         expect(r.error).toContain('no encontrada');
     });
 
-    it('maps the GOD variant to GOD and ignores the word "god" in names', async () => {
-        vi.stubGlobal('fetch', mockFetchJson(lemonResponse({}, { variant_id: 999 })));
-        expect((await activateLicenseKey(UUID)).tier).toBe('god');
+    it('grants PRO by product or by variant, and ignores the word "god" in names', async () => {
+        vi.stubGlobal('fetch', mockFetchJson(lemonResponse({}, { product_id: 555, variant_id: 301 })));
+        expect((await activateLicenseKey(UUID)).tier).toBe('pro');
 
         vi.stubGlobal('fetch', mockFetchJson(lemonResponse({}, { variant_name: 'God mode', product_name: 'GOD' })));
         expect((await activateLicenseKey(UUID)).tier).toBe('pro');
     });
 
-    it('maps a monthly variant with expires_at to monthly + exact expiration', async () => {
+    it('keeps the exact expiration of a legacy subscription license', async () => {
         const expires = '2099-01-15T00:00:00.000Z';
         vi.stubGlobal('fetch', mockFetchJson(lemonResponse({ license_key: { status: 'active', expires_at: expires } }, { variant_id: 301 })));
         const r = await activateLicenseKey(UUID);
-        expect(r.planType).toBe('monthly');
+        expect(r.tier).toBe('pro');
         expect(r.expiresAt).toBe(new Date(expires).getTime());
     });
 
