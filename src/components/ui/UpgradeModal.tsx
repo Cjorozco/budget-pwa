@@ -1,18 +1,6 @@
 import React, { useState } from 'react';
-import {
-    X,
-    Check,
-    Sparkles,
-    Flame,
-    Key,
-    ExternalLink,
-    ShieldCheck,
-    CreditCard,
-    Star,
-    Award,
-    Bot,
-} from 'lucide-react';
-import { useLicenseStore, type PlanType, getTierDisplayName } from '../../store/licenseStore';
+import { X, Check, Sparkles, Key, ExternalLink, ShieldCheck, Coffee, Heart, Bot } from 'lucide-react';
+import { useLicenseStore } from '../../store/licenseStore';
 import { useUIStore } from '../../store/ui';
 import { useTranslation } from '../../lib/i18n';
 
@@ -20,10 +8,7 @@ const LEMON_SQUEEZY_CHECKOUT_URL: string = import.meta.env.VITE_LEMON_CHECKOUT_U
 
 export const UpgradeModal: React.FC = () => {
     const {
-        tier,
         isPro,
-        isGod,
-        planType,
         expiresAt,
         isUpgradeModalOpen,
         upgradeModalReason,
@@ -34,16 +19,11 @@ export const UpgradeModal: React.FC = () => {
     const { addToast } = useUIStore();
     const { t } = useTranslation();
 
-    const [selectedPlan, setSelectedPlan] = useState<PlanType>(
-        planType === 'monthly' ? 'annual' : planType === 'annual' ? 'lifetime' : 'annual'
-    );
     const [licenseInput, setLicenseInput] = useState('');
     const [isActivating, setIsActivating] = useState(false);
-    const [activeTab, setActiveTab] = useState<'plans' | 'key'>('plans');
+    const [activeTab, setActiveTab] = useState<'support' | 'key'>('support');
 
     if (!isUpgradeModalOpen) return null;
-
-    const isLifetimePro = isPro && planType === 'lifetime' && !isGod;
 
     const handleActivate = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -85,6 +65,14 @@ export const UpgradeModal: React.FC = () => {
         }
     };
 
+    const features = [
+        { icon: Check, color: 'text-emerald-500', text: t.upgradeModal.featureUnlimitedAccounts },
+        { icon: Bot, color: 'text-blue-500', text: t.upgradeModal.featureAiCategorization },
+        { icon: Check, color: 'text-emerald-500', text: t.upgradeModal.featureAmbiguousReview },
+        { icon: Check, color: 'text-emerald-500', text: t.upgradeModal.featureQuickTemplates },
+        { icon: Check, color: 'text-emerald-500', text: t.upgradeModal.featureAdvancedReports },
+    ];
+
     return (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:p-6 sm:pb-6 animate-in fade-in duration-200">
             {/* Backdrop */}
@@ -101,11 +89,7 @@ export const UpgradeModal: React.FC = () => {
                 aria-labelledby="upgrade-modal-title"
             >
                 {/* Header */}
-                <div className={`relative p-5 text-white flex-shrink-0 ${
-                    isGod 
-                        ? 'bg-gradient-to-r from-rose-600 via-purple-600 to-amber-600' 
-                        : 'bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500'
-                }`}>
+                <div className="relative p-5 text-white flex-shrink-0 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500">
                     <button
                         type="button"
                         onClick={closeUpgradeModal}
@@ -116,27 +100,17 @@ export const UpgradeModal: React.FC = () => {
                     </button>
 
                     <div className="flex items-center gap-2 mb-1">
-                        {isGod ? <Flame className="w-5 h-5 text-yellow-200" /> : <Sparkles className="w-5 h-5 text-yellow-200" />}
+                        {isPro ? <Heart className="w-5 h-5 text-yellow-200" /> : <Coffee className="w-5 h-5 text-yellow-200" />}
                         <span className="text-xs font-bold uppercase tracking-wider bg-white/20 px-2.5 py-0.5 rounded-full">
-                            {isGod ? 'Nivel Máximo Activo' : isLifetimePro ? 'Membresía Activa' : isPro ? 'Plan Activo' : 'Desbloquea el Potencial'}
+                            {isPro ? t.upgradeModal.activeMembership : t.upgradeModal.plansTab}
                         </span>
                     </div>
 
                     <h2 id="upgrade-modal-title" className="text-xl sm:text-2xl font-black text-white">
-                        {isGod
-                            ? 'Personal Budget GOD'
-                            : isLifetimePro
-                            ? '¡Eres Miembro PRO Lifetime!'
-                            : isPro
-                            ? 'Personal Budget PRO'
-                            : 'Personal Budget PRO'}
+                        {t.upgradeModal.modalTitle}
                     </h2>
                     <p className="text-amber-100 text-xs sm:text-sm mt-1">
-                        {isGod
-                            ? 'Tienes activo el nivel más alto. Incluye todas las funcionalidades de Personal Budget y mejoras continuas.'
-                            : isLifetimePro
-                            ? 'Tienes acceso permanente a todas las características profesionales.'
-                            : upgradeModalReason || 'Automatiza tus finanzas con IA, cuentas ilimitadas y análisis profesional.'}
+                        {isPro ? t.upgradeModal.proMemberDesc : upgradeModalReason || t.upgradeModal.modalSubtitle}
                     </p>
                 </div>
 
@@ -144,15 +118,15 @@ export const UpgradeModal: React.FC = () => {
                 <div className="flex border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex-shrink-0">
                     <button
                         type="button"
-                        onClick={() => setActiveTab('plans')}
+                        onClick={() => setActiveTab('support')}
                         className={`flex-1 py-2.5 text-xs font-semibold flex items-center justify-center gap-1.5 border-b-2 transition-colors ${
-                            activeTab === 'plans'
+                            activeTab === 'support'
                                 ? 'border-amber-500 text-amber-600 dark:text-amber-400 bg-white dark:bg-slate-900'
                                 : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                         }`}
                     >
-                        <CreditCard className="w-4 h-4" />
-                        {isGod || isLifetimePro ? t.upgradeModal.activeMembership : t.upgradeModal.plansTab}
+                        <Coffee className="w-4 h-4" />
+                        {isPro ? t.upgradeModal.activeMembership : t.upgradeModal.plansTab}
                     </button>
                     <button
                         type="button"
@@ -172,252 +146,59 @@ export const UpgradeModal: React.FC = () => {
                 <div className="p-5 overflow-y-auto flex-1 space-y-4">
                     {/* Status Badge */}
                     {isPro && (
-                        <div className={`p-3.5 rounded-xl border flex items-center justify-between ${
-                            isGod
-                                ? 'bg-purple-50 dark:bg-purple-950/40 border-purple-200 dark:border-purple-800'
-                                : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800'
-                        }`}>
-                            <div className="flex items-center gap-2.5">
-                                <ShieldCheck className={`w-5 h-5 shrink-0 ${isGod ? 'text-purple-600 dark:text-purple-400' : 'text-emerald-600 dark:text-emerald-400'}`} />
-                                <div>
-                                    <p className={`text-xs font-bold ${isGod ? 'text-purple-900 dark:text-purple-200' : 'text-emerald-900 dark:text-emerald-200'}`}>
-                                        Nivel Activo: {getTierDisplayName(tier)}
-                                        {isGod && ' (Nivel Máximo)'}
-                                        {!isGod && planType === 'lifetime' && ' (Vitalicio / Lifetime)'}
-                                        {!isGod && planType === 'annual' && ' (Suscripción Anual)'}
-                                        {!isGod && planType === 'monthly' && ' (Suscripción Mensual)'}
-                                    </p>
-                                    <p className={`text-[11px] ${isGod ? 'text-purple-700 dark:text-purple-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
-                                        {isGod
-                                            ? 'Todas las características actuales y sus actualizaciones incluidas.'
-                                            : planType === 'lifetime'
-                                            ? 'Licencia permanente sin fecha de expiración.'
-                                            : expiresAt
-                                            ? `Suscripción activa hasta el ${new Date(expiresAt).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}.`
-                                            : 'Todas las características PRO desbloqueadas.'}
-                                    </p>
-                                </div>
+                        <div className="p-3.5 rounded-xl border flex items-center gap-2.5 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800">
+                            <ShieldCheck className="w-5 h-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                            <div>
+                                <p className="text-xs font-bold text-emerald-900 dark:text-emerald-200">
+                                    Personal Budget PRO
+                                </p>
+                                <p className="text-[11px] text-emerald-700 dark:text-emerald-400">
+                                    {/* Only legacy subscription licenses carry an expiry date. */}
+                                    {expiresAt
+                                        ? `Licencia activa hasta el ${new Date(expiresAt).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}.`
+                                        : 'Licencia permanente sin fecha de expiración.'}
+                                </p>
                             </div>
                         </div>
                     )}
 
-                    {activeTab === 'plans' ? (
+                    {activeTab === 'support' ? (
                         <>
-                            {/* CASE 1: USER IS GOD */}
-                            {isGod ? (
-                                <div className="space-y-4">
-                                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 space-y-3 border border-slate-200 dark:border-slate-800">
-                                        <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 font-bold text-xs uppercase tracking-wider">
-                                            <Flame className="w-4 h-4 text-purple-500" />
-                                            <span>Poderes Desbloqueados en Nivel GOD:</span>
-                                        </div>
-                                        <ul className="space-y-2 text-xs text-slate-700 dark:text-slate-300">
-                                            <li className="flex items-center gap-2">
-                                                <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                                                <span><strong>Cuentas y Reservas Ilimitadas:</strong> Múltiples bancos, tarjetas y fondos.</span>
-                                            </li>
-                                            <li className="flex items-center gap-2">
-                                                <Bot className="w-4 h-4 text-purple-500 shrink-0" />
-                                                <span><strong>Categorización con IA (BYOK):</strong> Soporte para API keys de Gemini, OpenAI, Groq y Claude.</span>
-                                            </li>
-                                            <li className="flex items-center gap-2">
-                                                <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                                                <span><strong>Revisión de Transacciones Ambiguas</strong> y detección de movimientos dudosos.</span>
-                                            </li>
-                                            <li className="flex items-center gap-2">
-                                                <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                                                <span><strong>Plantillas Rápidas (1-Tap)</strong> y Tags ilimitados.</span>
-                                            </li>
-                                            <li className="flex items-center gap-2">
-                                                <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                                                <span><strong>Reportes Avanzados y Exportación CSV/Excel</strong> para tu contabilidad.</span>
-                                            </li>
-                                        </ul>
-                                    </div>
-
-                                    <div className="p-3.5 bg-purple-50/80 dark:bg-purple-950/30 rounded-xl border border-purple-200 dark:border-purple-800/60 text-xs text-purple-900 dark:text-purple-200 flex items-center gap-2">
-                                        <Award className="w-4 h-4 text-purple-600 shrink-0" />
-                                        <span>Tienes el nivel máximo. Todas las mejoras y actualizaciones de las características existentes están incluidas.</span>
-                                    </div>
+                            {!isPro && (
+                                <div className="p-4 rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50/70 dark:bg-amber-950/20 space-y-1.5">
+                                    <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
+                                        {t.upgradeModal.supportPitch}
+                                    </p>
+                                    <p className="text-[11px] font-semibold text-amber-700 dark:text-amber-400">
+                                        {t.upgradeModal.oneTimeNote}
+                                    </p>
                                 </div>
-                            ) : isLifetimePro ? (
-                                /* CASE 2: USER IS LIFETIME PRO */
-                                <div className="space-y-4">
-                                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 space-y-3 border border-slate-200 dark:border-slate-800">
-                                        <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-bold text-xs uppercase tracking-wider">
-                                            <Award className="w-4 h-4" />
-                                            <span>Funcionalidades Desbloqueadas en tu Cuenta:</span>
-                                        </div>
-                                        <ul className="space-y-2 text-xs text-slate-700 dark:text-slate-300">
-                                            <li className="flex items-center gap-2">
-                                                <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                                                <span><strong>Cuentas y Reservas Ilimitadas:</strong> Múltiples bancos, tarjetas y fondos de ahorro.</span>
-                                            </li>
-                                            <li className="flex items-center gap-2">
-                                                <Bot className="w-4 h-4 text-blue-500 shrink-0" />
-                                                <span><strong>Categorización con IA (BYOK):</strong> Usa tus API Keys de Gemini, OpenAI, Groq o Claude con privacidad total.</span>
-                                            </li>
-                                            <li className="flex items-center gap-2">
-                                                <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                                                <span><strong>Revisión de Transacciones Ambiguas</strong> y detección de movimientos dudosos.</span>
-                                            </li>
-                                            <li className="flex items-center gap-2">
-                                                <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                                                <span><strong>Plantillas Rápidas (1-Tap)</strong> y Tags personalizados ilimitados.</span>
-                                            </li>
-                                            <li className="flex items-center gap-2">
-                                                <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                                                <span><strong>Reportes Avanzados y Exportación CSV/Excel</strong> para tu contabilidad.</span>
-                                            </li>
-                                        </ul>
-                                    </div>
+                            )}
 
-                                    {/* Future Nivel GOD Teaser with Discount Promise */}
-                                    <div className="p-4 bg-gradient-to-br from-rose-50 to-orange-50 dark:from-rose-950/30 dark:to-orange-950/30 rounded-xl border border-rose-200 dark:border-rose-900/60 space-y-2">
-                                        <div className="flex items-center gap-2 text-rose-700 dark:text-rose-300 font-bold text-xs">
-                                            <Flame className="w-4 h-4 text-rose-500" />
-                                            <span>Próximamente: Personal Budget GOD</span>
-                                        </div>
-                                        <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                                            Incluirá escaneo de recibos y facturas mediante cámara (OCR), importador inteligente de extractos bancarios PDF/Excel y asistente financiero autónomo.
-                                        </p>
-                                        <div className="p-2.5 bg-white/80 dark:bg-slate-900/80 rounded-lg text-[11px] text-amber-800 dark:text-amber-300 font-semibold border border-amber-200 dark:border-amber-800 flex items-center gap-2">
-                                            <Star className="w-4 h-4 text-amber-500 fill-amber-500 shrink-0" />
-                                            <span>🎁 Por ser usuario Lifetime PRO, tendrás acceso a un descuento preferencial para actualizar a GOD.</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            ) : (
-                                /* CASE 3: USER IS FREE OR MONTHLY/ANNUAL UPGRADE */
+                            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3.5 space-y-2.5 border border-slate-200/80 dark:border-slate-800">
+                                <p className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                                    <Sparkles className="w-4 h-4 text-amber-500" />
+                                    {t.upgradeModal.featuresHeader}
+                                </p>
+                                <ul className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
+                                    {features.map(({ icon: Icon, color, text }) => (
+                                        <li key={text} className="flex items-start gap-2">
+                                            <Icon className={`w-4 h-4 shrink-0 mt-0.5 ${color}`} />
+                                            <span>{text}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+
+                            {!isPro && (
                                 <>
-                                    {/* Pricing Options */}
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                                        {/* Monthly (only show if free) */}
-                                        {planType !== 'monthly' && planType !== 'annual' && (
-                                            <button
-                                                type="button"
-                                                onClick={() => setSelectedPlan('monthly')}
-                                                className={`relative p-3 rounded-xl border text-left flex flex-col justify-between transition-all ${
-                                                    selectedPlan === 'monthly'
-                                                        ? 'border-amber-500 bg-amber-50/50 dark:bg-amber-950/20 ring-2 ring-amber-500/20'
-                                                        : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/40 dark:bg-slate-800/30'
-                                                }`}
-                                            >
-                                                <div>
-                                                    <p className="text-xs font-bold text-slate-900 dark:text-slate-100">{t.upgradeModal.monthlyPlan}</p>
-                                                    <p className="text-[11px] text-slate-500">{t.upgradeModal.monthlyDesc}</p>
-                                                    <div className="mt-2">
-                                                        <span className="text-lg font-black text-slate-900 dark:text-slate-100">$0.99</span>
-                                                        <span className="text-[11px] text-slate-500"> USD/m</span>
-                                                    </div>
-                                                </div>
-                                                <p className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold mt-1">
-                                                    ~ $3.900 COP/mes
-                                                </p>
-                                            </button>
-                                        )}
-
-                                        {/* Annual (show if free or monthly) */}
-                                        {planType !== 'annual' && (
-                                            <button
-                                                type="button"
-                                                onClick={() => setSelectedPlan('annual')}
-                                                className={`relative p-3 rounded-xl border text-left flex flex-col justify-between transition-all ${
-                                                    selectedPlan === 'annual'
-                                                        ? 'border-amber-500 bg-amber-50/60 dark:bg-amber-950/30 ring-2 ring-amber-500/30'
-                                                        : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/40 dark:bg-slate-800/30'
-                                                }`}
-                                            >
-                                                <div className="absolute -top-2.5 right-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shadow-xs">
-                                                    {t.upgradeModal.annualDiscountBadge}
-                                                </div>
-                                                <div>
-                                                    <div className="flex items-center gap-1">
-                                                        <p className="text-xs font-bold text-slate-900 dark:text-slate-100">{t.upgradeModal.annualPlan}</p>
-                                                        <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
-                                                    </div>
-                                                    <p className="text-[11px] text-slate-500">{t.upgradeModal.annualDesc}</p>
-                                                    <div className="mt-2">
-                                                        <span className="text-lg font-black text-slate-900 dark:text-slate-100">$7.99</span>
-                                                        <span className="text-[11px] text-slate-500"> USD/año</span>
-                                                    </div>
-                                                </div>
-                                                <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1">
-                                                    ~$29.900 COP (~$2.490/m)
-                                                </p>
-                                            </button>
-                                        )}
-
-                                        {/* Lifetime (always available for upgrade) */}
-                                        <button
-                                            type="button"
-                                            onClick={() => setSelectedPlan('lifetime')}
-                                            className={`relative p-3 rounded-xl border text-left flex flex-col justify-between transition-all ${
-                                                selectedPlan === 'lifetime'
-                                                    ? 'border-amber-500 bg-amber-50/50 dark:bg-amber-950/20 ring-2 ring-amber-500/20'
-                                                    : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/40 dark:bg-slate-800/30'
-                                            }`}
-                                        >
-                                            <div className="absolute -top-2.5 right-2 bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">
-                                                {t.upgradeModal.lifetimeBadge}
-                                            </div>
-                                            <div>
-                                                <div className="flex items-center gap-1">
-                                                    <p className="text-xs font-bold text-slate-900 dark:text-slate-100">{t.upgradeModal.lifetimePlan}</p>
-                                                    <Award className="w-3 h-3 text-rose-500" />
-                                                </div>
-                                                <p className="text-[11px] text-slate-500">{t.upgradeModal.lifetimeDesc}</p>
-                                                <div className="mt-2">
-                                                    <span className="text-lg font-black text-slate-900 dark:text-slate-100">$19.99</span>
-                                                    <span className="text-[11px] text-slate-500"> USD</span>
-                                                </div>
-                                            </div>
-                                            <p className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold mt-1">
-                                                ~ $79.000 COP
-                                            </p>
-                                        </button>
-                                    </div>
-
-                                    {/* Feature Details with clear AI BYOK explanation */}
-                                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3.5 space-y-2.5 border border-slate-200/80 dark:border-slate-800">
-                                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
-                                            {t.upgradeModal.featuresHeader}
-                                        </p>
-                                        <ul className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
-                                            <li className="flex items-start gap-2">
-                                                <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                                                <span>{t.upgradeModal.featureUnlimitedAccounts}</span>
-                                            </li>
-                                            <li className="flex items-start gap-2">
-                                                <Bot className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
-                                                <span>{t.upgradeModal.featureAiCategorization}</span>
-                                            </li>
-                                            <li className="flex items-start gap-2">
-                                                <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                                                <span>{t.upgradeModal.featureAmbiguousReview}</span>
-                                            </li>
-                                            <li className="flex items-start gap-2">
-                                                <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                                                <span>{t.upgradeModal.featureQuickTemplates}</span>
-                                            </li>
-                                            <li className="flex items-start gap-2">
-                                                <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                                                <span>{t.upgradeModal.featureAdvancedReports}</span>
-                                            </li>
-                                        </ul>
-                                    </div>
-
-                                    {/* Checkout Button */}
                                     <button
                                         type="button"
                                         onClick={handleCheckout}
                                         className="w-full py-3 px-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-xl shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2 transition-all transform active:scale-98"
                                     >
-                                        <span>
-                                            {planType === 'monthly' || planType === 'annual'
-                                                ? t.upgradeModal.checkoutButtonUpdate
-                                                : t.upgradeModal.checkoutButton}
-                                        </span>
+                                        <Coffee className="w-4 h-4" />
+                                        <span>{t.upgradeModal.checkoutButton}</span>
                                         <ExternalLink className="w-4 h-4" />
                                     </button>
 
@@ -433,7 +214,7 @@ export const UpgradeModal: React.FC = () => {
                         <form onSubmit={handleActivate} className="space-y-4">
                             <div className="bg-slate-50 dark:bg-slate-800/40 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-300">
                                 <p className="font-semibold text-slate-800 dark:text-slate-200 mb-1">
-                                    {isPro ? 'Información de tu Licencia Actual' : '¿Ya compraste tu suscripción o recibiste una clave?'}
+                                    {isPro ? 'Información de tu Licencia Actual' : '¿Ya hiciste tu aporte o recibiste una clave?'}
                                 </p>
                                 <p>
                                     {isPro

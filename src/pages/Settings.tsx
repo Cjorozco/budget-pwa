@@ -24,7 +24,7 @@ export default function SettingsPage() {
     const [importJson, setImportJson] = useState<string | null>(null);
     const [isGuideOpen, setIsGuideOpen] = useState(false);
     const { addToast, confirm } = useUIStore();
-    const { tier, isPro, isGod, openUpgradeModal } = useLicenseStore();
+    const { tier, isPro, openUpgradeModal } = useLicenseStore();
     const { t } = useTranslation();
     const navigate = useNavigate();
     const tourStart = useTourStore((s) => s.start);
@@ -319,11 +319,7 @@ export default function SettingsPage() {
 
             <section className="space-y-4">
                 <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{t.settings.licenseSection}</h2>
-                <div className={`p-5 rounded-2xl text-white shadow-lg relative overflow-hidden ${
-                    isGod
-                        ? 'bg-gradient-to-br from-rose-600 via-purple-600 to-amber-600'
-                        : 'bg-gradient-to-br from-amber-500 via-orange-500 to-rose-600'
-                }`}>
+                <div className="p-5 rounded-2xl text-white shadow-lg relative overflow-hidden bg-gradient-to-br from-amber-500 via-orange-500 to-rose-600">
                     <div className="relative z-10 space-y-3">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
@@ -336,23 +332,15 @@ export default function SettingsPage() {
                         </div>
 
                         <p className="text-xs text-amber-50 leading-relaxed opacity-95">
-                            {isGod
-                                ? t.upgradeModal.godMemberDesc
-                                : isPro
-                                ? t.upgradeModal.proMemberDesc
-                                : t.upgradeModal.modalSubtitle}
+                            {isPro ? t.upgradeModal.proMemberDesc : t.upgradeModal.modalSubtitle}
                         </p>
 
                         <div className="pt-1">
                             <Button
                                 onClick={() => openUpgradeModal()}
-                                className={`font-bold border-none shadow-sm text-xs py-2 px-3.5 ${
-                                    isGod
-                                        ? 'bg-white text-purple-700 hover:bg-purple-50'
-                                        : 'bg-white text-orange-600 hover:bg-amber-50'
-                                }`}
+                                className="font-bold border-none shadow-sm text-xs py-2 px-3.5 bg-white text-orange-600 hover:bg-amber-50"
                             >
-                                {isGod ? t.settings.viewStatusAndBenefits : isPro ? t.settings.viewStatusManageLicense : t.settings.viewPlansAndPricing}
+                                {isPro ? t.settings.viewStatusManageLicense : t.settings.viewPlansAndPricing}
                             </Button>
                         </div>
                     </div>

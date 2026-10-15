@@ -1,4 +1,4 @@
-import { Sparkles, Zap, Flame } from 'lucide-react';
+import { Sparkles, Zap } from 'lucide-react';
 import { useLicenseStore, type Tier } from '../../store/licenseStore';
 
 interface ProBadgeProps {
@@ -23,11 +23,7 @@ export const ProBadge: React.FC<ProBadgeProps> = ({
     let icon = <Sparkles className={size === 'sm' ? 'w-3 h-3' : 'w-4 h-4'} />;
     let colorClass = 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-700/60';
 
-    if (tier === 'god') {
-        label = 'GOD';
-        icon = <Flame className={size === 'sm' ? 'w-3 h-3' : 'w-4 h-4'} />;
-        colorClass = 'bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950/70 dark:text-rose-300 dark:border-rose-600';
-    } else if (tier === 'pro') {
+    if (tier === 'pro') {
         label = 'PRO';
         icon = <Zap className={size === 'sm' ? 'w-3 h-3' : 'w-4 h-4'} />;
         colorClass = 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-700/60';
