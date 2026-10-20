@@ -101,6 +101,7 @@ La app separa intencionalmente la **liquidez patrimonial acumulada** del **flujo
 - **React Hook Form** + **Zod** (Formularios, validación de schemas y contratos de IA)
 - **TanStack Charts** (Visualización interactiva)
 - **Lucide React** (Iconografía)
+- **motion** (Microinteracciones, respeta `prefers-reduced-motion`) y **Poppins** vía Fontsource
 - **vite-plugin-pwa** (Progressive Web App con Service Worker de auto-actualización)
 - **Vitest** (290+ pruebas unitarias y de integración)
 

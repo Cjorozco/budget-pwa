@@ -1,4 +1,78 @@
+@import "@fontsource/poppins/300.css";
+@import "@fontsource/poppins/400.css";
+@import "@fontsource/poppins/500.css";
+@import "@fontsource/poppins/600.css";
+@import "@fontsource/poppins/700.css";
 @import "tailwindcss";
+
+/* Design tokens from the Figma kit "Finance Dashboard UI Kit" (page: Design System).
+   Raw palette first, semantic roles after. Components should use the roles. */
+@theme {
+  --color-honeydew: #f1fff3;
+  --color-light-green: #dff7e2;
+  --color-caribbean: #00d09e;
+  --color-cyprus: #0e3e3e;
+  --color-fence-green: #052224;
+  --color-void: #031314;
+  --color-sky: #6db6fe;
+  --color-vivid-blue: #3299ff;
+  --color-ocean-blue: #0068ff;
+  --color-forest: #093030;
+
+  /* Opt-in with `font-brand`; the app's default font is unchanged. */
+  --font-brand: Poppins, system-ui, sans-serif;
+
+  /* Type scale from the kit: Subtitle 15, Paragraph 13 (Tailwind's text-xs/2xl cover 12/24). */
+  --text-body: 0.9375rem;
+  --text-caption: 0.8125rem;
+
+  /* Radii from the kit: icon tile 22, card 31. */
+  --radius-tile: 1.375rem;
+  --radius-card: 1.9375rem;
+}
+
+/* Semantic roles (light). Contrast notes: accent is a fill only (as text on
+   surface it is 1.93:1); put text-on-accent on it (5.92:1). */
+:root {
+  --surface: var(--color-honeydew);
+  --surface-raised: var(--color-light-green);
+  --text: var(--color-fence-green);
+  --text-muted: var(--color-forest);
+  --accent: var(--color-caribbean);
+  --on-accent: var(--color-fence-green);
+  --info: var(--color-ocean-blue);
+  /* Money keeps red/green semantics (the kit paints expenses blue: conscious deviation). */
+  --income: var(--color-green-800);
+  --expense: var(--color-red-700);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface: var(--color-void);
+    --surface-raised: var(--color-fence-green);
+    --text: var(--color-honeydew);
+    --text-muted: var(--color-light-green);
+    --accent: var(--color-caribbean);
+    --on-accent: var(--color-void);
+    --info: var(--color-sky);
+    --income: var(--color-green-400);
+    --expense: var(--color-red-400);
+  }
+}
+
+/* Expose roles as utilities (bg-surface, text-text, bg-accent, ...). `inline`
+   keeps the var() reference so the dark override above takes effect. */
+@theme inline {
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
+  --color-info: var(--info);
+  --color-income: var(--income);
+  --color-expense: var(--expense);
+}
 
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;

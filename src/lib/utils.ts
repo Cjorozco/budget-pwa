@@ -1,9 +1,20 @@
 import { type ClassValue, clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { extendTailwindMerge } from 'tailwind-merge';
 import { useI18nStore } from '@/lib/i18n/i18nStore';
 import { getNumberSeparators } from '@/lib/money';
 import { currencyDigits, numberLocale, type CurrencyCode } from '@/lib/region/region';
 import { getRegion } from '@/lib/region/regionStore';
+
+// Custom @theme tokens (src/index.css) must be declared here, otherwise tailwind-merge
+// reads `text-body` as a color and drops it next to `text-income`.
+const twMerge = extendTailwindMerge({
+    extend: {
+        classGroups: {
+            'font-size': [{ text: ['body', 'caption'] }],
+            rounded: [{ rounded: ['tile', 'card'] }],
+        },
+    },
+});
 
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));

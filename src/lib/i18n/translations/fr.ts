@@ -104,6 +104,8 @@ export const fr: TranslationSchema = {
         noIncomeMonth: 'Aucun revenu enregistré en {month}.',
         noExpenseMonth: 'Aucune dépense enregistrée en {month}.',
         noMovementsMonth: 'Aucune transaction en {month}.\nAjoutez une transaction pour ce mois !',
+        totalBalance: 'Solde total',
+        totalExpense: 'Dépense totale',
         uncategorized: 'Sans Catégorie',
         deletedAccount: 'Compte Supprimé',
         deleteConfirmTitle: 'Supprimer la transaction ?',

@@ -26,5 +26,6 @@ Qué se gana y qué se paga.
 | [0003](0003-semilla-localizada-y-enlace-de-region.md) | Semilla localizada y enlace de región |
 | [0004](0004-licencias.md) | Licencias: solo Lemon Squeezy, verificado en línea |
 | [0005](0005-apoyo-pago-unico.md) | Un solo plan: aporte único "invítame un café" |
+| [0006](0006-tokens-de-diseno-y-movimiento.md) | Tokens de diseño (Figma → `@theme`) y movimiento |
 
 Las excepciones del proyecto a la capa común están en `.agents/rules/architecture.md`.

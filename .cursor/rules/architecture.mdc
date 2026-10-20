@@ -12,14 +12,24 @@ globs: **/*
 
 - **React 19 + TypeScript** (strict)
 - **Vite 7**
-- **Tailwind CSS 4** (mobile-first, ver `ux-principles.md`)
+- **Tailwind CSS 4** (mobile-first, ver `ux-principles.md`) con tokens de diseño en `src/index.css` (ver sección "Tokens de diseño")
 - **Dexie.js (IndexedDB)** + `dexie-react-hooks` para persistencia y reactividad offline-first
 - **Zustand** para estado de UI transitorio (toasts, flags, confirm dialogs) y estado de licencia
 - **React Router** para navegación
 - **React Hook Form + Zod** para formularios, contratos de IA y backups
 - **TanStack Charts** (`@tanstack/charts`) para las gráficas
 - **date-fns**, **Lucide**, **vite-plugin-pwa**
+- **motion** (`motion/react`) para microinteracciones y **Poppins** (`@fontsource/poppins`, opt-in con `font-brand`)
 - **Vitest** para pruebas unitarias y de integración
+
+## Tokens de diseño
+
+Decisión y razones en `docs/adr/0006-tokens-de-diseno-y-movimiento.md`.
+
+- Los componentes usan **roles semánticos** (`bg-surface`, `text-text`, `bg-accent`, `text-income`, `text-expense`...), nunca hex ni la paleta cruda. Modo oscuro por `prefers-color-scheme`; el valor oscuro se define una vez en `src/index.css`.
+- Un token nuevo se define en claro, en oscuro y en `@theme inline`. Si es un tamaño de fuente o un radio propio, se declara también en `cn()` (`src/lib/utils.ts`), o `tailwind-merge` lo descarta.
+- Dinero: ingresos en verde y gastos en rojo, aunque el diseño use otro color. El contraste (WCAG AA) pesa más que la fidelidad al diseño.
+- Animaciones con `motion/react`. `MotionConfig reducedMotion="user"` en `App.tsx` es el único lugar donde se respeta `prefers-reduced-motion`.
 
 ## Excepciones del proyecto a la capa común
 

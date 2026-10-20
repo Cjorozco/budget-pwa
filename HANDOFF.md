@@ -1,14 +1,15 @@
 # HANDOFF — personal-buget-pwa
 
-Actualizado: 2026-10-11 · Rama: `master` · Versión: `2.4.0`
+Actualizado: 2026-10-20 · Rama: `practice/figma-mcp` (sin fusionar; `master` sigue en 2.4.0) · Versión: `2.4.0`
 
-Lee primero `AGENTS.md` y `.agents/rules/*`. Las decisiones de diseño están en `docs/adr/` (0001–0005).
+Lee primero `AGENTS.md` y `.agents/rules/*`. Las decisiones de diseño están en `docs/adr/` (0001–0006).
 
-## Verificación (2026-10-11, sobre `master`)
+## Verificación (2026-10-20, sobre `practice/figma-mcp`)
 
-- `npm run test:run`: 56 archivos, 553 tests, todos pasan.
+- `npx vitest run`: 57 archivos, 565 tests, todos pasan.
 - `npm run build`: OK.
-- `npx eslint .`: sin problemas (la deuda de lint se limpió en `7046cca`).
+- `npx eslint src` y `tsc -p tsconfig.app.json --noEmit`: sin problemas.
+- Medido en navegador a 375 y 1280 px (claro y oscuro). Falta la superposición con el diseño (PerfectPixel).
 
 ## Estado actual
 
@@ -19,6 +20,7 @@ PWA offline-first (React 19, Vite 7, Dexie, Zustand, TanStack Charts). Desde el 
 - **Semilla localizada (ADR 0003)** es/en/fr y enlace de primer arranque.
 - **IA:** modelos centralizados (ADR 0001), Gemini con `thinkingLevel`, prompt con criterios por categoría y reglas locales para Canadá, avisos diferenciados (key, cuota, red, timeout), onboarding BYOK con Gemini recomendado, y arnés de evaluación (`npm run eval:ai`).
 - **UX:** tour de bienvenida (Movimientos y Cuentas), modo de datos de ejemplo, instalador PWA visible, separador de miles automático en campos de dinero, "Reconciliación" renombrado a "Cuadrar saldo", gráficas migradas a TanStack Charts.
+- **Tokens de diseño y movimiento (rama `practice/figma-mcp`, ADR 0006):** paleta del kit FinWise de Figma como roles semánticos en `src/index.css` (claro/oscuro por `prefers-color-scheme`), Poppins opt-in (`font-brand`), componentes `TransactionItem` y `BalanceSummaryCard` en `src/components/transactions/`, `TransactionItem` ya usado en Movimientos con entrada animada (`motion`, respeta `prefers-reduced-motion`). Práctica de flujo Figma → código; no está publicada.
 - **Fixes:** transferencias entre cuentas (saldo real del destino y reversión al borrar), sin botón de editar en transferencias.
 
 ## Pendiente / a verificar
@@ -31,6 +33,11 @@ PWA offline-first (React 19, Vite 7, Dexie, Zustand, TanStack Charts). Desde el 
 - **Razones del motor local** (reglas e historial): siguen en español para todos los idiomas. Tampoco hay botón para traducir categorías ya creadas.
 - **IA, fuera de alcance por ahora:** las preguntas "¿es recurrente?" (→ plantilla) y "¿es transferencia propia?" (→ transferencia) de HU-5. Además `3.6-flash` y `3.8-flash` casi no sirven como respaldo dentro del plazo de 8 s ni con key gratuita.
 - Chunk principal grande (~1,1 MiB de precache en el build actual); considerar `import()` dinámico si afecta la carga.
+
+- **Tokens de diseño (ADR 0006):** decidir si la rama se fusiona (sería MINOR, 2.5.0: pantalla, fuente y dependencias nuevas) o queda como práctica. `BalanceSummaryCard` no está conectada a ninguna pantalla.
+- **Migración a tokens:** el resto de la app sigue con `slate-*`; el cuerpo (`slate-50`/`slate-950`) difiere ligeramente de `bg-surface`. Migrar de forma incremental.
+- **Movimientos:** la página hace `return null` mientras carga, por eso `TransactionItemSkeleton` existe pero no se muestra. Los botones de editar y borrar miden 32 px (la regla pide 44 px). Probar a mano `prefers-reduced-motion`: el panel del navegador no lo emula.
+- `.claude/launch.json` (servidor de desarrollo del panel de la app de escritorio) está sin versionar; borrarlo o ignorarlo.
 
 ## Cómo operar
 

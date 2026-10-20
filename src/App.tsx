@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { MotionConfig } from 'motion/react';
 import Layout from '@/components/Layout';
 import Dashboard from '@/pages/Dashboard';
 import TransactionsPage from '@/pages/Transactions';
@@ -32,27 +33,30 @@ function App() {
   }, []);
 
   return (
-    <BrowserRouter>
-      <ErrorBoundary key={country}>
-        <Routes>
-          <Route path="/" element={<Layout />}>
-            <Route index element={<Dashboard />} />
-            <Route path="budget" element={<BudgetPage />} />
-            <Route path="transactions" element={<TransactionsPage />} />
-            <Route path="accounts" element={<AccountsPage />} />
-            <Route path="categories" element={<CategoriesPage />} />
-            <Route path="review" element={<AmbiguousReview />} />
-            <Route path="templates" element={<TemplatesPage />} />
-            <Route path="settings" element={<SettingsPage />} />
-            <Route path="reports" element={<ReportsPage />} />
-          </Route>
-        </Routes>
-      </ErrorBoundary>
-      <InstallPWA />
-      <Toaster />
-      <ConfirmDialog />
-      <UpgradeModal />
-    </BrowserRouter>
+    // reducedMotion="user": with prefers-reduced-motion, motion keeps fades but drops movement.
+    <MotionConfig reducedMotion="user">
+      <BrowserRouter>
+        <ErrorBoundary key={country}>
+          <Routes>
+            <Route path="/" element={<Layout />}>
+              <Route index element={<Dashboard />} />
+              <Route path="budget" element={<BudgetPage />} />
+              <Route path="transactions" element={<TransactionsPage />} />
+              <Route path="accounts" element={<AccountsPage />} />
+              <Route path="categories" element={<CategoriesPage />} />
+              <Route path="review" element={<AmbiguousReview />} />
+              <Route path="templates" element={<TemplatesPage />} />
+              <Route path="settings" element={<SettingsPage />} />
+              <Route path="reports" element={<ReportsPage />} />
+            </Route>
+          </Routes>
+        </ErrorBoundary>
+        <InstallPWA />
+        <Toaster />
+        <ConfirmDialog />
+        <UpgradeModal />
+      </BrowserRouter>
+    </MotionConfig>
   );
 }
 
