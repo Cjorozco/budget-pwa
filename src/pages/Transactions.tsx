@@ -6,7 +6,7 @@ import { db } from '@/lib/db';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { TransactionForm } from '@/components/forms/TransactionForm';
-import { formatCurrency } from '@/lib/utils';
+import { TransactionItem, TransactionsEmpty } from '@/components/transactions/TransactionItem';
 import type { Account, Transaction } from '@/lib/types';
 import { useUIStore } from '@/store/ui';
 import { useTranslation, getDateFnsLocale } from '@/lib/i18n';
@@ -272,36 +272,33 @@ export default function TransactionsPage() {
                 </button>
             </div>
 
-            <div className="space-y-3">
-                {filteredTransactions.length === 0 ? (
-                    <div className="text-center py-10 text-slate-500 whitespace-pre-line text-sm">
-                        {filter === 'income'
+            {filteredTransactions.length === 0 ? (
+                <TransactionsEmpty
+                    message={
+                        filter === 'income'
                             ? t.transactions.noIncomeMonth.replace('{month}', monthLabel)
                             : filter === 'expense'
                             ? t.transactions.noExpenseMonth.replace('{month}', monthLabel)
-                            : t.transactions.noMovementsMonth.replace('{month}', monthLabel)}
-                    </div>
-                ) : (
-                    filteredTransactions.map((tx) => (
-                        <div
-                            key={tx.id}
-                            className="flex items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800"
-                        >
-                            <div className="flex items-center gap-3 flex-1">
-                                <div
-                                    className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg shrink-0`}
-                                    style={{ backgroundColor: tx.type === 'transfer' ? '#64748b' : tx.categoryColor }}
-                                >
-                                    {tx.type === 'transfer' ? <ArrowRightLeft size={16} /> : tx.categoryName[0]?.toUpperCase()}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="font-semibold text-slate-900 dark:text-slate-100 line-clamp-1">
-                                        {tx.description}
-                                    </p>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                                        {format(tx.date, "d MMM, yyyy", { locale: dateLocale })} • {tx.accountName}
-                                    </p>
-                                    <div className="flex flex-wrap gap-1 mt-1.5">
+                            : t.transactions.noMovementsMonth.replace('{month}', monthLabel)
+                    }
+                />
+            ) : (
+                <ul className="space-y-3">
+                    {filteredTransactions.map((tx, index) => {
+                        const isIncome = tx.type === 'income' || (tx.type === 'transfer' && tx.categoryId === 'transfer-in');
+                        return (
+                            <TransactionItem
+                                key={tx.id}
+                                index={index}
+                                title={tx.description}
+                                subtitle={`${format(tx.date, "d MMM, yyyy", { locale: dateLocale })} • ${tx.accountName}`}
+                                categoryLabel={tx.type === 'transfer' ? t.transactions.transferTag : tx.categoryName}
+                                amount={tx.amount}
+                                direction={isIncome ? 'in' : 'out'}
+                                iconColor={tx.type === 'transfer' ? '#64748b' : tx.categoryColor}
+                                icon={tx.type === 'transfer' ? <ArrowRightLeft size={16} /> : tx.categoryName[0]?.toUpperCase()}
+                                badges={
+                                    <>
                                         {(tx.isAmbiguous || tx.needsReview) && (
                                             <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 border border-amber-200 dark:border-amber-800 flex items-center gap-0.5">
                                                 <AlertTriangle size={8} /> {t.transactions.reviewTag}
@@ -317,54 +314,42 @@ export default function TransactionsPage() {
                                                 {t.transactions.transferTag}
                                             </span>
                                         )}
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <div className="text-right">
-                                    <p
-                                        className={`font-bold ${tx.type === 'income' || (tx.type === 'transfer' && tx.categoryId === 'transfer-in')
-                                            ? 'text-green-600'
-                                            : 'text-red-600'
-                                            }`}
-                                    >
-                                        {tx.type === 'income' || (tx.type === 'transfer' && tx.categoryId === 'transfer-in') ? '+' : '-'}{formatCurrency(tx.amount)}
-                                    </p>
-                                    <p className="text-xs text-slate-400">
-                                        {tx.type === 'transfer' ? t.transactions.transferTag : tx.categoryName}
-                                    </p>
-                                </div>
-                                <div className="flex gap-1 ml-2">
-                                    {/* Las transferencias son dos movimientos enlazados: editarlas como gasto/ingreso desajustaría los saldos. Solo se pueden borrar. */}
-                                    {tx.type !== 'transfer' && (
+                                    </>
+                                }
+                                actions={
+                                    <>
+                                        {/* Las transferencias son dos movimientos enlazados: editarlas como gasto/ingreso desajustaría los saldos. Solo se pueden borrar. */}
+                                        {tx.type !== 'transfer' && (
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                className="h-8 w-8 p-0"
+                                                aria-label={t.transactions.editTransaction}
+                                                onClick={() => {
+                                                    setEditingTransaction(tx);
+                                                    setIsModalOpen(true);
+                                                }}
+                                            >
+                                                <Pencil size={14} />
+                                            </Button>
+                                        )}
                                         <Button
                                             size="sm"
                                             variant="ghost"
-                                            className="h-8 w-8 p-0"
-                                            aria-label={t.transactions.editTransaction}
-                                            onClick={() => {
-                                                setEditingTransaction(tx);
-                                                setIsModalOpen(true);
-                                            }}
+                                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                                            aria-label={t.common.delete}
+                                            onClick={() => handleDelete(tx)}
+                                            isLoading={deletingId === tx.id}
                                         >
-                                            <Pencil size={14} />
+                                            <Trash2 size={14} />
                                         </Button>
-                                    )}
-                                    <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-                                        onClick={() => handleDelete(tx)}
-                                        isLoading={deletingId === tx.id}
-                                    >
-                                        <Trash2 size={14} />
-                                    </Button>
-                                </div>
-                            </div>
-                        </div>
-                    ))
-                )}
-            </div>
+                                    </>
+                                }
+                            />
+                        );
+                    })}
+                </ul>
+            )}
 
             <Modal
                 isOpen={isModalOpen}

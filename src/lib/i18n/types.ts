@@ -132,6 +132,8 @@ export interface TranslationSchema {
         noIncomeMonth: string;
         noExpenseMonth: string;
         noMovementsMonth: string;
+        totalBalance: string;
+        totalExpense: string;
         uncategorized: string;
         deletedAccount: string;
         deleteConfirmTitle: string;
