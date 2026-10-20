@@ -1,6 +1,6 @@
 # HANDOFF — personal-buget-pwa
 
-Actualizado: 2026-10-20 · Rama: `master` (incluye #55) · Versión: `2.4.0` (sin bump todavía, ver Pendiente)
+Actualizado: 2026-10-20 · Rama: `master` (incluye #55) · Versión: `2.5.0`
 
 Lee primero `AGENTS.md` y `.agents/rules/*`. Las decisiones de diseño están en `docs/adr/` (0001–0006).
 
@@ -20,7 +20,7 @@ PWA offline-first (React 19, Vite 7, Dexie, Zustand, TanStack Charts). Desde el 
 - **Semilla localizada (ADR 0003)** es/en/fr y enlace de primer arranque.
 - **IA:** modelos centralizados (ADR 0001), Gemini con `thinkingLevel`, prompt con criterios por categoría y reglas locales para Canadá, avisos diferenciados (key, cuota, red, timeout), onboarding BYOK con Gemini recomendado, y arnés de evaluación (`npm run eval:ai`).
 - **UX:** tour de bienvenida (Movimientos y Cuentas), modo de datos de ejemplo, instalador PWA visible, separador de miles automático en campos de dinero, "Reconciliación" renombrado a "Cuadrar saldo", gráficas migradas a TanStack Charts.
-- **Tokens de diseño y movimiento (#55, ADR 0006):** paleta del kit FinWise de Figma como roles semánticos en `src/index.css` (claro/oscuro por `prefers-color-scheme`), Poppins opt-in (`font-brand`), componentes `TransactionItem` y `BalanceSummaryCard` en `src/components/transactions/`, `TransactionItem` ya usado en Movimientos con entrada animada (`motion`, respeta `prefers-reduced-motion`). Salió de una práctica del flujo Figma → código; la rama `practice/figma-mcp` se conserva para seguir practicando.
+- **Tokens de diseño y movimiento (2.5.0, #55, ADR 0006):** paleta del kit FinWise de Figma como roles semánticos en `src/index.css` (claro/oscuro por `prefers-color-scheme`), Poppins opt-in (`font-brand`), componentes `TransactionItem` y `BalanceSummaryCard` en `src/components/transactions/`, `TransactionItem` ya usado en Movimientos con entrada animada (`motion`, respeta `prefers-reduced-motion`). Salió de una práctica del flujo Figma → código; la rama `practice/figma-mcp` se conserva para seguir practicando.
 - **Fixes:** transferencias entre cuentas (saldo real del destino y reversión al borrar), sin botón de editar en transferencias.
 
 ## Pendiente / a verificar
@@ -34,7 +34,6 @@ PWA offline-first (React 19, Vite 7, Dexie, Zustand, TanStack Charts). Desde el 
 - **IA, fuera de alcance por ahora:** las preguntas "¿es recurrente?" (→ plantilla) y "¿es transferencia propia?" (→ transferencia) de HU-5. Además `3.6-flash` y `3.8-flash` casi no sirven como respaldo dentro del plazo de 8 s ni con key gratuita.
 - Chunk principal grande (~1,1 MiB de precache en el build actual); considerar `import()` dinámico si afecta la carga.
 
-- **Versión:** #55 se fusionó sin subir `package.json`. Es un cambio MINOR (pantalla, fuente y dependencias nuevas): al publicar, 2.4.0 → 2.5.0.
 - **Superposición píxel a píxel (ADR 0006):** solo se midió tamaño, color y fuente en navegador a 375 y 1280 px. Falta superponer el frame `Home` de FinWise con PerfectPixel. Diferencias conocidas: el ícono del ítem mide 48×48 (57×53 en Figma) y el diseño es de 430 px.
 - **Tokens de diseño:** `BalanceSummaryCard` no está conectada a ninguna pantalla. El resto de la app sigue con `slate-*`; el cuerpo (`slate-50`/`slate-950`) difiere ligeramente de `bg-surface`. Migrar de forma incremental.
 - **Movimientos:** la página hace `return null` mientras carga, por eso `TransactionItemSkeleton` existe pero no se muestra. Los botones de editar y borrar miden 32 px (la regla pide 44 px). Probar a mano `prefers-reduced-motion`: el panel del navegador no lo emula.
