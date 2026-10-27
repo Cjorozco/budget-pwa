@@ -36,6 +36,9 @@ export interface TranslationSchema {
         edit: string;
         create: string;
         back: string;
+        notFoundTitle: string;
+        notFoundBody: string;
+        goHome: string;
         close: string;
         loading: string;
         success: string;

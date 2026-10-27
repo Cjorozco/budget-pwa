@@ -152,8 +152,6 @@ export default function Dashboard() {
                 </div>
             </header>
 
-            <DemoEmptyState />
-
             {/* AI Review Notice */}
             {ambiguousCount > 0 && (
                 <Link
@@ -235,7 +233,7 @@ export default function Dashboard() {
                     <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
                         <div className="flex items-center gap-2 mb-2">
                             <ArrowUpCircle className="text-green-500" size={20} />
-                            <span className="text-sm text-slate-500 font-medium">{t.dashboard.monthlyIncome}</span>
+                            <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">{t.dashboard.monthlyIncome}</span>
                         </div>
                         <p className="text-lg font-bold text-slate-900 dark:text-white">
                             {stats ? formatCurrency(stats.income) : '-'}
@@ -244,7 +242,7 @@ export default function Dashboard() {
                     <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
                         <div className="flex items-center gap-2 mb-2">
                             <ArrowDownCircle className="text-red-500" size={20} />
-                            <span className="text-sm text-slate-500 font-medium">{t.dashboard.monthlyExpense}</span>
+                            <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">{t.dashboard.monthlyExpense}</span>
                         </div>
                         <p className="text-lg font-bold text-slate-900 dark:text-white">
                             {stats ? formatCurrency(stats.expense) : '-'}
@@ -267,12 +265,15 @@ export default function Dashboard() {
                 )}
             </div>
 
+            {/* Below the balance and stats so its async appearance never shifts them (CLS) */}
+            <DemoEmptyState />
+
             {/* Quick Templates */}
             {quickTemplates.length > 0 && (
                 <section>
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-lg font-bold text-slate-900 dark:text-white">{t.settings.manageTemplates}</h2>
-                        <Link to="/settings" className="text-xs text-blue-600 font-medium">{t.common.edit}</Link>
+                        <Link to="/settings" className="text-xs text-blue-600 dark:text-blue-400 font-medium">{t.common.edit}</Link>
                     </div>
                     <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
                         {quickTemplates.map(template => (
@@ -293,7 +294,7 @@ export default function Dashboard() {
             <section>
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-lg font-bold text-slate-900 dark:text-white">{t.dashboard.recentTransactions}</h2>
-                    <Link to="/transactions" className="text-sm text-blue-600 font-medium">{t.dashboard.viewAllTransactions}</Link>
+                    <Link to="/transactions" className="text-sm text-blue-600 dark:text-blue-400 font-medium">{t.dashboard.viewAllTransactions}</Link>
                 </div>
                 <div className="space-y-3">
                     {recentTransactions?.map(tx => (

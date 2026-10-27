@@ -12,6 +12,7 @@ const SettingsPage = lazy(() => import('@/pages/Settings'));
 const AmbiguousReview = lazy(() => import('@/pages/AmbiguousReview'));
 const TemplatesPage = lazy(() => import('@/pages/Templates'));
 const ReportsPage = lazy(() => import('@/pages/Reports'));
+const NotFoundPage = lazy(() => import('@/pages/NotFound'));
 import { seedInitialData } from '@/lib/db/seed';
 import { InstallPWA } from '@/components/InstallPWA';
 import { Toaster } from '@/components/Toaster';
@@ -50,6 +51,7 @@ function App() {
               <Route path="templates" element={<TemplatesPage />} />
               <Route path="settings" element={<SettingsPage />} />
               <Route path="reports" element={<ReportsPage />} />
+              <Route path="*" element={<NotFoundPage />} />
             </Route>
           </Routes>
           </Suspense>
