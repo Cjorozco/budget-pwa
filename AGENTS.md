@@ -24,3 +24,7 @@ Saldos atómicos, reconciliación auditable, soberanía de datos, licenciamiento
 ## Mantenimiento de las reglas
 
 `.cursor/rules/*.mdc` es espejo de `.agents/rules/*.md` (mismo contenido, solo cambia el frontmatter). Al editar uno, actualiza el otro.
+
+## Ramas
+
+Solo existen `master` y `develop`. Todo cambio llega primero a `develop` y de ahí pasa a `master`; no se sube directo a `master`. Las ramas de trabajo se borran al fusionarlas.
