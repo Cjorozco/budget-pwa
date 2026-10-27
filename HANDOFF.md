@@ -1,6 +1,6 @@
 # HANDOFF — personal-buget-pwa
 
-Actualizado: 2026-10-20 · Rama: `master` (incluye #55) · Versión: `2.5.0`
+Actualizado: 2026-10-20 · Rama: `master` (incluye #55) · Versión: `2.5.1`
 
 Lee primero `AGENTS.md` y `.agents/rules/*`. Las decisiones de diseño están en `docs/adr/` (0001–0006).
 
