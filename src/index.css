@@ -75,13 +75,11 @@
 }
 
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: var(--font-brand);
   line-height: 1.5;
   font-weight: 400;
 
   color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -96,15 +94,17 @@
 }
 
 /* Safe-area support (iOS notch/home indicator) */
-.safe-bottom {
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
+.safe-bottom,
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* Fallback explícito por si la utility de Tailwind no se genera */
-.min-h-dvh {
-  min-height: 100dvh;
+/* Browser surfaces themed from the palette */
+::selection {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+:focus-visible {
+  outline-color: var(--info);
 }

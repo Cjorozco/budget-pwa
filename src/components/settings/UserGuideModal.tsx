@@ -24,7 +24,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
 
     const sections = [
         {
-            icon: <Lock className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />,
+            icon: <Lock className="w-5 h-5 text-teal-700 dark:text-teal-400" />,
             title: t.userGuide.sections.noBankTitle,
             desc: t.userGuide.sections.noBankDesc,
         },
@@ -53,7 +53,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
             desc: t.userGuide.sections.reservesDesc,
         },
         {
-            icon: <Zap className="w-5 h-5 text-amber-500" />,
+            icon: <Zap className="w-5 h-5 text-amber-700 dark:text-amber-500" />,
             title: t.userGuide.sections.quickTemplatesTitle,
             desc: t.userGuide.sections.quickTemplatesDesc,
         },
@@ -80,7 +80,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                 aria-labelledby="guide-modal-title"
             >
                 {/* Header */}
-                <div className="relative p-5 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 text-white flex-shrink-0">
+                <div className="relative p-5 bg-cyprus text-white flex-shrink-0">
                     <button
                         type="button"
                         onClick={onClose}
@@ -128,7 +128,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                                     href={sec.extraLink.url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline pt-1 pl-1"
+                                    className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline pt-1 pl-1"
                                 >
                                     <span>{sec.extraLink.label}</span>
                                     <ExternalLink className="w-3 h-3" />

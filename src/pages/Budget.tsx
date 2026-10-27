@@ -224,7 +224,7 @@ export default function Budget() {
               <button
                 type="button"
                 onClick={jumpToCurrentMonth}
-                className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 px-2 py-0.5 rounded-full hover:bg-indigo-100 transition-colors"
+                className="text-xs font-bold text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/50 px-2 py-0.5 rounded-full hover:bg-teal-100 transition-colors"
               >
                 {t.transactions.currentMonth}
               </button>
@@ -242,19 +242,19 @@ export default function Budget() {
 
       {/* Copy Previous Month Banner if Current Month is Empty */}
       {currentMonthItems.length === 0 && prevMonthItems.length > 0 && (
-        <div className="p-4 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+        <div className="p-4 bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
           <div>
-            <h3 className="font-bold text-sm text-indigo-950 dark:text-indigo-200">
+            <h3 className="font-bold text-sm text-teal-950 dark:text-teal-200">
               {t.budget.noItemsInMonthBanner.replace('{month}', format(currentDate, 'MMMM yyyy', { locale: dateLocale }))}
             </h3>
-            <p className="text-xs text-indigo-700 dark:text-indigo-300 mt-0.5">
+            <p className="text-xs text-teal-800 dark:text-teal-300 mt-0.5">
               {t.budget.copyFromPreviousMonth.replace('{month}', format(prevDate, 'MMMM yyyy', { locale: dateLocale }))}
             </p>
           </div>
           <button
             type="button"
             onClick={handleCopyPreviousMonth}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors shrink-0"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold rounded-xl shadow-xs transition-colors shrink-0"
           >
             <Copy size={14} />
             {t.budget.copyMonthBtn
@@ -268,10 +268,10 @@ export default function Budget() {
       <div className={cn(
         "p-6 rounded-3xl shadow-lg border-2",
         plannedAvailable < 0
-          ? "bg-gradient-to-br from-red-600 to-red-700 border-red-500 text-white"
-          : "bg-gradient-to-br from-indigo-600 to-indigo-700 border-indigo-500 text-white"
+          ? "bg-red-700 border-red-600 text-white"
+          : "bg-cyprus border-caribbean/40 text-honeydew"
       )}>
-        <div className="flex items-center gap-2 mb-2 text-indigo-100">
+        <div className="flex items-center gap-2 mb-2 text-teal-100">
           <Calculator size={20} className={plannedAvailable < 0 ? "text-red-200" : ""} />
           <span className={cn("text-sm font-medium", plannedAvailable < 0 ? "text-red-100" : "")}>
             {t.budget.plannedAvailable} ({format(currentDate, "MMMM", { locale: dateLocale })})
@@ -286,7 +286,7 @@ export default function Budget() {
           </div>
         )}
         {plannedAvailable >= 0 && (
-          <div className="mt-2 text-xs font-medium text-indigo-100/80">
+          <div className="mt-2 text-xs font-medium text-teal-100/80">
             {t.budget.freeMoney}
           </div>
         )}
@@ -332,7 +332,7 @@ export default function Budget() {
 
         <div className="space-y-2">
           {fixedIncomes.length === 0 ? (
-            <p className="text-sm text-slate-400 text-center py-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
+            <p className="text-sm text-slate-600 dark:text-slate-400 text-center py-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
               {t.budget.noFixedIncomes}
             </p>
           ) : (
@@ -346,7 +346,7 @@ export default function Budget() {
                   <button
                     onClick={() => handleOpenEditModal(item)}
                     aria-label={`${t.common.edit} ${item.name}`}
-                    className="text-slate-400 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                    className="text-slate-600 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
                     title={t.common.edit}
                   >
                     <Pencil size={16} />
@@ -354,7 +354,7 @@ export default function Budget() {
                   <button
                     onClick={() => handleDeleteItem(item.id)}
                     aria-label={`${t.common.delete} ${item.name}`}
-                    className="text-slate-400 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                    className="text-slate-600 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                     title={t.common.delete}
                   >
                     <Trash2 size={16} />
@@ -379,7 +379,7 @@ export default function Budget() {
             <select
               value={expenseSortOrder}
               onChange={(e) => setExpenseSortOrder(e.target.value as 'az' | 'za' | 'amount-asc' | 'amount-desc')}
-              className="text-sm bg-slate-50 dark:bg-slate-800 border-none rounded-lg px-2 py-1.5 text-slate-600 dark:text-slate-300 focus:ring-0 cursor-pointer outline-none shrink-0"
+              className="text-sm bg-slate-50 dark:bg-slate-800 border-none rounded-lg px-2 py-1.5 text-slate-600 dark:text-slate-300 focus:ring-0 cursor-pointer shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
             >
               <option value="amount-desc">{t.budget.sortAmountDesc}</option>
               <option value="amount-asc">{t.budget.sortAmountAsc}</option>
@@ -397,7 +397,7 @@ export default function Budget() {
 
         <div className="space-y-2">
           {sortedFixedExpenses.length === 0 ? (
-            <p className="text-sm text-slate-400 text-center py-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
+            <p className="text-sm text-slate-600 dark:text-slate-400 text-center py-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
               {t.budget.noFixedExpenses}
             </p>
           ) : (
@@ -411,7 +411,7 @@ export default function Budget() {
                   <button
                     onClick={() => handleOpenEditModal(item)}
                     aria-label={`${t.common.edit} ${item.name}`}
-                    className="text-slate-400 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                    className="text-slate-600 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
                     title={t.common.edit}
                   >
                     <Pencil size={16} />
@@ -419,7 +419,7 @@ export default function Budget() {
                   <button
                     onClick={() => handleDeleteItem(item.id)}
                     aria-label={`${t.common.delete} ${item.name}`}
-                    className="text-slate-400 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                    className="text-slate-600 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                     title={t.common.delete}
                   >
                     <Trash2 size={16} />
@@ -452,10 +452,11 @@ export default function Budget() {
       >
         <form onSubmit={handleSaveItem} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            <label htmlFor="budget-item-name" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               {t.budget.itemNameLabel}
             </label>
             <input
+              id="budget-item-name"
               type="text"
               required
               value={newItemName}
@@ -465,10 +466,11 @@ export default function Budget() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            <label htmlFor="budget-item-amount" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               {t.budget.itemAmountLabel}
             </label>
             <MoneyInput
+              id="budget-item-amount"
               required
               value={newItemAmount ? Number(newItemAmount) : undefined}
               onValueChange={v => setNewItemAmount(v === undefined ? '' : String(v))}

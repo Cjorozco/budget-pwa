@@ -95,7 +95,7 @@ export default function AccountsPage() {
                 ))}
 
                 {accounts?.length === 0 && (
-                    <div className="col-span-full py-12 text-center text-slate-400 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800">
+                    <div className="col-span-full py-12 text-center text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800">
                         <Wallet className="mx-auto h-12 w-12 opacity-20 mb-3" />
                         <p>{t.accounts.noAccountsRegistered}</p>
                         <Button variant="link" onClick={() => setIsModalOpen(true)}>{t.accounts.createFirstAccount}</Button>

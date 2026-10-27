@@ -42,7 +42,7 @@ export const LanguageSelector: React.FC = () => {
                                     <p className="text-xs font-bold text-slate-900 dark:text-slate-100">
                                         {lang.label}
                                     </p>
-                                    <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">
                                         {lang.description}
                                     </p>
                                 </div>

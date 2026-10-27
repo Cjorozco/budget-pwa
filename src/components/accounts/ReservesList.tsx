@@ -49,7 +49,7 @@ export function ReservesList({ accountId, onEditReserve }: ReservesListProps) {
 
     if (reserves.length === 0) {
         return (
-            <div className="py-8 text-center text-slate-400">
+            <div className="py-8 text-center text-slate-600 dark:text-slate-400">
                 <PiggyBank className="mx-auto h-12 w-12 opacity-10 mb-2" />
                 <p className="text-sm">{t.forms.noActiveReserves}</p>
             </div>
@@ -68,14 +68,14 @@ export function ReservesList({ accountId, onEditReserve }: ReservesListProps) {
                             <span className="text-sm font-bold text-slate-900 dark:text-white">
                                 {formatCurrency(reserve.amount)}
                             </span>
-                            <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-bold uppercase">
+                            <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-bold uppercase">
                                 {t.accounts.reservedLabel}
                             </span>
                         </div>
                         <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
                             {reserve.description}
                         </p>
-                        <p className="text-[10px] text-slate-400 mt-1">
+                        <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
                             {t.forms.createdDate.replace('{date}', format(reserve.createdAt, "d MMM, yyyy", { locale: dateLocale }))}
                         </p>
                     </div>
@@ -83,7 +83,7 @@ export function ReservesList({ accountId, onEditReserve }: ReservesListProps) {
                         <Button
                             size="sm"
                             variant="ghost"
-                            className="h-8 w-8 p-0 text-slate-300 hover:text-blue-500 rounded-full"
+                            className="h-8 w-8 p-0 text-slate-600 dark:text-slate-400 hover:text-blue-500 rounded-full"
                             onClick={() => onEditReserve?.(reserve)}
                             title={t.common.edit}
                         >
@@ -92,7 +92,7 @@ export function ReservesList({ accountId, onEditReserve }: ReservesListProps) {
                         <Button
                             size="sm"
                             variant="ghost"
-                            className="h-8 w-8 p-0 text-slate-300 hover:text-red-500 rounded-full"
+                            className="h-8 w-8 p-0 text-slate-600 dark:text-slate-400 hover:text-red-500 rounded-full"
                             onClick={() => handleDeactivate(reserve.id)}
                             title={t.common.delete}
                         >

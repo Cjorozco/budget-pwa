@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
 import { Wallet } from 'lucide-react';
@@ -11,6 +12,7 @@ interface AccountSelectProps {
 }
 
 export function AccountSelect({ value, onChange, label = 'Cuenta', excludeId }: AccountSelectProps) {
+    const selectId = useId();
     const accounts = useLiveQuery(() =>
         db.accounts
             .filter(a => a.isActive)
@@ -22,12 +24,13 @@ export function AccountSelect({ value, onChange, label = 'Cuenta', excludeId }: 
 
     return (
         <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">{label}</label>
+            <label htmlFor={selectId} className="text-sm font-medium text-slate-700 dark:text-slate-300">{label}</label>
             <div className="relative">
                 <select
+                    id={selectId}
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
-                    className="w-full appearance-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 pr-10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium"
+                    className="w-full appearance-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 pr-10 text-slate-900 dark:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus:border-blue-600 transition-all font-medium"
                 >
                     <option value="" disabled>Seleccionar cuenta</option>
                     {filteredAccounts.map((account) => (
@@ -36,7 +39,7 @@ export function AccountSelect({ value, onChange, label = 'Cuenta', excludeId }: 
                         </option>
                     ))}
                 </select>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
                     <Wallet size={18} />
                 </div>
             </div>

@@ -174,22 +174,22 @@ export function GeminiKeyCard() {
                 onClick={() => handleProviderChange(p.id)}
                 className={`p-2.5 rounded-xl border text-left flex flex-col justify-between transition-all relative ${
                     isSelected
-                        ? 'border-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/40 ring-2 ring-indigo-500/20 shadow-xs'
+                        ? 'border-teal-600 bg-teal-50/70 dark:bg-teal-950/40 ring-2 ring-teal-600/20 shadow-xs'
                         : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40'
                 }`}
                 data-testid={`ai-provider-select-${p.id}`}
             >
                 <div className="flex items-center justify-between gap-1 mb-1">
-                    <span className="p-1 rounded-md bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 border border-slate-200/60 dark:border-slate-700 shadow-2xs">
+                    <span className="p-1 rounded-md bg-white dark:bg-slate-800 text-teal-700 dark:text-teal-400 border border-slate-200/60 dark:border-slate-700 shadow-2xs">
                         <Cpu size={13} />
                     </span>
                     {providerHasStoredKey ? (
-                        <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100/80 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded-full">
+                        <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100/80 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded-full">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                             {t.settings.keyReady}
                         </span>
                     ) : (
-                        <span className="text-[9px] text-slate-600 dark:text-slate-300">
+                        <span className="text-xs text-slate-600 dark:text-slate-300">
                             {t.settings.noKey}
                         </span>
                     )}
@@ -197,16 +197,16 @@ export function GeminiKeyCard() {
                 <div>
                     <p className={`text-xs font-bold truncate ${
                         isSelected
-                            ? 'text-indigo-900 dark:text-indigo-200'
+                            ? 'text-teal-900 dark:text-teal-200'
                             : 'text-slate-800 dark:text-slate-200'
                     }`}>
                         {pLabel}
                     </p>
-                    <p className="text-[10px] text-slate-600 dark:text-slate-300 truncate">
+                    <p className="text-xs text-slate-600 dark:text-slate-300 truncate">
                         {pSubLabel}
                     </p>
                     {p.recommended && (
-                        <p data-testid="ai-recommended-hint" className="mt-1 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400">
+                        <p data-testid="ai-recommended-hint" className="mt-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
                             {t.aiProviders.recommendedBadge} · {t.aiProviders.recommendedHint}
                         </p>
                     )}
@@ -219,26 +219,26 @@ export function GeminiKeyCard() {
         <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-4">
             {/* Header */}
             <div className="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-slate-800">
-                <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg text-indigo-600 dark:text-indigo-400">
+                <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg text-teal-700 dark:text-teal-400">
                     <Sparkles size={18} />
                 </div>
                 <div>
                     <h3 className="font-semibold text-slate-900 dark:text-white text-sm">
                         {t.settings.aiSection}
                     </h3>
-                    <p className="text-[11px] text-slate-500">
+                    <p className="text-xs text-slate-500">
                         {t.settings.aiDesc}
                     </p>
                 </div>
             </div>
 
-            <p data-testid="ai-optional-notice" className="text-[11px] text-slate-600 dark:text-slate-400 -mt-1">
+            <p data-testid="ai-optional-notice" className="text-xs text-slate-600 dark:text-slate-400 -mt-1">
                 {t.aiProviders.worksWithoutAi}
             </p>
 
             {/* Free providers first (Gemini recommended); paid ones live under "advanced" */}
             <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                <label className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
                     {t.settings.activeProvider}
                 </label>
                 <div className="grid grid-cols-2 gap-2">{freeProviders.map(renderProviderButton)}</div>
@@ -268,7 +268,7 @@ export function GeminiKeyCard() {
                         </h4>
                         <span
                             data-testid="ai-provider-pricing-badge"
-                            className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                            className={`rounded-full px-2 py-0.5 text-xs font-bold ${
                                 isFreeTier
                                     ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
                                     : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
@@ -277,16 +277,16 @@ export function GeminiKeyCard() {
                             {isFreeTier ? t.aiProviders.badgeFree : t.aiProviders.badgePaid}
                         </span>
                     </div>
-                    <p className="text-[11px] text-slate-500 mt-0.5">{helpText}</p>
-                    <p className="text-[11px] font-medium text-slate-700 dark:text-slate-300 mt-1 font-mono">
+                    <p className="text-xs text-slate-500 mt-0.5">{helpText}</p>
+                    <p className="text-xs font-medium text-slate-700 dark:text-slate-300 mt-1 font-mono">
                         {modelDescription}
                     </p>
                     {activeProviderT && (
-                        <p data-testid="ai-provider-cost-note" className="text-[11px] text-slate-600 dark:text-slate-400 mt-1">
+                        <p data-testid="ai-provider-cost-note" className="text-xs text-slate-600 dark:text-slate-400 mt-1">
                             {activeProviderT.costNote}
                         </p>
                     )}
-                    <p data-testid="ai-subscription-notice" className="text-[11px] text-slate-500 mt-1">
+                    <p data-testid="ai-subscription-notice" className="text-xs text-slate-500 mt-1">
                         {t.aiProviders.subscriptionNotice}
                     </p>
                 </div>
@@ -302,7 +302,7 @@ export function GeminiKeyCard() {
                     <summary className="min-h-[44px] flex items-center cursor-pointer text-xs font-semibold text-slate-700 dark:text-slate-300">
                         {t.aiProviders.tutorialTitle}
                     </summary>
-                    <ol className="list-decimal pl-4 pb-2 space-y-1 text-[11px] text-slate-600 dark:text-slate-400">
+                    <ol className="list-decimal pl-4 pb-2 space-y-1 text-xs text-slate-600 dark:text-slate-400">
                         {activeProviderT.tutorialSteps.map((step) => (
                             <li key={step}>{step}</li>
                         ))}
@@ -311,7 +311,7 @@ export function GeminiKeyCard() {
                         href={meta.docsUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 pb-3 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+                        className="inline-flex items-center gap-1 pb-3 text-xs font-semibold text-teal-700 dark:text-teal-400 hover:underline"
                     >
                         {t.aiProviders.docsLinkLabel}
                         <ExternalLink size={12} />
@@ -323,7 +323,7 @@ export function GeminiKeyCard() {
                 href={meta.keyUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-teal-700 dark:text-teal-400 hover:underline"
             >
                 {keyUrlLabel}
                 <ExternalLink size={12} />
@@ -331,7 +331,7 @@ export function GeminiKeyCard() {
 
             {hasKey ? (
                 <div className="rounded-xl bg-slate-50 dark:bg-slate-800/60 px-3 py-2 space-y-0.5">
-                    <p className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                    <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                         {t.settings.activeKeyFor} {providerLabel}
                     </p>
                     <p className="text-xs text-slate-600 dark:text-slate-400">
@@ -339,7 +339,7 @@ export function GeminiKeyCard() {
                     </p>
                 </div>
             ) : (
-                <p className="text-[11px] text-slate-500">
+                <p className="text-xs text-slate-500">
                     {t.settings.noKeyConfiguredFor.replace('{provider}', providerLabel)}
                 </p>
             )}
@@ -378,7 +378,7 @@ export function GeminiKeyCard() {
                     data-status={check.status}
                     role="status"
                     aria-live="polite"
-                    className={`flex items-start gap-1.5 text-[11px] font-medium ${
+                    className={`flex items-start gap-1.5 text-xs font-medium ${
                         check.status === 'valid'
                             ? 'text-emerald-700 dark:text-emerald-400'
                             : check.status === 'invalid'
@@ -400,12 +400,12 @@ export function GeminiKeyCard() {
             )}
 
             {showEditor && (
-                <p className="text-[10px] text-slate-500">
+                <p className="text-xs text-slate-500">
                     {t.aiProviders.keyCheckNote.replace('{provider}', providerLabel)}
                 </p>
             )}
 
-            <p className="text-[10px] text-slate-500">
+            <p className="text-xs text-slate-500">
                 {t.settings.keysStoredLocally}
             </p>
 

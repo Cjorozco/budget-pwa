@@ -180,13 +180,13 @@ export default function Dashboard() {
                 "p-6 rounded-3xl shadow-lg transition-colors border-2 relative",
                 isLoading ? "opacity-50 grayscale transition-all duration-500" : "",
                 totalAvailable < 0
-                    ? "bg-gradient-to-br from-red-600 to-red-700 text-white shadow-red-200 border-red-500 animate-pulse"
-                    : "bg-gradient-to-br from-indigo-600 to-indigo-700 text-white shadow-indigo-200 border-indigo-500"
+                    ? "bg-red-700 text-white shadow-red-200 border-red-600 motion-safe:animate-pulse"
+                    : "bg-cyprus text-honeydew shadow-cyprus/20 border-caribbean/40"
             )}>
                 <div className="flex items-center justify-between mb-1">
                     <p className={cn(
                         "text-sm font-medium",
-                        totalAvailable < 0 ? "text-red-100" : "text-indigo-100"
+                        totalAvailable < 0 ? "text-red-100" : "text-teal-100"
                     )}>{t.dashboard.availableBalance}</p>
                     <button
                         type="button"
@@ -195,7 +195,7 @@ export default function Dashboard() {
                             "p-1 rounded-full transition-colors",
                             totalAvailable < 0
                                 ? "hover:bg-red-500/40 text-red-200"
-                                : "hover:bg-indigo-500/40 text-indigo-200"
+                                : "hover:bg-teal-600/40 text-teal-200"
                         )}
                         aria-label="Info"
                         title={t.dashboard.reservesTooltip}
@@ -219,8 +219,8 @@ export default function Dashboard() {
 
                 {!showBalanceExplanation && totalReserved > 0 && (
                     <div className={cn(
-                        "mt-2 text-[10px] font-medium",
-                        totalAvailable < 0 ? "text-red-200" : "text-indigo-100/80"
+                        "mt-2 text-xs font-medium",
+                        totalAvailable < 0 ? "text-red-200" : "text-teal-100/80"
                     )}>
                         {formatCurrency(totalRealBalance)} ({formatCurrency(totalReserved)} {t.dashboard.savingsReserves}).
                     </div>
@@ -283,7 +283,7 @@ export default function Dashboard() {
                                 className="flex flex-col items-center gap-2 p-4 bg-white dark:bg-slate-900 rounded-2xl border-2 border-slate-100 dark:border-slate-800 hover:border-blue-200 transition-all active:scale-95 shrink-0 min-w-[100px]"
                             >
                                 <span className="text-2xl">{template.icon}</span>
-                                <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400">{template.name}</span>
+                                <span className="text-xs font-bold text-slate-600 dark:text-slate-400">{template.name}</span>
                             </button>
                         ))}
                     </div>
@@ -323,7 +323,7 @@ export default function Dashboard() {
                         </div>
                     ))}
                     {(!recentTransactions || recentTransactions.length === 0) && (
-                        <div className="text-center py-6 text-slate-400 text-sm bg-slate-50 dark:bg-slate-900 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
+                        <div className="text-center py-6 text-slate-600 dark:text-slate-400 text-sm bg-slate-50 dark:bg-slate-900 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
                             {t.dashboard.noRecentTransactions}
                         </div>
                     )}

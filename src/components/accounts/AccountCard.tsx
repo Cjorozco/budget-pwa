@@ -82,7 +82,7 @@ export function AccountCard({ account, onEdit, onReconcile, onViewHistory, onAdd
                         </div>
                         <div>
                             <h3 className="font-semibold text-slate-900 dark:text-slate-100 leading-tight text-sm">{account.name}</h3>
-                            <span className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">
+                            <span className="text-xs text-slate-500 uppercase tracking-wider font-bold">
                                 {account.type === 'bank' ? t.accounts.bankType : account.type === 'credit' ? t.accounts.creditType : t.accounts.cashType}
                             </span>
                         </div>
@@ -125,7 +125,7 @@ export function AccountCard({ account, onEdit, onReconcile, onViewHistory, onAdd
                 <div className="space-y-4 mt-auto">
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight block mb-1 truncate" title={getRealBalanceLabel(account)}>
+                            <span className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-tight block mb-1 truncate" title={getRealBalanceLabel(account)}>
                                 {getRealBalanceLabel(account)}
                             </span>
                             <div className="text-sm font-bold text-slate-900 dark:text-white truncate">
@@ -140,7 +140,7 @@ export function AccountCard({ account, onEdit, onReconcile, onViewHistory, onAdd
                                 title={t.common.viewDetails}
                                 data-testid="view-reserves-button"
                             >
-                                <span className="text-[10px] font-bold text-amber-500 uppercase tracking-tight block mb-1 group-hover/res:text-amber-600">{t.accounts.reservedLabel}</span>
+                                <span className="text-xs font-bold text-amber-700 dark:text-amber-500 uppercase tracking-tight block mb-1 group-hover/res:text-amber-600">{t.accounts.reservedLabel}</span>
                                 <div className="text-sm font-bold text-amber-600 dark:text-amber-400 truncate flex items-center gap-1">
                                     {formatCurrency(reservedAmount)}
                                     <span className="text-[8px] bg-amber-100 dark:bg-amber-900/40 px-1 rounded opacity-0 group-hover/res:opacity-100 transition-opacity">{t.accounts.viewLabel}</span>
@@ -151,12 +151,12 @@ export function AccountCard({ account, onEdit, onReconcile, onViewHistory, onAdd
 
                     <div className={cn(
                         "p-3 rounded-xl flex items-center justify-between transition-colors",
-                        reservedAmount > 0 ? "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 ring-1 ring-indigo-100 dark:ring-indigo-900/40" :
+                        reservedAmount > 0 ? "bg-teal-50 dark:bg-teal-900/20 text-teal-800 dark:text-teal-400 ring-1 ring-teal-100 dark:ring-teal-900/40" :
                             difference === null ? "bg-slate-50 dark:bg-slate-800/50" :
                                 isMatched ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400" :
                                     "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400"
                     )}>
-                        <span className="text-[10px] font-bold uppercase tracking-wider">
+                        <span className="text-xs font-bold uppercase tracking-wider">
                             {reservedAmount > 0 ? t.accounts.availableLabel : t.accounts.differenceLabel}
                         </span>
                         <span className="text-sm font-black tracking-tight">
@@ -171,13 +171,13 @@ export function AccountCard({ account, onEdit, onReconcile, onViewHistory, onAdd
                             onClick={() => onViewHistory(account)}
                             className="w-full pt-2 flex items-center justify-between group cursor-pointer"
                         >
-                            <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-medium italic group-hover:text-blue-500 transition-colors">
-                                <CheckCircle2 size={12} className={cn(isMatched ? "text-green-500" : "text-slate-400 group-hover:text-blue-500")} />
+                            <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 font-medium italic group-hover:text-blue-500 transition-colors">
+                                <CheckCircle2 size={12} className={cn(isMatched ? "text-green-500" : "text-slate-600 dark:text-slate-400 group-hover:text-blue-500")} />
                                 <span>
                                     {t.accounts.lastReconciliation.replace('{date}', format(account.lastReconciliationDate, "d MMM, p", { locale: dateLocale }))}
                                 </span>
                             </div>
-                            <span className="text-[10px] font-bold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span className="text-xs font-bold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
                                 {t.accounts.viewHistory}
                             </span>
                         </button>

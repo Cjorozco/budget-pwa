@@ -33,7 +33,7 @@ export const ProBadge: React.FC<ProBadgeProps> = ({
         colorClass = 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-700 hover:scale-105 transition-transform cursor-pointer';
     }
 
-    const sizeClasses = size === 'sm' ? 'text-[10px] px-1.5 py-0.5 gap-1' : 'text-xs px-2 py-1 gap-1.5 font-bold';
+    const sizeClasses = size === 'sm' ? 'text-xs px-1.5 py-0.5 gap-1' : 'text-xs px-2 py-1 gap-1.5 font-bold';
 
     const content = (
         <span

@@ -69,7 +69,7 @@ export default function CategoriesPage() {
                 }`}
         >
             <div className="flex items-center gap-3">
-                {isChild && <ChevronRight size={16} className="text-slate-400" />}
+                {isChild && <ChevronRight size={16} className="text-slate-600 dark:text-slate-400" />}
                 <div
                     className="w-8 h-8 rounded-full"
                     style={{ backgroundColor: category.color }}

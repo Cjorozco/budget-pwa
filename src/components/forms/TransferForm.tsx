@@ -113,7 +113,7 @@ export function TransferForm({ onSuccess, onCancel }: TransferFormProps) {
                     onChange={setSourceAccountId}
                     excludeId={destinationAccountId}
                 />
-                <div className="pt-6 text-slate-400">
+                <div className="pt-6 text-slate-600 dark:text-slate-400">
                     <ArrowRight size={20} />
                 </div>
                 <AccountSelect
@@ -125,42 +125,45 @@ export function TransferForm({ onSuccess, onCancel }: TransferFormProps) {
             </div>
 
             <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">{t.forms.transferAmount}</label>
+                <label htmlFor="transfer-amount" className="text-sm font-medium text-slate-700 dark:text-slate-300">{t.forms.transferAmount}</label>
                 <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-semibold">$</span>
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 dark:text-slate-400 font-semibold">$</span>
                     <MoneyInput
+                        id="transfer-amount"
                         required
                         value={amount ? Number(amount) : undefined}
                         onValueChange={(v) => setAmount(v === undefined ? '' : String(v))}
-                        className="w-full bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-2xl px-8 py-4 text-2xl font-bold text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all placeholder:text-slate-300"
+                        className="w-full bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-2xl px-8 py-4 text-2xl font-bold text-slate-900 dark:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus:border-blue-600 transition-all placeholder:text-slate-300"
                         placeholder="0.00"
                     />
                 </div>
             </div>
 
             <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">{t.common.date}</label>
+                <label htmlFor="transfer-date" className="text-sm font-medium text-slate-700 dark:text-slate-300">{t.common.date}</label>
                 <div className="relative">
                     <input
+                        id="transfer-date"
                         type="date"
                         required
                         value={date}
                         onChange={(e) => setDate(e.target.value)}
-                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 pl-10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium"
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 pl-10 text-slate-900 dark:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus:border-blue-600 transition-all font-medium"
                     />
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 dark:text-slate-400 pointer-events-none">
                         <Calendar size={18} />
                     </div>
                 </div>
             </div>
 
             <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">{t.forms.transferNote}</label>
+                <label htmlFor="transfer-note" className="text-sm font-medium text-slate-700 dark:text-slate-300">{t.forms.transferNote}</label>
                 <textarea
+                    id="transfer-note"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     rows={2}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus:border-blue-600 transition-all resize-none"
                     placeholder={t.forms.transferNotePlaceholder}
                 />
             </div>

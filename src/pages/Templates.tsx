@@ -139,8 +139,9 @@ export default function TemplatesPage() {
                     <form onSubmit={handleSave} className="space-y-4">
                         <div className="grid grid-cols-4 gap-4">
                             <div className="col-span-1">
-                                <label className="block text-xs font-bold text-slate-500 mb-1">{t.templates.iconLabel}</label>
+                                <label htmlFor="tpl-icon" className="block text-xs font-bold text-slate-600 mb-1">{t.templates.iconLabel}</label>
                                 <Input
+                                    id="tpl-icon"
                                     value={editingTemplate.icon}
                                     onChange={e => setEditingTemplate({ ...editingTemplate, icon: e.target.value })}
                                     placeholder="Emoji"
@@ -148,8 +149,9 @@ export default function TemplatesPage() {
                                 />
                             </div>
                             <div className="col-span-3">
-                                <label className="block text-xs font-bold text-slate-500 mb-1">{t.templates.nameLabel}</label>
+                                <label htmlFor="tpl-name" className="block text-xs font-bold text-slate-600 mb-1">{t.templates.nameLabel}</label>
                                 <Input
+                                    id="tpl-name"
                                     value={editingTemplate.name}
                                     onChange={e => setEditingTemplate({ ...editingTemplate, name: e.target.value })}
                                     placeholder={t.templates.namePlaceholder}
@@ -159,8 +161,9 @@ export default function TemplatesPage() {
                         </div>
 
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 mb-1">{t.templates.descriptionLabel}</label>
+                            <label htmlFor="tpl-description" className="block text-xs font-bold text-slate-600 mb-1">{t.templates.descriptionLabel}</label>
                             <Input
+                                id="tpl-description"
                                 value={editingTemplate.description}
                                 onChange={e => setEditingTemplate({ ...editingTemplate, description: e.target.value })}
                                 placeholder={t.templates.descriptionPlaceholder}
@@ -168,8 +171,9 @@ export default function TemplatesPage() {
                         </div>
 
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 mb-1">{t.templates.suggestedAmountLabel}</label>
+                            <label htmlFor="tpl-amount" className="block text-xs font-bold text-slate-600 mb-1">{t.templates.suggestedAmountLabel}</label>
                             <MoneyInput
+                                id="tpl-amount"
                                 value={editingTemplate.amount === 0 ? undefined : editingTemplate.amount}
                                 onValueChange={v => setEditingTemplate({ ...editingTemplate, amount: v ?? 0 })}
                                 placeholder="0"

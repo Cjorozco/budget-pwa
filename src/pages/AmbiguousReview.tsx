@@ -91,7 +91,7 @@ export default function AmbiguousReviewPage() {
         <div className="p-4 safe-bottom space-y-6">
             <header>
                 <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <AlertTriangle className="text-amber-500" />
+                    <AlertTriangle className="text-amber-700 dark:text-amber-500" />
                     {t.ambiguous.reviewTitle}
                 </h1>
                 <p className="text-sm text-slate-500">
@@ -111,11 +111,11 @@ export default function AmbiguousReviewPage() {
                                     {tx.description}
                                 </h3>
                                 <div className="flex items-center gap-2 mt-1">
-                                    <span className="text-[10px] font-medium text-slate-400 capitalize">
+                                    <span className="text-xs font-medium text-slate-600 dark:text-slate-400 capitalize">
                                         {format(tx.date, "EEEE, d MMMM", { locale: dateLocale })}
                                     </span>
                                     <span className="w-1 h-1 bg-slate-300 rounded-full" />
-                                    <span className="text-[10px] font-bold text-amber-600 uppercase tracking-tighter">
+                                    <span className="text-xs font-bold text-amber-600 uppercase tracking-tighter">
                                         {t.ambiguous.confidenceLabel.replace('{percentage}', String(Math.round((tx.aiConfidence || 0) * 100)))}
                                     </span>
                                 </div>
@@ -126,7 +126,7 @@ export default function AmbiguousReviewPage() {
                         </div>
 
                         <div className="flex flex-wrap gap-2 mb-4">
-                            <div className="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-[10px] font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                            <div className="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1">
                                 <Sparkles size={10} />
                                 {getCategoryName(tx.categoryId)}
                             </div>

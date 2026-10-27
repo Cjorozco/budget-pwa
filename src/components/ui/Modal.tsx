@@ -2,6 +2,7 @@ import { useEffect, useId, useRef } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
+import { useTranslation } from '@/lib/i18n';
 
 interface ModalProps {
     isOpen: boolean;
@@ -11,8 +12,10 @@ interface ModalProps {
 }
 
 export function Modal({ isOpen, onClose, title, children }: ModalProps) {
+    const { t } = useTranslation();
     const titleId = useId();
     const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+    const dialogRef = useRef<HTMLDivElement | null>(null);
     // Keep a stable ref so Esc works without re-running this effect on every parent render
     // (inline onClose callbacks would otherwise steal focus back to the close button).
     const onCloseRef = useRef(onClose);
@@ -22,8 +25,27 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
 
     useEffect(() => {
         const handleEsc = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') onCloseRef.current();
+            if (e.key === 'Escape') {
+                onCloseRef.current();
+                return;
+            }
+            if (e.key !== 'Tab' || !dialogRef.current) return;
+            const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
+                'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            );
+            if (focusable.length === 0) return;
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            const active = document.activeElement;
+            if (e.shiftKey && (active === first || !dialogRef.current.contains(active))) {
+                e.preventDefault();
+                last.focus();
+            } else if (!e.shiftKey && (active === last || !dialogRef.current.contains(active))) {
+                e.preventDefault();
+                first.focus();
+            }
         };
+        const previouslyFocused = document.activeElement as HTMLElement | null;
         if (isOpen) {
             document.body.style.overflow = 'hidden';
             window.addEventListener('keydown', handleEsc);
@@ -35,6 +57,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
         return () => {
             window.removeEventListener('keydown', handleEsc);
             document.body.style.overflow = 'unset';
+            if (isOpen && previouslyFocused?.isConnected) previouslyFocused.focus();
         };
     }, [isOpen]);
 
@@ -49,6 +72,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
             />
 
             <div
+                ref={dialogRef}
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby={titleId}
@@ -70,7 +94,8 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
                         variant="ghost"
                         size="icon"
                         onClick={onClose}
-                        className="h-8 w-8 rounded-full"
+                        aria-label={t.common.close}
+                        className="h-11 w-11 rounded-full"
                     >
                         <X size={18} />
                     </Button>

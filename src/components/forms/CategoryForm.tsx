@@ -194,10 +194,11 @@ export function CategoryForm({ onSuccess, onCancel, initialData, defaultType, de
             </div>
 
             <div className="space-y-2">
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                <label htmlFor="category-parent" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
                     {t.categories.parentCategoryOptional}
                 </label>
                 <select
+                    id="category-parent"
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
                     {...register('parentId')}
                 >

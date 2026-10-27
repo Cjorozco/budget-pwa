@@ -27,8 +27,8 @@ interface BudgetRow {
 }
 
 const SERIES_COLORS: Record<SeriesName, string> = {
-  Planeado: '#6366f1',
-  Real: '#0ea5e9',
+  Planeado: '#0d9488',
+  Real: '#0068ff',
 };
 
 export function BudgetVsActualChart({ data }: BudgetVsActualChartProps) {
@@ -74,7 +74,7 @@ export function BudgetVsActualChart({ data }: BudgetVsActualChartProps) {
 
   if (!data || data.length === 0) {
     return (
-      <div className="flex items-center justify-center h-56 text-slate-400 dark:text-slate-500 text-sm">
+      <div className="flex items-center justify-center h-56 text-slate-600 dark:text-slate-500 text-sm">
         No hay datos de presupuesto disponibles.
       </div>
     );

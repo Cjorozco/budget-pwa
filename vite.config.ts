@@ -27,7 +27,7 @@ export default defineConfig({
         name: 'Presupuesto Personal',
         short_name: 'Presupuesto',
         description: 'Gestor de finanzas personales enfocado en simplicidad y control real.',
-        theme_color: '#0f172a', // Slate 900
+        theme_color: '#031314', // --color-void
         background_color: '#ffffff',
         display: 'standalone',
         orientation: 'portrait',

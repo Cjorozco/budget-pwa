@@ -203,7 +203,7 @@ export default function TransactionsPage() {
                             type="button"
                             data-testid="go-current-month-button"
                             onClick={goToCurrentMonth}
-                            className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 px-2 py-0.5 rounded-full border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 transition-colors"
+                            className="text-xs font-semibold text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/50 px-2 py-0.5 rounded-full border border-teal-200 dark:border-teal-800 hover:bg-teal-100 transition-colors"
                         >
                             {t.transactions.currentMonth}
                         </button>
@@ -300,17 +300,17 @@ export default function TransactionsPage() {
                                 badges={
                                     <>
                                         {(tx.isAmbiguous || tx.needsReview) && (
-                                            <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 border border-amber-200 dark:border-amber-800 flex items-center gap-0.5">
+                                            <span className="px-1.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 border border-amber-200 dark:border-amber-800 flex items-center gap-0.5">
                                                 <AlertTriangle size={8} /> {t.transactions.reviewTag}
                                             </span>
                                         )}
                                         {tx.isAdjustment && (
-                                            <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700 flex items-center gap-0.5">
+                                            <span className="px-1.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700 flex items-center gap-0.5">
                                                 {t.transactions.adjustmentTag}
                                             </span>
                                         )}
                                         {tx.type === 'transfer' && (
-                                            <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700 flex items-center gap-0.5">
+                                            <span className="px-1.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700 flex items-center gap-0.5">
                                                 {t.transactions.transferTag}
                                             </span>
                                         )}

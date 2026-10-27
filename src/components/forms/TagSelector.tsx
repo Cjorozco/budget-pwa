@@ -118,9 +118,9 @@ export function TagSelector({ selectedTagIds, onChange }: TagSelectorProps) {
 
     return (
         <div className="space-y-3">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+            <p className="block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Etiquetas (opcional)
-            </label>
+            </p>
 
             {/* Selected Tags */}
             {selectedTags.length > 0 && (
@@ -223,7 +223,7 @@ export function TagSelector({ selectedTagIds, onChange }: TagSelectorProps) {
                 )}
             </div>
 
-            <p className="text-[10px] text-slate-500 italic">
+            <p className="text-xs text-slate-500 italic">
                 💡 Usa etiquetas para agrupar por personas, viajes o eventos especiales.
             </p>
         </div>

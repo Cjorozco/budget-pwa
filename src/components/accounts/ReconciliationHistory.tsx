@@ -21,7 +21,7 @@ export function ReconciliationHistory({ accountId }: ReconciliationHistoryProps)
             .sortBy('date')
     );
 
-    if (!history) return <div className="p-8 text-center animate-pulse text-slate-400">{t.forms.loadingHistory}</div>;
+    if (!history) return <div className="p-8 text-center animate-pulse text-slate-600 dark:text-slate-400">{t.forms.loadingHistory}</div>;
 
     if (history.length === 0) {
         return (
@@ -47,7 +47,7 @@ export function ReconciliationHistory({ accountId }: ReconciliationHistoryProps)
                                     {isMatched ? (
                                         <CheckCircle2 size={14} className="text-green-500" />
                                     ) : (
-                                        <AlertCircle size={14} className="text-amber-500" />
+                                        <AlertCircle size={14} className="text-amber-700 dark:text-amber-500" />
                                     )}
                                     <span className="text-xs font-bold text-slate-900 dark:text-slate-100 italic">
                                         {format(record.date, "d MMM, yyyy - p", { locale: dateLocale })}
@@ -58,7 +58,7 @@ export function ReconciliationHistory({ accountId }: ReconciliationHistoryProps)
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-500 mb-2">
+                            <div className="grid grid-cols-2 gap-2 text-xs text-slate-500 mb-2">
                                 <div>
                                     <span className="font-medium">{t.forms.calculated}</span> {formatCurrency(record.calculatedBalance)}
                                 </div>
@@ -68,7 +68,7 @@ export function ReconciliationHistory({ accountId }: ReconciliationHistoryProps)
                             </div>
 
                             {record.notes && (
-                                <p className="text-[11px] text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-800 p-2 rounded-lg border border-slate-100 dark:border-slate-800 italic">
+                                <p className="text-xs text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-800 p-2 rounded-lg border border-slate-100 dark:border-slate-800 italic">
                                     "{record.notes}"
                                 </p>
                             )}

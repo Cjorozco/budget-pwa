@@ -62,7 +62,7 @@ export function ExpenseBarChart({ data, emptyMessage = 'No hay datos para mostra
 
   if (!data || data.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64 text-slate-400 dark:text-slate-500 text-sm">
+      <div className="flex items-center justify-center h-64 text-slate-600 dark:text-slate-500 text-sm">
         {emptyMessage}
       </div>
     );

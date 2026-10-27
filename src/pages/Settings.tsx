@@ -224,9 +224,9 @@ export default function SettingsPage() {
             )}
 
             {import.meta.env.DEV && (
-                <section className="space-y-3 p-4 rounded-2xl border-2 border-dashed border-violet-300 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/30">
-                    <h2 className="text-lg font-semibold text-violet-900 dark:text-violet-200">Grabación (solo localhost)</h2>
-                    <p className="text-xs text-violet-800 dark:text-violet-300">
+                <section className="space-y-3 p-4 rounded-2xl border-2 border-dashed border-teal-300 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/30">
+                    <h2 className="text-lg font-semibold text-teal-900 dark:text-teal-200">Grabación (solo localhost)</h2>
+                    <p className="text-xs text-teal-900 dark:text-teal-300">
                         Carga datos ficticios para el video. No existe en producción. Para regrabar: Reset total → recargar → este botón otra vez.
                     </p>
                     <Button
@@ -235,7 +235,7 @@ export default function SettingsPage() {
                         isLoading={isLoading}
                         onClick={handleSeedDemoMarketing}
                         data-testid="seed-demo-button"
-                        className="w-full border-violet-400 text-violet-800 dark:text-violet-200"
+                        className="w-full border-teal-400 text-teal-900 dark:text-teal-200"
                     >
                         Cargar datos de demo
                     </Button>
@@ -249,7 +249,7 @@ export default function SettingsPage() {
                     <button
                         type="button"
                         onClick={() => setIsGuideOpen(true)}
-                        className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200 dark:border-blue-900/60 rounded-2xl hover:border-blue-300 dark:hover:border-blue-700 transition-all text-left w-full shadow-xs"
+                        className="p-4 bg-teal-50 dark:bg-teal-950/30 border border-blue-200 dark:border-blue-900/60 rounded-2xl hover:border-blue-300 dark:hover:border-blue-700 transition-all text-left w-full shadow-xs"
                     >
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
@@ -271,12 +271,12 @@ export default function SettingsPage() {
                         className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left w-full"
                     >
                         <div className="flex items-center gap-3">
-                            <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
-                                <Compass className="text-indigo-600 dark:text-indigo-400" size={20} />
+                            <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg">
+                                <Compass className="text-teal-700 dark:text-teal-400" size={20} />
                             </div>
                             <div>
                                 <h3 className="font-medium text-slate-900 dark:text-white text-sm">{t.tour.replayTitle}</h3>
-                                <p className="text-[10px] text-slate-500">{t.tour.replayDesc}</p>
+                                <p className="text-xs text-slate-500">{t.tour.replayDesc}</p>
                             </div>
                         </div>
                     </button>
@@ -290,10 +290,10 @@ export default function SettingsPage() {
                                     </div>
                                     <div>
                                         <h3 className="font-medium text-slate-900 dark:text-white text-sm">{t.settings.manageCategories}</h3>
-                                        <p className="text-[10px] text-slate-500">{t.settings.categoriesDesc}</p>
+                                        <p className="text-xs text-slate-500">{t.settings.categoriesDesc}</p>
                                     </div>
                                 </div>
-                                <span className="text-slate-400">→</span>
+                                <span className="text-slate-600 dark:text-slate-400">→</span>
                             </div>
                         </div>
                     </Link>
@@ -307,10 +307,10 @@ export default function SettingsPage() {
                                     </div>
                                     <div>
                                         <h3 className="font-medium text-slate-900 dark:text-white text-sm">{t.settings.manageTemplates}</h3>
-                                        <p className="text-[10px] text-slate-500">{t.settings.templatesDesc}</p>
+                                        <p className="text-xs text-slate-500">{t.settings.templatesDesc}</p>
                                     </div>
                                 </div>
-                                <span className="text-slate-400">→</span>
+                                <span className="text-slate-600 dark:text-slate-400">→</span>
                             </div>
                         </div>
                     </Link>
@@ -361,7 +361,7 @@ export default function SettingsPage() {
                                 </div>
                                 <div>
                                     <h3 className="font-bold text-slate-900 dark:text-white text-sm">{t.settings.aiSmartCategorization}</h3>
-                                    <p className="text-[11px] text-slate-500">Google Gemini · OpenAI · Anthropic Claude · Groq</p>
+                                    <p className="text-xs text-slate-500">Google Gemini · OpenAI · Anthropic Claude · Groq</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-1 text-xs font-semibold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-1 rounded-full border border-amber-200 dark:border-amber-800">
@@ -378,7 +378,7 @@ export default function SettingsPage() {
                             onClick={() => openUpgradeModal(t.settings.unlockAiButton)}
                             className="w-full text-xs"
                         >
-                            <Sparkles className="w-3.5 h-3.5 mr-1.5 text-amber-500" /> {t.settings.unlockAiButton}
+                            <Sparkles className="w-3.5 h-3.5 mr-1.5 text-amber-700 dark:text-amber-500" /> {t.settings.unlockAiButton}
                         </Button>
                     </div>
                 )}
@@ -392,15 +392,15 @@ export default function SettingsPage() {
                         className="flex items-center justify-between p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl hover:bg-slate-50 transition-colors text-left"
                     >
                         <div className="flex items-center gap-3">
-                            <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
-                                <FileJson className="text-indigo-600 dark:text-indigo-400" size={20} />
+                            <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg">
+                                <FileJson className="text-teal-700 dark:text-teal-400" size={20} />
                             </div>
                             <div>
                                 <h3 className="font-medium text-slate-900 dark:text-white text-sm">{t.settings.exportJSON}</h3>
-                                <p className="text-[10px] text-slate-500">{t.settings.exportJSONDesc}</p>
+                                <p className="text-xs text-slate-500">{t.settings.exportJSONDesc}</p>
                             </div>
                         </div>
-                        <Download size={18} className="text-slate-400" />
+                        <Download size={18} className="text-slate-600 dark:text-slate-400" />
                     </button>
 
                     <button
@@ -414,15 +414,15 @@ export default function SettingsPage() {
                             <div>
                                 <h3 className="font-medium text-slate-900 dark:text-white text-sm flex items-center gap-1.5">
                                     {t.settings.exportCSV}
-                                    {!isPro && <Lock size={14} className="text-amber-500" />}
+                                    {!isPro && <Lock size={14} className="text-amber-700 dark:text-amber-500" />}
                                 </h3>
-                                <p className="text-[10px] text-slate-500">{t.settings.exportCSVDesc}</p>
+                                <p className="text-xs text-slate-500">{t.settings.exportCSVDesc}</p>
                             </div>
                         </div>
                         {!isPro ? (
-                            <div className="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 text-[10px] font-bold px-2 py-1 rounded">PRO</div>
+                            <div className="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 text-xs font-bold px-2 py-1 rounded">PRO</div>
                         ) : (
-                            <Download size={18} className="text-slate-400" />
+                            <Download size={18} className="text-slate-600 dark:text-slate-400" />
                         )}
                     </button>
 
@@ -433,11 +433,11 @@ export default function SettingsPage() {
                             </div>
                             <div className="text-left">
                                 <h3 className="font-medium text-slate-900 dark:text-white text-sm">{t.settings.importJSON}</h3>
-                                <p className="text-[10px] text-slate-500">{t.settings.importJSONDesc}</p>
+                                <p className="text-xs text-slate-500">{t.settings.importJSONDesc}</p>
                             </div>
                         </div>
                         <input type="file" accept=".json" onChange={handleFileInput} className="hidden" />
-                        <span className="text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded">{t.settings.uploadButton}</span>
+                        <span className="text-xs font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded">{t.settings.uploadButton}</span>
                     </label>
                 </div>
             </section>
@@ -448,7 +448,7 @@ export default function SettingsPage() {
                     <div className="flex items-center justify-between gap-4">
                         <div className="flex-1">
                             <h3 className="font-medium text-red-900 dark:text-red-200 text-sm">{t.settings.resetTransactions}</h3>
-                            <p className="text-[10px] text-red-700 dark:text-red-300">{t.settings.resetTransactionsDesc}</p>
+                            <p className="text-xs text-red-700 dark:text-red-300">{t.settings.resetTransactionsDesc}</p>
                         </div>
                         <Button
                             variant="destructive"
@@ -468,7 +468,7 @@ export default function SettingsPage() {
                     <div className="flex items-center justify-between gap-4">
                         <div className="flex-1">
                             <h3 className="font-medium text-red-900 dark:text-red-200 text-sm">{t.settings.resetAllData}</h3>
-                            <p className="text-[10px] text-red-700 dark:text-red-300">{t.settings.resetAllDataDesc}</p>
+                            <p className="text-xs text-red-700 dark:text-red-300">{t.settings.resetAllDataDesc}</p>
                         </div>
                         <Button
                             variant="destructive"
@@ -486,7 +486,7 @@ export default function SettingsPage() {
             </section>
 
             <footer className="pt-2 text-center">
-                <p className="text-xs text-slate-400 dark:text-slate-500">
+                <p className="text-xs text-slate-600 dark:text-slate-500">
                     {t.settings.version} {__APP_VERSION__}
                 </p>
             </footer>

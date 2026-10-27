@@ -152,7 +152,7 @@ export const UpgradeModal: React.FC = () => {
                                 <p className="text-xs font-bold text-emerald-900 dark:text-emerald-200">
                                     Personal Budget PRO
                                 </p>
-                                <p className="text-[11px] text-emerald-700 dark:text-emerald-400">
+                                <p className="text-xs text-emerald-700 dark:text-emerald-400">
                                     {/* Only legacy subscription licenses carry an expiry date. */}
                                     {expiresAt
                                         ? `Licencia activa hasta el ${new Date(expiresAt).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}.`
@@ -169,7 +169,7 @@ export const UpgradeModal: React.FC = () => {
                                     <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
                                         {t.upgradeModal.supportPitch}
                                     </p>
-                                    <p className="text-[11px] font-semibold text-amber-700 dark:text-amber-400">
+                                    <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">
                                         {t.upgradeModal.oneTimeNote}
                                     </p>
                                 </div>
@@ -177,7 +177,7 @@ export const UpgradeModal: React.FC = () => {
 
                             <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3.5 space-y-2.5 border border-slate-200/80 dark:border-slate-800">
                                 <p className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-                                    <Sparkles className="w-4 h-4 text-amber-500" />
+                                    <Sparkles className="w-4 h-4 text-amber-700 dark:text-amber-500" />
                                     {t.upgradeModal.featuresHeader}
                                 </p>
                                 <ul className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
@@ -202,7 +202,7 @@ export const UpgradeModal: React.FC = () => {
                                         <ExternalLink className="w-4 h-4" />
                                     </button>
 
-                                    <p className="text-[11px] text-center text-slate-400 dark:text-slate-500 flex items-center justify-center gap-1">
+                                    <p className="text-xs text-center text-slate-600 dark:text-slate-500 flex items-center justify-center gap-1">
                                         <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
                                         {t.upgradeModal.securePaymentNote}
                                     </p>

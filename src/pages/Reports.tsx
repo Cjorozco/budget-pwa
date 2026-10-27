@@ -297,7 +297,7 @@ export default function Reports() {
           className={cn(
             "flex-1 py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5",
             activeTab === 'fixed-budget'
-              ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm"
+              ? "bg-white dark:bg-slate-900 text-teal-700 dark:text-teal-400 shadow-sm"
               : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
           )}
         >
@@ -337,7 +337,7 @@ export default function Reports() {
             </div>
 
             {/* Subcategory vs Parent Category Toggle */}
-            <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl self-start sm:self-auto gap-1 text-[11px] font-medium">
+            <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl self-start sm:self-auto gap-1 text-xs font-medium">
               <button
                 data-testid="toggle-parents"
                 onClick={() => setHierarchyView('parents')}
@@ -389,7 +389,7 @@ export default function Reports() {
           {/* Detailed Item List */}
           {!isLoading && currentChartData.length > 0 && (
             <div className="pt-4 border-t border-slate-100 dark:border-slate-800/60 space-y-2.5">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-500">
                 {t.reports.detailedBreakdown}
               </h3>
               <div className="space-y-2">
@@ -408,7 +408,7 @@ export default function Reports() {
                           {item.name}
                         </span>
                         {item.parentName && (
-                          <span className="text-[10px] text-slate-400 bg-slate-200/60 dark:bg-slate-700/60 px-1.5 py-0.5 rounded shrink-0">
+                          <span className="text-xs text-slate-600 dark:text-slate-400 bg-slate-200/60 dark:bg-slate-700/60 px-1.5 py-0.5 rounded shrink-0">
                             {item.parentName}
                           </span>
                         )}
@@ -417,7 +417,7 @@ export default function Reports() {
                         <span className="font-bold text-slate-900 dark:text-white">
                           {formatCurrency(item.value)}
                         </span>
-                        <span className="text-[11px] text-slate-400 font-medium w-9 text-right">
+                        <span className="text-xs text-slate-600 dark:text-slate-400 font-medium w-9 text-right">
                           {Math.round(item.percentage || 0)}%
                         </span>
                       </div>
@@ -449,7 +449,7 @@ export default function Reports() {
             <div className="flex justify-between items-start">
               <div>
                 <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <Target className="text-indigo-600 dark:text-indigo-400" size={20} />
+                  <Target className="text-teal-700 dark:text-teal-400" size={20} />
                   {t.reports.fixedExpensesCompliance}
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -458,7 +458,7 @@ export default function Reports() {
               </div>
               <Link
                 to={`/budget?month=${format(currentDate, 'yyyy-MM')}`}
-                className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold hover:underline shrink-0"
+                className="text-xs text-teal-700 dark:text-teal-400 font-semibold hover:underline shrink-0"
               >
                 {t.reports.adjustBudget}
               </Link>
@@ -511,7 +511,7 @@ export default function Reports() {
                 />
               </div>
 
-              <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-2">
+              <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">
                 {(reportData?.totalFixedExpense ?? 0) === 0 ? (
                   <>{t.reports.goToFixedBudget}</>
                 ) : expenseDifference >= 0 ? (
@@ -526,36 +526,36 @@ export default function Reports() {
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {/* Gastos Fijos Card */}
               <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-800">
-                <span className="text-[11px] text-slate-500 font-medium block mb-1">{t.reports.plannedFixedExpenses}</span>
+                <span className="text-xs text-slate-500 font-medium block mb-1">{t.reports.plannedFixedExpenses}</span>
                 <span className="text-base font-bold text-slate-900 dark:text-white block">
                   {formatCurrency(reportData?.totalFixedExpense ?? 0)}
                 </span>
-                <span className="text-[10px] text-slate-400">
+                <span className="text-xs text-slate-600 dark:text-slate-400">
                   {t.reports.itemsConfigured.replace('{count}', String(reportData?.fixedExpenses.length ?? 0))}
                 </span>
               </div>
 
               {/* Ingresos Planeados Card */}
               <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-800">
-                <span className="text-[11px] text-slate-500 font-medium block mb-1">{t.reports.plannedFixedIncomes}</span>
+                <span className="text-xs text-slate-500 font-medium block mb-1">{t.reports.plannedFixedIncomes}</span>
                 <span className="text-base font-bold text-slate-900 dark:text-white block">
                   {formatCurrency(reportData?.totalFixedIncome ?? 0)}
                 </span>
-                <span className="text-[10px] text-green-600 dark:text-green-400 font-medium">
+                <span className="text-xs text-green-600 dark:text-green-400 font-medium">
                   {t.reports.receivedThisMonth.replace('{percentage}', String(incomePercentage))}
                 </span>
               </div>
 
               {/* Disponible Planeado vs Real */}
               <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-100 dark:border-slate-800 col-span-2 sm:col-span-1">
-                <span className="text-[11px] text-slate-500 font-medium block mb-1">{t.reports.plannedAvailableMetric}</span>
+                <span className="text-xs text-slate-500 font-medium block mb-1">{t.reports.plannedAvailableMetric}</span>
                 <span className={cn(
                   "text-base font-bold block",
-                  (reportData?.plannedAvailable ?? 0) >= 0 ? "text-indigo-600 dark:text-indigo-400" : "text-red-500"
+                  (reportData?.plannedAvailable ?? 0) >= 0 ? "text-teal-700 dark:text-teal-400" : "text-red-500"
                 )}>
                   {formatCurrency(reportData?.plannedAvailable ?? 0)}
                 </span>
-                <span className="text-[10px] text-slate-400">
+                <span className="text-xs text-slate-600 dark:text-slate-400">
                   {t.reports.realFlow.replace('{amount}', formatCurrency(reportData?.realNetFlow ?? 0))}
                 </span>
               </div>
@@ -565,7 +565,7 @@ export default function Reports() {
           {/* Grouped Comparison Chart */}
           <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-3">
             <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-              <Wallet size={16} className="text-indigo-500" />
+              <Wallet size={16} className="text-teal-600" />
               {t.reports.comparisonChartTitle}
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -590,7 +590,7 @@ export default function Reports() {
                 <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
                   {t.reports.fixedItemsConfigured}
                 </h3>
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-slate-600 dark:text-slate-400">
                   Total: {formatCurrency(reportData.totalFixedExpense)}
                 </span>
               </div>

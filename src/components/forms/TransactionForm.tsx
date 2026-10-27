@@ -406,7 +406,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
             />
 
             {aiPending && (
-                <p className="text-[11px] text-indigo-600 dark:text-indigo-400 font-medium animate-pulse" data-testid="ai-pending">
+                <p className="text-xs text-teal-700 dark:text-teal-400 font-medium animate-pulse" data-testid="ai-pending">
                     {aiProgressMessage || t.forms.consultingAi}
                 </p>
             )}
@@ -451,7 +451,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                                             ? t.forms.localSuggestion
                                             : t.forms.reviewNeeded}
                                 </p>
-                                <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${aiSuggestion.confidence >= 0.7 ? 'bg-blue-200 text-blue-700' : 'bg-amber-200 text-amber-700'}`}>
+                                <span className={`text-xs px-1.5 py-0.5 rounded font-bold ${aiSuggestion.confidence >= 0.7 ? 'bg-blue-200 text-blue-700' : 'bg-amber-200 text-amber-700'}`}>
                                     {Math.round(aiSuggestion.confidence * 100)}%
                                 </span>
                             </div>
@@ -466,7 +466,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                                 <Button
                                     type="button"
                                     size="sm"
-                                    className="h-8 px-4 text-xs bg-indigo-600 hover:bg-indigo-700"
+                                    className="h-8 px-4 text-xs bg-teal-700 hover:bg-teal-800"
                                     data-testid="apply-category-button"
                                     onClick={() => handleAcceptSuggestion()}
                                 >
@@ -491,7 +491,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                             </div>
                             {aiSuggestion.alternatives && aiSuggestion.alternatives.length > 0 && (
                                 <div className="mt-2 space-y-1">
-                                    <p className="text-[11px] font-medium text-slate-500">
+                                    <p className="text-xs font-medium text-slate-500">
                                         {aiSuggestion.needsCategoryCreation
                                             ? t.forms.orUseExisting
                                             : t.forms.orUseOther}
@@ -607,7 +607,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                             </option>
                         ))}
                     </select>
-                    <p className="text-[10px] text-amber-700 dark:text-amber-500 italic">
+                    <p className="text-xs text-amber-700 dark:text-amber-500 italic">
                         {t.forms.fulfillReserveHint}
                     </p>
                 </div>

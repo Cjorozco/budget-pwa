@@ -77,7 +77,7 @@ export function RegionSelector() {
                                 <span className="text-xl" aria-hidden="true">{FLAGS[code]}</span>
                                 <div>
                                     <p className="text-xs font-bold text-slate-900 dark:text-slate-100">{t.region.countries[code]}</p>
-                                    <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">
                                         {t.region.currencyLine.replace('{currency}', CURRENCY_BY_COUNTRY[code])}
                                     </p>
                                 </div>
