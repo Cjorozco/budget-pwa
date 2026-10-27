@@ -1,16 +1,17 @@
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { MotionConfig } from 'motion/react';
 import Layout from '@/components/Layout';
 import Dashboard from '@/pages/Dashboard';
-import TransactionsPage from '@/pages/Transactions';
-import AccountsPage from '@/pages/Accounts';
-import CategoriesPage from '@/pages/Categories';
-import BudgetPage from '@/pages/Budget';
-import SettingsPage from '@/pages/Settings';
-import AmbiguousReview from '@/pages/AmbiguousReview';
-import TemplatesPage from '@/pages/Templates';
-import ReportsPage from '@/pages/Reports';
+// Secondary screens load on demand to keep the first bundle small.
+const TransactionsPage = lazy(() => import('@/pages/Transactions'));
+const AccountsPage = lazy(() => import('@/pages/Accounts'));
+const CategoriesPage = lazy(() => import('@/pages/Categories'));
+const BudgetPage = lazy(() => import('@/pages/Budget'));
+const SettingsPage = lazy(() => import('@/pages/Settings'));
+const AmbiguousReview = lazy(() => import('@/pages/AmbiguousReview'));
+const TemplatesPage = lazy(() => import('@/pages/Templates'));
+const ReportsPage = lazy(() => import('@/pages/Reports'));
 import { seedInitialData } from '@/lib/db/seed';
 import { InstallPWA } from '@/components/InstallPWA';
 import { Toaster } from '@/components/Toaster';
@@ -37,6 +38,7 @@ function App() {
     <MotionConfig reducedMotion="user">
       <BrowserRouter>
         <ErrorBoundary key={country}>
+          <Suspense fallback={null}>
           <Routes>
             <Route path="/" element={<Layout />}>
               <Route index element={<Dashboard />} />
@@ -50,6 +52,7 @@ function App() {
               <Route path="reports" element={<ReportsPage />} />
             </Route>
           </Routes>
+          </Suspense>
         </ErrorBoundary>
         <InstallPWA />
         <Toaster />
