@@ -19,3 +19,8 @@ El repo describía el flujo de ramas en cuatro archivos con palabras distintas. 
 - `master` acumula un commit de merge por publicación que no se devuelve a `develop`; es esperado.
 - Sin protección de rama en GitHub, la regla depende de la disciplina. Se recomienda proteger `master` y `develop` (PR obligatorio y CI verde) y confirmar en Vercel que la rama de producción sea `master`; ambos ajustes son del host, no del repo.
 - No reemplaza ningún ADR anterior; ninguno trataba el flujo de ramas.
+
+## Enmiendas
+
+### 2026-10-30 — Sin protección de rama en el host
+La protección de rama de GitHub no se activará porque requiere plan de pago. El flujo se sostiene por convención, no por bloqueo técnico: las reglas de los agentes, «push o merge solo cuando se pida», sin push forzado y el flujo de dos PR. Esta enmienda sustituye la línea de Consecuencias que daba por pendiente proteger `master` y `develop`. La rama de producción en Vercel es `master`.
