@@ -1,14 +1,19 @@
 # HANDOFF — personal-buget-pwa
 
-Actualizado: 2026-10-30 · Rama: `develop` · Versión: `2.6.0`
+Actualizado: 2026-10-30 · Rama: `docs/flujo-de-ramas` · Versión: `2.7.1`
 
-Lee primero `AGENTS.md` y `.agents/rules/*`. Las decisiones de diseño están en `docs/adr/` (0001–0006).
+Lee primero `AGENTS.md` y `.agents/rules/*`. Las decisiones de diseño están en `docs/adr/` (0001–0007).
 
 ## Verificación (2026-10-30)
 
 - `npx vitest run`: 59 archivos, 573 tests, todos pasan.
 - `npm run build`: OK (`tsc -b && vite build`).
 - `npx eslint src` y `tsc -p tsconfig.app.json --noEmit`: sin problemas.
+
+## Flujo de ramas (ADR 0007)
+
+`develop` integra y `master` publica; el detalle está en "Flujo de ramas" de `.agents/rules/working-style.md`. CI corre en PR y push a ambas ramas.
+Pendiente en el host (no está en el repo): confirmar en Vercel que la rama de producción es `master`, y proteger `master` y `develop` en GitHub (PR obligatorio, CI verde).
 
 ## Estado actual
 
