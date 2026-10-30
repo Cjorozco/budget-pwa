@@ -132,7 +132,7 @@ describe('suggestCategoryWithLlm', () => {
         expect(suggestWithAiProvider).not.toHaveBeenCalled();
     });
 
-    it('prioritizes Gemini over strong local when PRO + key + online', async () => {
+    it('asks the user to resolve a different Gemini suggestion from the local result', async () => {
         vi.mocked(suggestCategory).mockResolvedValue(strongLocal);
         vi.mocked(suggestWithAiProvider).mockResolvedValue({
             status: 'success',
@@ -149,14 +149,14 @@ describe('suggestCategoryWithLlm', () => {
         const result = await suggestCategoryWithLlm('luz', 'expense', { isPro: true, online: true });
 
         expect(suggestWithAiProvider).toHaveBeenCalledOnce();
-        expect(result.status).toBe('success');
-        if (result.status === 'success') {
-            expect(result.source).toBe('gemini');
-            expect(result.suggestion.categoryId).toBe('gemini-cat');
+        expect(result.status).toBe('conflict');
+        if (result.status === 'conflict') {
+            expect(result.local.categoryId).toBe(strongLocal.categoryId);
+            expect(result.ai.categoryId).toBe('gemini-cat');
         }
     });
 
-    it('uses selected Groq provider when Groq is configured in settings', async () => {
+    it('returns the selected Groq suggestion as a conflict when it differs locally', async () => {
         setSelectedAiProvider('groq');
         setAiApiKey('groq', 'gsk_dummyGroqKey123456789');
         vi.mocked(suggestCategory).mockResolvedValue(strongLocal);
@@ -174,14 +174,14 @@ describe('suggestCategoryWithLlm', () => {
         const result = await suggestCategoryWithLlm('restaurante', 'expense', { isPro: true, online: true });
 
         expect(suggestWithAiProvider).toHaveBeenCalledOnce();
-        expect(result.status).toBe('success');
-        if (result.status === 'success') {
+        expect(result.status).toBe('conflict');
+        if (result.status === 'conflict') {
             expect(result.source).toBe('groq');
-            expect(result.suggestion.categoryId).toBe('groq-cat');
+            expect(result.ai.categoryId).toBe('groq-cat');
         }
     });
 
-    it('documents actual behavior: AI wins even if local engine has higher confidence (priority order)', async () => {
+    it('requires a choice even when AI has lower confidence than the local result', async () => {
         vi.mocked(suggestCategory).mockResolvedValue({
             ...strongLocal,
             confidence: 0.95,
@@ -199,10 +199,9 @@ describe('suggestCategoryWithLlm', () => {
 
         const result = await suggestCategoryWithLlm('gasto test', 'expense', { isPro: true, online: true });
 
-        expect(result.status).toBe('success');
-        if (result.status === 'success') {
-            expect(result.source).toBe('gemini');
-            expect(result.suggestion.confidence).toBe(0.65);
+        expect(result.status).toBe('conflict');
+        if (result.status === 'conflict') {
+            expect(result.ai.confidence).toBe(0.65);
         }
     });
 

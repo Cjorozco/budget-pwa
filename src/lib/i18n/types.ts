@@ -254,6 +254,9 @@ export interface TranslationSchema {
         generateFromActualsSuccess: string;
         generateFromActualsDesc: string;
         copyOrGenerateSubtitle: string;
+        reviewActualsTitle: string;
+        reviewActualsHint: string;
+        itemTypeLabel: string;
     };
     reports: {
         title: string;
@@ -391,6 +394,12 @@ export interface TranslationSchema {
         createAndApply: string;
         applyCategory: string;
         ignore: string;
+        regenerateSuggestion: string;
+        validatedSuggestion: string;
+        suggestionMismatch: string;
+        suggestionMismatchHint: string;
+        keepLocalSuggestion: string;
+        useAiSuggestion: string;
         orUseExisting: string;
         orUseOther: string;
         selectCategory: string;

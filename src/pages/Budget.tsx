@@ -19,6 +19,7 @@ import { format, subMonths, addMonths, startOfMonth, endOfMonth } from 'date-fns
 import { Modal } from '@/components/ui/Modal';
 import { MoneyInput } from '@/components/ui/MoneyInput';
 import type { BudgetItem } from '@/lib/types';
+import type { ActualBudgetCandidate } from '@/lib/budget';
 import {
   getItemMonth,
   buildActualBudgetCandidates,
@@ -45,6 +46,7 @@ export default function Budget() {
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [actualsDraft, setActualsDraft] = useState<ActualBudgetCandidate[] | null>(null);
   const [editingItem, setEditingItem] = useState<BudgetItem | null>(null);
   const [newItemType, setNewItemType] = useState<'income' | 'expense'>('income');
   const [newItemName, setNewItemName] = useState('');
@@ -142,12 +144,20 @@ export default function Budget() {
     }
   };
 
-  const handleGenerateFromActuals = async () => {
+  const handleGenerateFromActuals = () => {
     if (prevMonthActualCandidates.length === 0 || isProcessing) return;
+    setActualsDraft(prevMonthActualCandidates.map((candidate) => ({ ...candidate })));
+  };
+
+  const handleSaveActualsDraft = async () => {
+    if (!actualsDraft?.length || isProcessing) return;
     setIsProcessing(true);
     try {
-      const generatedItems = candidatesToBudgetItems(prevMonthActualCandidates, currentMonthKey);
+      const validCandidates = actualsDraft.filter((item) => item.name.trim() && Number.isFinite(item.amount) && item.amount > 0);
+      if (validCandidates.length === 0) return;
+      const generatedItems = candidatesToBudgetItems(validCandidates, currentMonthKey);
       await db.budgetItems.bulkAdd(generatedItems);
+      setActualsDraft(null);
       addToast(
         t.budget.generateFromActualsSuccess.replace('{month}', format(prevDate, 'MMMM yyyy', { locale: dateLocale })),
         'success'
@@ -158,6 +168,10 @@ export default function Budget() {
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const handleAddActualDraftItem = () => {
+    setActualsDraft((items) => items ? [...items, { name: '', amount: 0, type: 'expense' }] : items);
   };
 
   const handleOpenAddModal = (type: 'income' | 'expense') => {
@@ -499,6 +513,55 @@ export default function Budget() {
           {t.budget.fixedBudgetNote}
         </p>
       </div>
+
+      <Modal
+        isOpen={actualsDraft !== null}
+        onClose={() => setActualsDraft(null)}
+        title={t.budget.reviewActualsTitle}
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-600 dark:text-slate-300">{t.budget.reviewActualsHint}</p>
+          <div className="space-y-3">
+            {actualsDraft?.map((item, index) => (
+              <div key={`${index}-${item.name}`} className="grid grid-cols-1 gap-2 rounded-xl border border-slate-200 dark:border-slate-700 p-3">
+                <input
+                  aria-label={`${t.budget.itemNameLabel} ${index + 1}`}
+                  value={item.name}
+                  onChange={(event) => setActualsDraft((items) => items?.map((entry, i) => i === index ? { ...entry, name: event.target.value } : entry) ?? null)}
+                  className="w-full h-11 px-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+                />
+                <div className="flex gap-2 items-center">
+                  <select
+                    aria-label={`${t.budget.itemTypeLabel} ${index + 1}`}
+                    value={item.type}
+                    onChange={(event) => setActualsDraft((items) => items?.map((entry, i) => i === index ? { ...entry, type: event.target.value as 'income' | 'expense' } : entry) ?? null)}
+                    className="h-11 px-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+                  >
+                    <option value="income">{t.budget.incomeWord}</option>
+                    <option value="expense">{t.budget.expenseWord}</option>
+                  </select>
+                  <MoneyInput
+                    aria-label={`${t.budget.itemAmountLabel} ${index + 1}`}
+                    value={item.amount}
+                    onValueChange={(amount) => setActualsDraft((items) => items?.map((entry, i) => i === index ? { ...entry, amount: amount ?? 0 } : entry) ?? null)}
+                    className="min-w-0 flex-1 h-11"
+                  />
+                  <button type="button" aria-label={`${t.common.delete} ${item.name}`} onClick={() => setActualsDraft((items) => items?.filter((_, i) => i !== index) ?? null)} className="min-h-11 min-w-11 flex items-center justify-center rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <button type="button" onClick={handleAddActualDraftItem} className="w-full min-h-11 rounded-xl border border-dashed border-slate-300 dark:border-slate-600 font-semibold text-slate-700 dark:text-slate-200">
+            + {t.budget.addItem}
+          </button>
+          <div className="flex gap-2">
+            <button type="button" onClick={() => setActualsDraft(null)} className="flex-1 min-h-11 rounded-xl bg-slate-100 dark:bg-slate-800 font-semibold">{t.common.cancel}</button>
+            <button type="button" onClick={handleSaveActualsDraft} disabled={isProcessing || !actualsDraft?.some((item) => item.name.trim() && item.amount > 0)} className="flex-1 min-h-11 rounded-xl bg-teal-700 text-white font-bold disabled:opacity-50">{t.budget.saveBtn}</button>
+          </div>
+        </div>
+      </Modal>
 
       <Modal
         isOpen={isAddModalOpen}

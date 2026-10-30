@@ -12,6 +12,7 @@ import type {
     AppConfig,
     QuickTemplate,
     BudgetItem,
+    SuggestionValidation,
 } from '../types';
 
 // Row-level Zod schemas for backup validation
@@ -265,6 +266,9 @@ export async function importDatabase(jsonString: string): Promise<void> {
             if (data.tables.appConfig.length > 0) await db.appConfig.bulkAdd(data.tables.appConfig as AppConfig[]);
             if (data.tables.quickTemplates && data.tables.quickTemplates.length > 0) await db.quickTemplates.bulkAdd(data.tables.quickTemplates as QuickTemplate[]);
             if (data.tables.budgetItems && data.tables.budgetItems.length > 0) await db.budgetItems.bulkAdd(data.tables.budgetItems as BudgetItem[]);
+            if (data.tables.suggestionValidations && data.tables.suggestionValidations.length > 0) {
+                await db.suggestionValidations.bulkAdd(data.tables.suggestionValidations as SuggestionValidation[]);
+            }
         } catch (error) {
             console.error('Error during bulk import:', error);
             throw new Error('Error al insertar los datos en la base de datos local');

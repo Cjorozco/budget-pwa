@@ -31,6 +31,7 @@ export interface CategorySuggestion {
     alternatives?: Array<{ categoryId: string; categoryPath: string }>;
     /** local = reglas/historial; o proveedor de IA (gemini, groq, etc.) */
     source?: 'local' | 'gemini' | 'openai' | 'anthropic' | 'groq' | 'ollama' | 'deepseek' | 'custom';
+    isValidated?: boolean;
 }
 
 const KNOWN_ESTABLISHMENTS = [

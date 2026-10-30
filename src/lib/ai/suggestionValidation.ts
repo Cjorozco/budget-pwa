@@ -1,6 +1,6 @@
 import { db } from '../db';
 import type { SuggestionValidation } from '../types';
-import { normalizeForMatch } from './categoryRules';
+import { categoryNamesAreSimilar, normalizeForMatch } from './categoryRules';
 import type { CategorySuggestion } from './categorizer';
 import type { AiProviderType } from './types';
 
@@ -18,7 +18,14 @@ export function categorySuggestionsMatch(
     if (a.categoryId && b.categoryId) {
         return a.categoryId === b.categoryId;
     }
-    return normalizeForMatch(a.categoryPath) === normalizeForMatch(b.categoryPath);
+    const normA = normalizeForMatch(a.categoryPath);
+    const normB = normalizeForMatch(b.categoryPath);
+    if (normA === normB) {
+        return true;
+    }
+    const leafA = a.categoryPath.split(/[/›]/).pop()?.trim() ?? a.categoryPath;
+    const leafB = b.categoryPath.split(/[/›]/).pop()?.trim() ?? b.categoryPath;
+    return categoryNamesAreSimilar(leafA, leafB);
 }
 
 export function shouldAutoCallAi(
@@ -47,6 +54,7 @@ export function suggestionFromValidation(record: SuggestionValidation): Category
         needsCategoryCreation: record.needsCategoryCreation,
         pendingCategory: record.pendingCategory,
         source,
+        isValidated: true,
     };
 }
 

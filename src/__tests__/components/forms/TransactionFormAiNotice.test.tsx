@@ -29,6 +29,7 @@ describe('TransactionForm AI diagnostic notice', () => {
         await db.accounts.clear();
         await db.categories.clear();
         await db.reserves.clear();
+        await db.suggestionValidations.clear();
         await db.accounts.add({ id: 'acc-1', name: 'Banco', type: 'bank', calculatedBalance: 0, currency: 'COP', isActive: true });
     });
 

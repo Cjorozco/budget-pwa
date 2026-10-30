@@ -146,12 +146,16 @@ describe('Budget Page - Generate budget from actuals', () => {
     const generateBtn = screen.getByRole('button', { name: /Crear con consumos reales \(3\)/i });
     fireEvent.click(generateBtn);
 
-    // Verify items are populated in the UI
+    // Review the editable draft before saving it.
     await waitFor(() => {
-      expect(screen.getByText('Alimentación')).toBeInTheDocument();
-      expect(screen.getByText('Servicios')).toBeInTheDocument();
-      expect(screen.getByText('Salario')).toBeInTheDocument();
+      expect(screen.getByRole('dialog', { name: /Revisa el presupuesto sugerido/i })).toBeInTheDocument();
+      expect(screen.getByDisplayValue('Alimentación')).toBeInTheDocument();
     });
+
+    expect(await db.budgetItems.where('month').equals('2099-10').count()).toBe(0);
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+
+    await waitFor(() => expect(screen.getByText('Alimentación')).toBeInTheDocument());
 
     // Check items persisted in Dexie
     const items = await db.budgetItems.where('month').equals('2099-10').toArray();

@@ -43,6 +43,9 @@ export function getAiNotice(result: ResolverResult): AiNotice | null {
     if (!diagnosis) return null;
 
     const usedLocal = result.status === 'success' && result.source === 'local';
+    if (result.status === 'conflict') {
+        return null;
+    }
 
     switch (diagnosis.status) {
         case 'unavailable':

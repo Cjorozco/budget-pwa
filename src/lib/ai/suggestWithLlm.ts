@@ -83,8 +83,9 @@ export async function suggestCategoryWithLlm(
     const hasKey = hasAiApiKey(activeProvider);
     const forceRegenerate = options.forceRegenerate === true;
 
-    const local = await suggestCategory(description, type);
+    const localRule = await suggestCategory(description, type);
     const validated = await getValidatedSuggestion(description, type);
+    const local = validated ? suggestionFromValidation(validated) : localRule;
 
     if (!shouldAutoCallAi(validated, forceRegenerate) && validated) {
         const suggestion = suggestionFromValidation(validated);
@@ -125,7 +126,7 @@ export async function suggestCategoryWithLlm(
                         chosenSource: 'local',
                         provider,
                     });
-                    return localSuccess(local, {
+                    return localSuccess({ ...local, isValidated: true }, {
                         comparedWithAi: true,
                         aiDiagnosis: aiResult,
                         geminiDiagnosis: aiResult,
@@ -152,7 +153,7 @@ export async function suggestCategoryWithLlm(
                 });
                 return {
                     status: 'success',
-                    suggestion: aiSuggestion,
+                    suggestion: { ...aiSuggestion, isValidated: true },
                     source: provider,
                     comparedWithAi: true,
                     aiDiagnosis: aiResult,

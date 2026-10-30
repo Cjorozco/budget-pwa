@@ -8,17 +8,19 @@ import { db } from '@/lib/db';
 import { TransactionSchema } from '@/lib/schemas';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { type CategorySuggestion } from '@/lib/ai/categorizer';
+import { suggestCategory, type CategorySuggestion } from '@/lib/ai/categorizer';
 import { findOrCreateCategory } from '@/lib/ai/categoryResolver';
 import { suggestCategoryWithLlm } from '@/lib/ai/suggestWithLlm';
 import { formatAiNotice, getAiNotice } from '@/lib/ai/aiNotice';
 import { getProviderMeta, getSelectedAiProvider, hasAiApiKey } from '@/lib/ai/gateway/config';
+import { saveValidatedSuggestion, shouldAutoCallAi, getValidatedSuggestion, suggestionFromValidation } from '@/lib/ai/suggestionValidation';
+import type { AiProviderType } from '@/lib/ai/types';
 import { useUIStore } from '@/store/ui';
 import { useLicenseStore } from '@/store/licenseStore';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 import { format } from 'date-fns';
-import { PiggyBank, Sparkles, AlertCircle, FolderPlus } from 'lucide-react';
+import { PiggyBank, Sparkles, AlertCircle, FolderPlus, RefreshCw } from 'lucide-react';
 import { formatCurrency, toSentenceCase } from '@/lib/utils';
 import type { Account, Category, Reserve, Transaction } from '@/lib/types';
 import { useTranslation } from '@/lib/i18n';
@@ -44,7 +46,14 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
     const [aiPending, setAiPending] = useState(false);
     const [aiProgressMessage, setAiProgressMessage] = useState<string | null>(null);
     const [createdCategories, setCreatedCategories] = useState<Category[]>([]);
+    const [suggestionConflict, setSuggestionConflict] = useState<{
+        local: CategorySuggestion;
+        ai: CategorySuggestion;
+        provider: AiProviderType;
+    } | null>(null);
+    const [regenerateNonce, setRegenerateNonce] = useState(0);
     const categoryTouchedRef = useRef(false);
+    const forceRegenerateRef = useRef(false);
 
     const {
         register,
@@ -84,12 +93,13 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
         [accountId]
     ) || [];
 
-    // AI Suggestions Logic
+    // Fast local suggestion effect (Prioridad Local Inicial)
     useEffect(() => {
         if (initialData) return; // Don't suggest when editing
-        if (!description || description.length < 3) {
+        if (!description || description.trim().length < 3) {
             setAiSuggestion(null);
             setShowAiSuggestion(false);
+            setSuggestionConflict(null);
             setAiDiagnosticNotice(null);
             setAiPending(false);
             setAiProgressMessage(null);
@@ -98,22 +108,104 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
 
         if (type !== 'income' && type !== 'expense') return;
 
+        let isCancelled = false;
+
+        async function loadInitialLocal() {
+            // 1. Check if already validated in local DB
+            const validated = await getValidatedSuggestion(description, type);
+            if (isCancelled) return;
+            if (validated) {
+                const suggestion = suggestionFromValidation(validated);
+                setAiSuggestion(suggestion);
+                setShowAiSuggestion(true);
+                setSuggestionConflict(null);
+                if (
+                    !categoryTouchedRef.current &&
+                    suggestion.categoryId &&
+                    !suggestion.needsCategoryCreation &&
+                    suggestion.confidence >= 0.7 &&
+                    !suggestion.alternatives?.length
+                ) {
+                    setValue('categoryId', suggestion.categoryId);
+                }
+                return;
+            }
+
+            // 2. Fall back to local rules engine immediately
+            const local = await suggestCategory(description, type);
+            if (isCancelled) return;
+            if (local) {
+                setAiSuggestion(local);
+                setShowAiSuggestion(true);
+                if (
+                    !categoryTouchedRef.current &&
+                    local.categoryId &&
+                    !local.needsCategoryCreation &&
+                    local.confidence >= 0.7 &&
+                    !local.alternatives?.length
+                ) {
+                    setValue('categoryId', local.categoryId);
+                }
+            }
+        }
+
+        void loadInitialLocal();
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [description, type, initialData, setValue]);
+
+    // AI Suggestions Logic (Validación Inicial / Regeneración)
+    useEffect(() => {
+        if (initialData) return; // Don't suggest when editing
+        if (!description || description.trim().length < 3) return;
+        if (type !== 'income' && type !== 'expense') return;
+
         const controller = new AbortController();
+        const forceRegenerate = forceRegenerateRef.current;
+        forceRegenerateRef.current = false;
+
+        const delay = forceRegenerate ? 0 : 500;
         const timer = setTimeout(async () => {
             const activeProvider = getSelectedAiProvider();
             const mayCallAi = isPro && hasAiApiKey(activeProvider);
             const providerName = getProviderMeta(activeProvider).label;
+            const validated = await getValidatedSuggestion(description, type);
+            const shouldResolveSuggestion = shouldAutoCallAi(validated, forceRegenerate);
+
+            if (!shouldResolveSuggestion) {
+                setAiPending(false);
+                setAiProgressMessage(null);
+                return;
+            }
+
             setAiPending(mayCallAi);
             setAiProgressMessage(mayCallAi ? t.forms.consultingProvider.replace('{provider}', providerName) : null);
             try {
                 const result = await suggestCategoryWithLlm(description, type, {
                     isPro,
                     signal: controller.signal,
+                    forceRegenerate,
                     onProgress: (_attempt, msg) => {
                         setAiProgressMessage(msg);
                     },
                 });
                 if (controller.signal.aborted) return;
+
+                if (result.status === 'conflict') {
+                    setSuggestionConflict({
+                        local: result.local,
+                        ai: result.ai,
+                        provider: result.source,
+                    });
+                    setAiSuggestion(null);
+                    setShowAiSuggestion(false);
+                    setAiDiagnosticNotice(null);
+                    return;
+                }
+
+                setSuggestionConflict(null);
 
                 if (result.status === 'success') {
                     const suggestion = result.suggestion;
@@ -144,22 +236,35 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                     setAiProgressMessage(null);
                 }
             }
-        }, 500);
+        }, delay);
 
         return () => {
             clearTimeout(timer);
             controller.abort();
         };
-    }, [description, type, initialData, setValue, isPro, t]);
+    }, [description, type, initialData, setValue, isPro, t, regenerateNonce]);
 
-    const handleAcceptSuggestion = async (chosenId?: string) => {
-        if (!aiSuggestion) return;
+    const canRegenerateAi =
+        !initialData &&
+        isPro &&
+        (type === 'income' || type === 'expense') &&
+        Boolean(description && description.length >= 3) &&
+        hasAiApiKey(getSelectedAiProvider());
+
+    const handleRegenerateSuggestion = () => {
+        forceRegenerateRef.current = true;
+        setSuggestionConflict(null);
+        setRegenerateNonce((n) => n + 1);
+    };
+
+    const handleAcceptSuggestion = async (chosenId?: string, suggestion = aiSuggestion) => {
+        if (!suggestion) return;
 
         try {
-            let categoryId = chosenId ?? aiSuggestion.categoryId;
+            let categoryId = chosenId ?? suggestion.categoryId;
 
-            if (!chosenId && aiSuggestion.needsCategoryCreation && aiSuggestion.pendingCategory) {
-                const { type: catType, parentName, subcategoryName } = aiSuggestion.pendingCategory;
+            if (!chosenId && suggestion.needsCategoryCreation && suggestion.pendingCategory) {
+                const { type: catType, parentName, subcategoryName } = suggestion.pendingCategory;
                 categoryId = await findOrCreateCategory(catType, parentName, subcategoryName);
 
                 const created = await db.categories.get(categoryId);
@@ -185,11 +290,50 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
             if (categoryId) {
                 setValue('categoryId', categoryId, { shouldValidate: true, shouldDirty: true });
             }
+
+            // Persist accepted suggestion as validated
+            if (description && (type === 'income' || type === 'expense')) {
+                const chosenCat = categoryId ? await db.categories.get(categoryId) : null;
+                const catPath = chosenCat
+                    ? (chosenCat.parentId
+                        ? `${(await db.categories.get(chosenCat.parentId))?.name ?? ''} / ${chosenCat.name}`
+                        : chosenCat.name)
+                    : suggestion.categoryPath;
+
+                await saveValidatedSuggestion({
+                    description,
+                    type,
+                    suggestion: {
+                        ...suggestion,
+                        categoryId,
+                        categoryPath: catPath,
+                        isValidated: true,
+                    },
+                    chosenSource: suggestion.source === 'gemini' || suggestion.source === 'anthropic' || suggestion.source === 'groq' ? 'ai' : 'local',
+                    provider: suggestion.source === 'gemini' || suggestion.source === 'anthropic' || suggestion.source === 'groq' ? suggestion.source : undefined,
+                });
+            }
+
             setShowAiSuggestion(false);
+            setSuggestionConflict(null);
         } catch (error) {
             console.error('Error creating category:', error);
             addToast(t.common.error, 'error');
         }
+    };
+
+    const handleResolveConflict = async (choice: 'local' | 'ai') => {
+        if (!suggestionConflict || (type !== 'income' && type !== 'expense')) return;
+        const chosen = choice === 'local' ? suggestionConflict.local : suggestionConflict.ai;
+        await saveValidatedSuggestion({
+            description,
+            type,
+            suggestion: { ...chosen, isValidated: true },
+            chosenSource: choice,
+            provider: suggestionConflict.provider,
+        });
+        setAiSuggestion({ ...chosen, isValidated: true });
+        await handleAcceptSuggestion(undefined, chosen);
     };
 
     // Filter categories by type and organize hierarchically
@@ -409,6 +553,71 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                 <p className="text-xs text-teal-700 dark:text-teal-400 font-medium animate-pulse" data-testid="ai-pending">
                     {aiProgressMessage || t.forms.consultingAi}
                 </p>
+            )}
+
+            {canRegenerateAi && (
+                <Button
+                    type="button"
+                    variant="ghost"
+                    className="min-h-11 w-full justify-center text-sm"
+                    data-testid="regenerate-suggestion-button"
+                    onClick={handleRegenerateSuggestion}
+                    disabled={aiPending}
+                >
+                    <RefreshCw size={16} className="mr-2" />
+                    {t.forms.regenerateSuggestion}
+                </Button>
+            )}
+
+            {suggestionConflict && (
+                <div
+                    data-testid="suggestion-conflict-panel"
+                    className="p-4 rounded-xl border-2 border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800"
+                >
+                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-1">
+                        {t.forms.suggestionMismatch}
+                    </p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mb-3">
+                        {t.forms.suggestionMismatchHint}
+                    </p>
+                    <div className="space-y-2 mb-3">
+                        <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                            {t.forms.localSuggestion}
+                        </p>
+                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                            {suggestionConflict.local.categoryPath}
+                        </p>
+                        <p className="text-xs font-bold uppercase tracking-wider text-slate-500 pt-2">
+                            {suggestionConflict.provider === 'anthropic'
+                                ? t.forms.claudeSuggestion
+                                : suggestionConflict.provider === 'groq'
+                                    ? t.forms.groqSuggestion
+                                    : t.forms.geminiSuggestion}
+                        </p>
+                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                            {suggestionConflict.ai.categoryPath}
+                        </p>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                        <Button
+                            type="button"
+                            className="min-h-11 w-full"
+                            data-testid="keep-local-suggestion-button"
+                            onClick={() => handleResolveConflict('local')}
+                        >
+                            {t.forms.keepLocalSuggestion}
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="min-h-11 w-full"
+                            data-testid="use-ai-suggestion-button"
+                            onClick={() => handleResolveConflict('ai')}
+                        >
+                            {t.forms.useAiSuggestion}
+                        </Button>
+                    </div>
+                </div>
             )}
 
             {aiDiagnosticNotice && (
