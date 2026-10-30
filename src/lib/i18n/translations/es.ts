@@ -222,6 +222,10 @@ export const es: TranslationSchema = {
         noItemsInMonthBanner: 'No has configurado ingresos o gastos fijos para {month}.',
         budgetForMonth: 'Presupuesto de {month}',
         copyMonthBtn: 'Copiar {count} ítems de {month}',
+        generateFromActualsBtn: 'Crear con consumos reales ({count})',
+        generateFromActualsSuccess: 'Presupuesto generado exitosamente a partir de los consumos reales de {month}',
+        generateFromActualsDesc: 'Genera tu presupuesto a partir de los gastos e ingresos reales de {month}',
+        copyOrGenerateSubtitle: 'Puedes copiar el presupuesto anterior o generarlo desde los consumos reales de {month}',
     },
     reports: {
         title: 'Informes',

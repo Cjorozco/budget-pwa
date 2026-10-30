@@ -13,20 +13,21 @@ import {
   ChevronLeft,
   ChevronRight,
   Copy,
+  Sparkles,
 } from 'lucide-react';
-import { format, subMonths, addMonths } from 'date-fns';
+import { format, subMonths, addMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { Modal } from '@/components/ui/Modal';
 import { MoneyInput } from '@/components/ui/MoneyInput';
 import type { BudgetItem } from '@/lib/types';
+import {
+  getItemMonth,
+  buildActualBudgetCandidates,
+  candidatesToBudgetItems,
+} from '@/lib/budget';
 import { useUIStore } from '@/store/ui';
 import { useTranslation, getDateFnsLocale } from '@/lib/i18n';
 
 const NO_BUDGET_ITEMS: BudgetItem[] = [];
-
-/** Month key of an item; legacy rows without `month` fall back to their creation date. */
-function getItemMonth(item: BudgetItem) {
-  return item.month || format(new Date(item.createdAt || now()), 'yyyy-MM');
-}
 
 export default function Budget() {
   const { t, language } = useTranslation();
@@ -43,6 +44,7 @@ export default function Budget() {
   });
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [editingItem, setEditingItem] = useState<BudgetItem | null>(null);
   const [newItemType, setNewItemType] = useState<'income' | 'expense'>('income');
   const [newItemName, setNewItemName] = useState('');
@@ -61,10 +63,23 @@ export default function Budget() {
   const fixedIncomes = currentMonthItems.filter(item => item.type === 'income');
   const fixedExpenses = currentMonthItems.filter(item => item.type === 'expense');
 
-  // Check if previous month has items to offer one-click cloning
+  // Check if previous month has items or actuals to offer one-click creation
   const prevDate = subMonths(currentDate, 1);
   const prevMonthKey = format(prevDate, 'yyyy-MM');
   const prevMonthItems = allBudgetItems.filter(item => getItemMonth(item) === prevMonthKey);
+
+  // Aggregated actual items from previous month (matching Reports)
+  const prevMonthActualCandidates = useLiveQuery(async () => {
+    const prevStart = startOfMonth(prevDate).getTime();
+    const prevEnd = endOfMonth(prevDate).getTime();
+
+    const [txs, cats] = await Promise.all([
+      db.transactions.where('date').between(prevStart, prevEnd).toArray(),
+      db.categories.toArray(),
+    ]);
+
+    return buildActualBudgetCandidates(txs, cats, t.transactions.uncategorized);
+  }, [prevMonthKey, t.transactions.uncategorized]) ?? [];
 
   const sortedFixedExpenses = [...fixedExpenses].sort((a, b) => {
     switch (expenseSortOrder) {
@@ -100,7 +115,8 @@ export default function Budget() {
   };
 
   const handleCopyPreviousMonth = async () => {
-    if (prevMonthItems.length === 0) return;
+    if (prevMonthItems.length === 0 || isProcessing) return;
+    setIsProcessing(true);
     try {
       const clonedItems: BudgetItem[] = prevMonthItems.map(item => ({
         id: crypto.randomUUID(),
@@ -121,6 +137,26 @@ export default function Budget() {
     } catch (err) {
       console.error('Error copying budget:', err);
       addToast(t.common.error, 'error');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleGenerateFromActuals = async () => {
+    if (prevMonthActualCandidates.length === 0 || isProcessing) return;
+    setIsProcessing(true);
+    try {
+      const generatedItems = candidatesToBudgetItems(prevMonthActualCandidates, currentMonthKey);
+      await db.budgetItems.bulkAdd(generatedItems);
+      addToast(
+        t.budget.generateFromActualsSuccess.replace('{month}', format(prevDate, 'MMMM yyyy', { locale: dateLocale })),
+        'success'
+      );
+    } catch (err) {
+      console.error('Error generating budget from actuals:', err);
+      addToast(t.common.error, 'error');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -240,27 +276,53 @@ export default function Budget() {
         </div>
       </header>
 
-      {/* Copy Previous Month Banner if Current Month is Empty */}
-      {currentMonthItems.length === 0 && prevMonthItems.length > 0 && (
-        <div className="p-4 bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+      {/* Copy or Generate Previous Month Banner if Current Month is Empty */}
+      {currentMonthItems.length === 0 && (prevMonthItems.length > 0 || prevMonthActualCandidates.length > 0) && (
+        <div className="p-4 bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs">
           <div>
             <h3 className="font-bold text-sm text-teal-950 dark:text-teal-200">
               {t.budget.noItemsInMonthBanner.replace('{month}', format(currentDate, 'MMMM yyyy', { locale: dateLocale }))}
             </h3>
             <p className="text-xs text-teal-800 dark:text-teal-300 mt-0.5">
-              {t.budget.copyFromPreviousMonth.replace('{month}', format(prevDate, 'MMMM yyyy', { locale: dateLocale }))}
+              {prevMonthItems.length > 0 && prevMonthActualCandidates.length > 0
+                ? t.budget.copyOrGenerateSubtitle.replace('{month}', format(prevDate, 'MMMM yyyy', { locale: dateLocale }))
+                : prevMonthItems.length > 0
+                  ? t.budget.copyFromPreviousMonth.replace('{month}', format(prevDate, 'MMMM yyyy', { locale: dateLocale }))
+                  : t.budget.generateFromActualsDesc.replace('{month}', format(prevDate, 'MMMM yyyy', { locale: dateLocale }))}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={handleCopyPreviousMonth}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold rounded-xl shadow-xs transition-colors shrink-0"
-          >
-            <Copy size={14} />
-            {t.budget.copyMonthBtn
-              .replace('{count}', String(prevMonthItems.length))
-              .replace('{month}', format(prevDate, 'MMMM', { locale: dateLocale }))}
-          </button>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0">
+            {prevMonthItems.length > 0 && (
+              <button
+                type="button"
+                onClick={handleCopyPreviousMonth}
+                disabled={isProcessing}
+                className="inline-flex items-center justify-center gap-2 px-3.5 py-2.5 min-h-[44px] bg-teal-700 hover:bg-teal-800 active:scale-[0.98] disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-xs transition-all"
+              >
+                <Copy size={15} />
+                <span>
+                  {t.budget.copyMonthBtn
+                    .replace('{count}', String(prevMonthItems.length))
+                    .replace('{month}', format(prevDate, 'MMMM', { locale: dateLocale }))}
+                </span>
+              </button>
+            )}
+            {prevMonthActualCandidates.length > 0 && (
+              <button
+                type="button"
+                onClick={handleGenerateFromActuals}
+                disabled={isProcessing}
+                className="inline-flex items-center justify-center gap-2 px-3.5 py-2.5 min-h-[44px] bg-white dark:bg-slate-900 border border-teal-600 dark:border-teal-500 text-teal-800 dark:text-teal-200 hover:bg-teal-50 dark:hover:bg-teal-950 active:scale-[0.98] disabled:opacity-50 text-xs font-bold rounded-xl shadow-xs transition-all"
+              >
+                <Sparkles size={15} className="text-teal-600 dark:text-teal-400" />
+                <span>
+                  {t.budget.generateFromActualsBtn
+                    .replace('{count}', String(prevMonthActualCandidates.length))
+                    .replace('{month}', format(prevDate, 'MMMM', { locale: dateLocale }))}
+                </span>
+              </button>
+            )}
+          </div>
         </div>
       )}
 

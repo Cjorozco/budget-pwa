@@ -250,6 +250,10 @@ export interface TranslationSchema {
         noItemsInMonthBanner: string;
         budgetForMonth: string;
         copyMonthBtn: string;
+        generateFromActualsBtn: string;
+        generateFromActualsSuccess: string;
+        generateFromActualsDesc: string;
+        copyOrGenerateSubtitle: string;
     };
     reports: {
         title: string;

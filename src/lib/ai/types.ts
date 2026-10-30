@@ -27,6 +27,16 @@ export type ResolverResult =
       status: 'success';
       suggestion: CategorySuggestion;
       source: 'local' | AiProviderType;
+      skippedAi?: boolean;
+      comparedWithAi?: boolean;
+      geminiDiagnosis?: GeminiResult;
+      aiDiagnosis?: LlmResult;
+    }
+  | {
+      status: 'conflict';
+      local: CategorySuggestion;
+      ai: CategorySuggestion;
+      source: AiProviderType;
       geminiDiagnosis?: GeminiResult;
       aiDiagnosis?: LlmResult;
     }

@@ -222,6 +222,10 @@ export const en: TranslationSchema = {
         noItemsInMonthBanner: 'You have not set up fixed income or expenses for {month}.',
         budgetForMonth: 'Budget for {month}',
         copyMonthBtn: 'Copy {count} items from {month}',
+        generateFromActualsBtn: 'Create from actuals ({count})',
+        generateFromActualsSuccess: 'Budget successfully generated from {month} actuals',
+        generateFromActualsDesc: 'Generate your budget from your actual income and expenses in {month}',
+        copyOrGenerateSubtitle: 'You can copy the previous budget or generate it from {month} actuals',
     },
     reports: {
         title: 'Reports',

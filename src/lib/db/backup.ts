@@ -123,6 +123,24 @@ export const BackupBudgetItemSchema = z.object({
     updatedAt: z.number().optional(),
 }).passthrough();
 
+export const BackupSuggestionValidationSchema = z.object({
+    id: z.string().min(1),
+    type: z.enum(['income', 'expense']),
+    normalizedDescription: z.string(),
+    categoryId: z.string().nullable(),
+    categoryPath: z.string(),
+    reason: z.string(),
+    chosenSource: z.enum(['local', 'ai']),
+    provider: z.enum(['gemini', 'openai', 'anthropic', 'groq', 'ollama', 'deepseek', 'custom']).optional(),
+    needsCategoryCreation: z.boolean(),
+    pendingCategory: z.object({
+        type: z.enum(['income', 'expense']),
+        parentName: z.string(),
+        subcategoryName: z.string().optional(),
+    }).optional(),
+    validatedAt: z.number(),
+}).passthrough();
+
 // Zod schema for backup validation
 export const BackupSchema = z.object({
     version: z.number(),
@@ -137,6 +155,7 @@ export const BackupSchema = z.object({
         appConfig: z.array(BackupAppConfigSchema),
         quickTemplates: z.array(BackupQuickTemplateSchema).optional().default([]),
         budgetItems: z.array(BackupBudgetItemSchema).optional().default([]),
+        suggestionValidations: z.array(BackupSuggestionValidationSchema).optional().default([]),
     })
 }).superRefine((data, ctx) => {
     // Balances are summed, so one backup must use a single currency (the app's currency).
@@ -165,6 +184,7 @@ export interface BackupData {
         appConfig: AppConfig[];
         quickTemplates?: QuickTemplate[];
         budgetItems?: BudgetItem[];
+        suggestionValidations?: SuggestionValidation[];
     };
 }
 
@@ -184,6 +204,7 @@ export async function exportDatabase(): Promise<string> {
             appConfig: (await db.appConfig.toArray()).map((config) => ({ ...config, country: getRegion().country })),
             quickTemplates: await db.quickTemplates.toArray(),
             budgetItems: await db.budgetItems.toArray(),
+            suggestionValidations: await db.suggestionValidations.toArray(),
         }
     };
 
@@ -218,7 +239,8 @@ export async function importDatabase(jsonString: string): Promise<void> {
         db.reserves,
         db.appConfig,
         db.quickTemplates,
-        db.budgetItems
+        db.budgetItems,
+        db.suggestionValidations,
     ], async () => {
         try {
             await Promise.all([
@@ -231,6 +253,7 @@ export async function importDatabase(jsonString: string): Promise<void> {
                 db.appConfig.clear(),
                 db.quickTemplates.clear(),
                 db.budgetItems.clear(),
+                db.suggestionValidations.clear(),
             ]);
 
             if (data.tables.transactions.length > 0) await db.transactions.bulkAdd(data.tables.transactions as Transaction[]);

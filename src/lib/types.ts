@@ -110,3 +110,22 @@ export interface BudgetItem {
     createdAt: number;
     updatedAt?: number;
 }
+
+/** User-validated description → category mapping. Once set, AI is not auto-called again. */
+export interface SuggestionValidation {
+    id: string;
+    type: 'income' | 'expense';
+    normalizedDescription: string;
+    categoryId: string | null;
+    categoryPath: string;
+    reason: string;
+    chosenSource: 'local' | 'ai';
+    provider?: 'gemini' | 'openai' | 'anthropic' | 'groq' | 'ollama' | 'deepseek' | 'custom';
+    needsCategoryCreation: boolean;
+    pendingCategory?: {
+        type: 'income' | 'expense';
+        parentName: string;
+        subcategoryName?: string;
+    };
+    validatedAt: number;
+}

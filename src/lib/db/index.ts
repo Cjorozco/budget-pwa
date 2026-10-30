@@ -10,6 +10,7 @@ import {
     type AppConfig,
     type QuickTemplate,
     type BudgetItem,
+    type SuggestionValidation,
 } from '../types';
 
 // Database definition
@@ -23,6 +24,7 @@ export class PersonalBudgetDB extends Dexie {
     appConfig!: EntityTable<AppConfig, 'id'>;
     quickTemplates!: EntityTable<QuickTemplate, 'id'>;
     budgetItems!: EntityTable<BudgetItem, 'id'>;
+    suggestionValidations!: EntityTable<SuggestionValidation, 'id'>;
 
     constructor() {
         super('PersonalBudgetDB');
@@ -69,6 +71,10 @@ export class PersonalBudgetDB extends Dexie {
 
         this.version(9).stores({
             budgetItems: 'id, month, type',
+        });
+
+        this.version(10).stores({
+            suggestionValidations: 'id, type, normalizedDescription',
         });
     }
 }

@@ -1,20 +1,20 @@
 # HANDOFF — personal-buget-pwa
 
-Actualizado: 2026-10-20 · Rama: `master` (incluye #55 y #58) · Versión: `2.5.2`
+Actualizado: 2026-10-30 · Rama: `develop` · Versión: `2.6.0`
 
 Lee primero `AGENTS.md` y `.agents/rules/*`. Las decisiones de diseño están en `docs/adr/` (0001–0006).
 
-## Verificación (2026-10-20, rama `practice/figma-mcp` antes de fusionar #55)
+## Verificación (2026-10-30)
 
-- `npx vitest run`: 57 archivos, 565 tests, todos pasan.
-- `npm run build`: OK.
+- `npx vitest run`: 59 archivos, 573 tests, todos pasan.
+- `npm run build`: OK (`tsc -b && vite build`).
 - `npx eslint src` y `tsc -p tsconfig.app.json --noEmit`: sin problemas.
-- Medido en navegador a 375 y 1280 px (claro y oscuro). Falta la superposición con el diseño (PerfectPixel).
 
 ## Estado actual
 
 PWA offline-first (React 19, Vite 7, Dexie, Zustand, TanStack Charts). Desde el handoff anterior (v1.3.0) se entregó:
 
+- **Presupuesto basado en consumos reales (2.6.0):** nueva opción en la vista de presupuesto (`/budget`) cuando el mes está vacío para generar el presupuesto del mes tomando como base los consumos y egresos reales registrados en los reportes del mes previo, agrupados por categoría padre y con montos exactos redondeados. El usuario puede editar, eliminar o agregar ítems libremente.
 - **Licencias (2.3.0, ADR 0004):** solo una licencia real de la tienda de Lemon Squeezy, activada en línea, concede PRO. Se eliminaron claves maestras, claves "firmadas" y la bandera `budget_is_pro` de `localStorage`. Ciclo de vida: `instance_id`, revalidación cada 24 h, 14 días de gracia sin conexión, desactivación al cerrar sesión. Los IDs salen de `.env` (`VITE_LEMON_*`); si faltan, la activación falla cerrada. Hay una compuerta de publicación en `src/__tests__/release`.
 - **Región y moneda (2.0.0, ADR 0002):** países CO, CA, US con una moneda por app (COP, CAD, USD) y centavos exactos. **Breaking:** un backup con cuentas en CAD o USD no abre en versiones anteriores a 2.0.0; los backups COP siguen abriendo.
 - **Semilla localizada (ADR 0003)** es/en/fr y enlace de primer arranque.

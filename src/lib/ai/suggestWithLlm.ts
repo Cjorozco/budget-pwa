@@ -1,7 +1,14 @@
 import { suggestCategory, type CategorySuggestion } from './categorizer';
 import { getSelectedAiProvider, hasAiApiKey } from './gateway/config';
 import { sanitizePii, suggestWithAiProvider } from './geminiSuggest';
-import type { GeminiResult, LlmResult, ResolverResult } from './types';
+import {
+    categorySuggestionsMatch,
+    getValidatedSuggestion,
+    saveValidatedSuggestion,
+    shouldAutoCallAi,
+    suggestionFromValidation,
+} from './suggestionValidation';
+import type { AiProviderType, GeminiResult, LlmResult, ResolverResult } from './types';
 
 export type { GeminiResult, LlmResult, ResolverResult };
 
@@ -18,6 +25,7 @@ export interface SuggestWithLlmOptions {
     isPro: boolean;
     signal?: AbortSignal;
     online?: boolean;
+    forceRegenerate?: boolean;
     onProgress?: (attempt: import('./types').ModelAttempt, friendlyMessage: string) => void;
 }
 
@@ -46,11 +54,22 @@ async function compareWithLocalForDiagnostics(
     }
 }
 
+function localSuccess(
+    local: CategorySuggestion,
+    extra?: Partial<Extract<ResolverResult, { status: 'success' }>>
+): ResolverResult {
+    return {
+        status: 'success',
+        suggestion: { ...local, source: local.source ?? 'local' },
+        source: 'local',
+        ...extra,
+    };
+}
+
 /**
- * AI Suggestions:
- * When PRO + API key + online, the active AI provider (Groq, Gemini, OpenAI, etc.)
- * takes top priority as the primary intelligent engine.
- * Local rules and heuristics act as safety fallback when offline, no key, or on AI error/timeout/rejection.
+ * Local rules first. The configured AI is compared at most once per description
+ * until the user regenerates. A matching pair is auto-validated; a mismatch
+ * is returned as conflict for a manual choice.
  */
 export async function suggestCategoryWithLlm(
     description: string,
@@ -62,6 +81,20 @@ export async function suggestCategoryWithLlm(
     const online = options.online ?? (typeof navigator !== 'undefined' ? navigator.onLine : false);
     const activeProvider = getSelectedAiProvider();
     const hasKey = hasAiApiKey(activeProvider);
+    const forceRegenerate = options.forceRegenerate === true;
+
+    const local = await suggestCategory(description, type);
+    const validated = await getValidatedSuggestion(description, type);
+
+    if (!shouldAutoCallAi(validated, forceRegenerate) && validated) {
+        const suggestion = suggestionFromValidation(validated);
+        return {
+            status: 'success',
+            suggestion,
+            source: suggestion.source === 'local' || !suggestion.source ? 'local' : suggestion.source,
+            skippedAi: true,
+        };
+    }
 
     let aiUnavailableReason: 'not-pro' | 'no-api-key' | 'offline' | null = null;
     if (!options.isPro) {
@@ -81,10 +114,47 @@ export async function suggestCategoryWithLlm(
 
             if (aiResult.status === 'success') {
                 void compareWithLocalForDiagnostics(description, type, aiResult);
+                const aiSuggestion = aiResult.suggestion;
+                const provider: AiProviderType = aiResult.providerUsed ?? activeProvider;
+
+                if (local && categorySuggestionsMatch(local, aiSuggestion)) {
+                    await saveValidatedSuggestion({
+                        description,
+                        type,
+                        suggestion: local,
+                        chosenSource: 'local',
+                        provider,
+                    });
+                    return localSuccess(local, {
+                        comparedWithAi: true,
+                        aiDiagnosis: aiResult,
+                        geminiDiagnosis: aiResult,
+                    });
+                }
+
+                if (local) {
+                    return {
+                        status: 'conflict',
+                        local: { ...local, source: local.source ?? 'local' },
+                        ai: aiSuggestion,
+                        source: provider,
+                        aiDiagnosis: aiResult,
+                        geminiDiagnosis: aiResult,
+                    };
+                }
+
+                await saveValidatedSuggestion({
+                    description,
+                    type,
+                    suggestion: aiSuggestion,
+                    chosenSource: 'ai',
+                    provider,
+                });
                 return {
                     status: 'success',
-                    suggestion: aiResult.suggestion,
-                    source: aiResult.providerUsed ?? activeProvider,
+                    suggestion: aiSuggestion,
+                    source: provider,
+                    comparedWithAi: true,
                     aiDiagnosis: aiResult,
                     geminiDiagnosis: aiResult,
                 };
@@ -110,16 +180,24 @@ export async function suggestCategoryWithLlm(
 
     if (options.signal?.aborted) return { status: 'no-match' };
 
-    // Ejecutar motor local exactamente como siempre
-    const local = await suggestCategory(description, type);
+    if (forceRegenerate && validated) {
+        const suggestion = suggestionFromValidation(validated);
+        return {
+            status: 'success',
+            suggestion,
+            source: suggestion.source === 'local' || !suggestion.source ? 'local' : suggestion.source,
+            skippedAi: false,
+            aiDiagnosis,
+            geminiDiagnosis: aiDiagnosis,
+        };
+    }
+
     if (local) {
         if (import.meta.env?.DEV) {
             console.debug('[suggestCategoryWithLlm] Local fallback matched successfully:', local);
         }
         return {
-            status: 'success',
-            suggestion: { ...local, source: local.source ?? 'local' },
-            source: 'local',
+            ...localSuccess(local),
             aiDiagnosis,
             geminiDiagnosis: aiDiagnosis,
         };
