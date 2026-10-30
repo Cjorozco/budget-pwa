@@ -27,4 +27,4 @@ Saldos atómicos, reconciliación auditable, soberanía de datos, licenciamiento
 
 ## Ramas
 
-Solo existen `master` y `develop`. Todo cambio llega primero a `develop` y de ahí pasa a `master`; no se sube directo a `master`. Las ramas de trabajo se borran al fusionarlas.
+El flujo (`develop` integración, `master` producción) está en "Flujo de ramas" de `.agents/rules/working-style.md`.
