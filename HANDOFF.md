@@ -13,7 +13,7 @@ Lee primero `AGENTS.md` y `.agents/rules/*`. Las decisiones de diseño están en
 ## Flujo de ramas (ADR 0007)
 
 `develop` integra y `master` publica; el detalle está en "Flujo de ramas" de `.agents/rules/working-style.md`. CI corre en PR y push a ambas ramas.
-Pendiente en el host (no está en el repo): confirmar en Vercel que la rama de producción es `master`, y proteger `master` y `develop` en GitHub (PR obligatorio, CI verde).
+Sin protección de rama a propósito (plan de pago de GitHub): el flujo se sostiene por convención (ADR 0007, enmienda 2026-10-30). Producción: `master` en Vercel.
 
 ## Estado actual
 
