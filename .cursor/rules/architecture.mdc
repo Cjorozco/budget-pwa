@@ -43,7 +43,7 @@ Estas reglas comunes **no se aplican tal cual** aquí, por razones propias del p
 | Auth: better-auth | No aplica | Sin cuentas ni backend |
 | Persistencia del repo común (Convex) | Dexie / IndexedDB | Offline-first |
 | Borrado lógico (`active: false`) | Solo donde ya existe; el resto de la historia es inmutable por la regla de reconciliación | No reescribir el pasado |
-| Flujo `develop` → `master` | Ramas nuevas desde `master`, PR y squash merge (ver `working-style.md`) | `master` despliega a producción en Vercel |
+| Flujo `develop` → `master` | Ver "Flujo de ramas" en `working-style.md` | `master` despliega a producción en Vercel; `develop` es preview |
 
 ## Convenciones clave de dominio
 
