@@ -137,49 +137,52 @@ describe('Budget Page - Generate budget from actuals', () => {
       </MemoryRouter>
     );
 
-    // Verify empty month banner appears with generate from actuals button (3 categories: Alimentación, Servicios, Salario)
+    // Verify empty month banner appears with generate from actuals button (4 exact categories).
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Crear con consumos reales \(3\)/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Crear con consumos reales \(4\)/i })).toBeInTheDocument();
     });
 
-    // Click "Crear con consumos reales (3)"
-    const generateBtn = screen.getByRole('button', { name: /Crear con consumos reales \(3\)/i });
+    const generateBtn = screen.getByRole('button', { name: /Crear con consumos reales \(4\)/i });
     fireEvent.click(generateBtn);
 
     // Review the editable draft before saving it.
     await waitFor(() => {
       expect(screen.getByRole('dialog', { name: /Revisa el presupuesto sugerido/i })).toBeInTheDocument();
-      expect(screen.getByDisplayValue('Alimentación')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('Supermercado')).toBeInTheDocument();
     });
+
+    const nameInput = screen.getByDisplayValue('Supermercado');
+    nameInput.focus();
+    fireEvent.change(nameInput, { target: { value: 'Supermercad' } });
+    expect(document.activeElement).toBe(nameInput);
 
     expect(await db.budgetItems.where('month').equals('2099-10').count()).toBe(0);
     fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
 
-    await waitFor(() => expect(screen.getByText('Alimentación')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Supermercad')).toBeInTheDocument());
 
     // Check items persisted in Dexie
     const items = await db.budgetItems.where('month').equals('2099-10').toArray();
-    expect(items).toHaveLength(3);
+    expect(items).toHaveLength(4);
 
-    const foodItem = items.find((i) => i.name === 'Alimentación');
-    expect(foodItem).toBeDefined();
-    // 300000 (Supermercado) + 150000 (Restaurantes) = 450000
-    expect(foodItem?.amount).toBe(450000);
-    expect(foodItem?.type).toBe('expense');
+    const supermarketItem = items.find((i) => i.name === 'Supermercad');
+    expect(supermarketItem).toBeDefined();
+    expect(supermarketItem?.amount).toBe(300000);
+    expect(supermarketItem?.type).toBe('expense');
 
     const salaryItem = items.find((i) => i.name === 'Salario');
     expect(salaryItem?.amount).toBe(2500000);
     expect(salaryItem?.type).toBe('income');
 
     // The user retains the ability to edit an item
-    const editBtn = screen.getByLabelText(/Editar Alimentación/i);
+    const editBtn = screen.getByLabelText(/Editar Supermercad/i);
     fireEvent.click(editBtn);
 
     await waitFor(() => {
       expect(screen.getByText('Editar Gasto Fijo')).toBeInTheDocument();
     });
 
-    const amountInput = screen.getByDisplayValue('450.000');
+    const amountInput = screen.getByDisplayValue('300.000');
     fireEvent.change(amountInput, { target: { value: '500000' } });
 
     const submitBtn = screen.getByRole('button', { name: /Actualizar Gasto/i });
@@ -190,7 +193,7 @@ describe('Budget Page - Generate budget from actuals', () => {
       expect(updatedItems).toBeDefined();
     });
 
-    const updatedInDb = await db.budgetItems.get(foodItem!.id);
+    const updatedInDb = await db.budgetItems.get(supermarketItem!.id);
     expect(updatedInDb?.amount).toBe(500000);
   });
 

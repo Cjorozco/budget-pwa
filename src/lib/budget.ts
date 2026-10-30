@@ -17,7 +17,8 @@ export function getItemMonth(item: BudgetItem): string {
 
 /**
  * Aggregates actual income and expenses from transactions of a given period into
- * budget candidates rolled up by parent category (matching Reports category view).
+ * budget candidates by the transaction's exact category. Subcategories stay
+ * separate so the user can budget at the same level they categorize expenses.
  */
 export function buildActualBudgetCandidates(
   txs: Transaction[],
@@ -43,12 +44,7 @@ export function buildActualBudgetCandidates(
       let name: string;
       let categoryId: string | undefined;
 
-      if (cat?.parentId) {
-        const parent = catMap.get(cat.parentId);
-        key = parent?.id || cat.parentId;
-        name = parent?.name || cat.name || uncategorizedLabel;
-        categoryId = key;
-      } else if (cat) {
+      if (cat) {
         key = cat.id;
         name = cat.name;
         categoryId = cat.id;

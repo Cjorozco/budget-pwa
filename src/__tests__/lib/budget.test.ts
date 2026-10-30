@@ -88,7 +88,7 @@ describe('Budget domain logic', () => {
       },
     ];
 
-    it('rolls child categories up to parent category and sums amounts', () => {
+    it('keeps child categories separate and sums amounts within each subcategory', () => {
       const txs: Transaction[] = [
         {
           id: 'tx-1',
@@ -118,18 +118,15 @@ describe('Budget domain logic', () => {
 
       const candidates = buildActualBudgetCandidates(txs, categories, 'Sin categoría');
 
-      expect(candidates).toHaveLength(1);
-      expect(candidates[0]).toEqual({
-        name: 'Alimentación',
-        amount: 200000,
-        type: 'expense',
-        categoryId: 'cat-food',
-      });
+      expect(candidates).toEqual([
+        { name: 'Supermercado', amount: 150000, type: 'expense', categoryId: 'cat-super' },
+        { name: 'Restaurantes', amount: 50000, type: 'expense', categoryId: 'cat-rest' },
+      ]);
     });
 
     it('handles categories without parents, uncategorized items, and income/expenses separation', () => {
       const txs: Transaction[] = [
-        // Income with parent rollup
+        // Income in a subcategory
         {
           id: 'tx-inc-1',
           type: 'income',
@@ -199,12 +196,8 @@ describe('Budget domain logic', () => {
 
       // Incomes come first, then expenses (each sorted descending by amount)
       expect(candidates).toEqual([
-        {
-          name: 'Salario',
-          amount: 3000000,
-          type: 'income',
-          categoryId: 'cat-salary',
-        },
+        { name: 'Salario', amount: 2500000, type: 'income', categoryId: 'cat-salary' },
+        { name: 'Bonificaciones', amount: 500000, type: 'income', categoryId: 'cat-bonus' },
         {
           name: 'Vivienda',
           amount: 1200000,

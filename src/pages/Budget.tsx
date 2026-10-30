@@ -30,6 +30,10 @@ import { useTranslation, getDateFnsLocale } from '@/lib/i18n';
 
 const NO_BUDGET_ITEMS: BudgetItem[] = [];
 
+interface ActualsDraftItem extends ActualBudgetCandidate {
+  draftId: string;
+}
+
 export default function Budget() {
   const { t, language } = useTranslation();
   const dateLocale = getDateFnsLocale(language);
@@ -46,7 +50,7 @@ export default function Budget() {
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [actualsDraft, setActualsDraft] = useState<ActualBudgetCandidate[] | null>(null);
+  const [actualsDraft, setActualsDraft] = useState<ActualsDraftItem[] | null>(null);
   const [editingItem, setEditingItem] = useState<BudgetItem | null>(null);
   const [newItemType, setNewItemType] = useState<'income' | 'expense'>('income');
   const [newItemName, setNewItemName] = useState('');
@@ -146,7 +150,10 @@ export default function Budget() {
 
   const handleGenerateFromActuals = () => {
     if (prevMonthActualCandidates.length === 0 || isProcessing) return;
-    setActualsDraft(prevMonthActualCandidates.map((candidate) => ({ ...candidate })));
+    setActualsDraft(prevMonthActualCandidates.map((candidate) => ({
+      ...candidate,
+      draftId: crypto.randomUUID(),
+    })));
   };
 
   const handleSaveActualsDraft = async () => {
@@ -171,7 +178,12 @@ export default function Budget() {
   };
 
   const handleAddActualDraftItem = () => {
-    setActualsDraft((items) => items ? [...items, { name: '', amount: 0, type: 'expense' }] : items);
+    setActualsDraft((items) => items ? [...items, {
+      draftId: crypto.randomUUID(),
+      name: '',
+      amount: 0,
+      type: 'expense',
+    }] : items);
   };
 
   const handleOpenAddModal = (type: 'income' | 'expense') => {
@@ -523,7 +535,7 @@ export default function Budget() {
           <p className="text-sm text-slate-600 dark:text-slate-300">{t.budget.reviewActualsHint}</p>
           <div className="space-y-3">
             {actualsDraft?.map((item, index) => (
-              <div key={`${index}-${item.name}`} className="grid grid-cols-1 gap-2 rounded-xl border border-slate-200 dark:border-slate-700 p-3">
+              <div key={item.draftId} className="grid grid-cols-1 gap-2 rounded-xl border border-slate-200 dark:border-slate-700 p-3">
                 <input
                   aria-label={`${t.budget.itemNameLabel} ${index + 1}`}
                   value={item.name}
