@@ -24,8 +24,8 @@ export default defineConfig({
       includeAssets: ['vite.svg', 'robots.txt'],
       manifest: {
         lang: 'es',
-        name: 'Presupuesto Personal',
-        short_name: 'Presupuesto',
+        name: 'MyRealBalance',
+        short_name: 'MyRealBalance',
         description: 'Gestor de finanzas personales enfocado en simplicidad y control real.',
         theme_color: '#031314', // --color-void
         background_color: '#ffffff',
