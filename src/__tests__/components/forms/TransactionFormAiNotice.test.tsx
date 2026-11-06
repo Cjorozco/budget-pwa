@@ -1,11 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TransactionForm } from '@/components/forms/TransactionForm';
 import { db } from '@/lib/db';
 import { useUIStore } from '@/store/ui';
 import { useLicenseStore } from '@/store/licenseStore';
 import type { ResolverResult } from '@/lib/ai/types';
+import { saveValidatedSuggestion } from '@/lib/ai/suggestionValidation';
+import { setAiApiKey, setSelectedAiProvider } from '@/lib/ai/gateway/config';
 
 vi.mock('@/lib/ai/suggestWithLlm', () => ({
     suggestCategoryWithLlm: vi.fn(),
@@ -17,6 +19,7 @@ async function typeDescription(text: string) {
     const user = userEvent.setup();
     render(<TransactionForm onSuccess={vi.fn()} />);
     await user.type(screen.getByTestId('description-input'), text);
+    await user.tab();
 }
 
 describe('TransactionForm AI diagnostic notice', () => {
@@ -69,6 +72,7 @@ describe('TransactionForm AI diagnostic notice', () => {
         const user = userEvent.setup();
         render(<TransactionForm onSuccess={vi.fn()} />);
         await user.type(screen.getByTestId('description-input'), 'almuerzo');
+        await user.tab();
         await waitFor(() => expect(suggestCategoryWithLlm).toHaveBeenCalled(), { timeout: 3000 });
         expect(vi.mocked(suggestCategoryWithLlm).mock.calls.at(-1)?.[2]).toMatchObject({ isPro: false });
 
@@ -76,6 +80,7 @@ describe('TransactionForm AI diagnostic notice', () => {
         vi.mocked(suggestCategoryWithLlm).mockClear();
         useLicenseStore.setState({ isPro: true });
         await user.type(screen.getByTestId('description-input'), ' hoy');
+        await user.tab();
         await waitFor(() => expect(suggestCategoryWithLlm).toHaveBeenCalled(), { timeout: 3000 });
         expect(vi.mocked(suggestCategoryWithLlm).mock.calls.at(-1)?.[2]).toMatchObject({ isPro: true });
     });
@@ -88,5 +93,63 @@ describe('TransactionForm AI diagnostic notice', () => {
 
         await waitFor(() => expect(suggestCategoryWithLlm).toHaveBeenCalled(), { timeout: 3000 });
         expect(screen.queryByTestId('ai-diagnostic-notice')).not.toBeInTheDocument();
+    });
+
+    it('waits through pauses while typing and resolves the completed description after blur', async () => {
+        vi.mocked(suggestCategoryWithLlm).mockResolvedValue({ status: 'no-match' });
+        const user = userEvent.setup();
+        render(<TransactionForm onSuccess={vi.fn()} />);
+        await user.type(screen.getByTestId('description-input'), 'pag');
+        await act(async () => { await new Promise(resolve => setTimeout(resolve, 650)); });
+        expect(suggestCategoryWithLlm).not.toHaveBeenCalled();
+
+        await user.type(screen.getByTestId('description-input'), 'o de internet');
+        await user.tab();
+        await waitFor(() => expect(suggestCategoryWithLlm).toHaveBeenCalledOnce());
+        expect(suggestCategoryWithLlm).toHaveBeenCalledWith('Pago de internet', 'expense', expect.any(Object));
+    });
+
+    it('shows a saved suggestion while typing and skips AI after blur, unless regenerated', async () => {
+        setSelectedAiProvider('gemini');
+        setAiApiKey('gemini', 'AIzaSyDummyKeyForUnitTests1234567890');
+        await saveValidatedSuggestion({
+            description: 'pago de internet',
+            type: 'expense',
+            suggestion: { categoryId: null, categoryPath: 'Servicios › Internet', confidence: 1, reason: 'Validada', needsCategoryCreation: false },
+            chosenSource: 'local',
+        });
+        vi.mocked(suggestCategoryWithLlm).mockResolvedValue({ status: 'no-match' });
+        const user = userEvent.setup();
+        render(<TransactionForm onSuccess={vi.fn()} />);
+        await user.type(screen.getByTestId('description-input'), 'pago de internet');
+        expect(await screen.findByTestId('category-suggestion-panel')).toHaveTextContent('Internet');
+        await user.tab();
+        await act(async () => { await new Promise(resolve => setTimeout(resolve, 650)); });
+        expect(suggestCategoryWithLlm).not.toHaveBeenCalled();
+
+        await user.click(screen.getByTestId('regenerate-suggestion-button'));
+        await waitFor(() => expect(suggestCategoryWithLlm).toHaveBeenCalledOnce());
+        expect(suggestCategoryWithLlm).toHaveBeenCalledWith('Pago de internet', 'expense', expect.objectContaining({ forceRegenerate: true }));
+    });
+
+    it('aborts an outstanding comparison when the user resumes editing and ignores its late response', async () => {
+        let finishComparison!: (result: ResolverResult) => void;
+        vi.mocked(suggestCategoryWithLlm).mockReturnValue(new Promise(resolve => { finishComparison = resolve; }));
+        const user = userEvent.setup();
+        render(<TransactionForm onSuccess={vi.fn()} />);
+        await user.type(screen.getByTestId('description-input'), 'internet');
+        await user.tab();
+        await waitFor(() => expect(suggestCategoryWithLlm).toHaveBeenCalledOnce());
+        const signal = vi.mocked(suggestCategoryWithLlm).mock.calls[0][2].signal;
+        await user.type(screen.getByTestId('description-input'), ' oficina');
+        expect(signal?.aborted).toBe(true);
+        await act(async () => {
+            finishComparison({
+                status: 'success', source: 'gemini',
+                suggestion: { categoryId: null, categoryPath: 'Respuesta antigua', confidence: 1, reason: 'Anterior', needsCategoryCreation: false },
+            });
+        });
+        expect(screen.queryByText('Respuesta antigua')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('ai-pending')).not.toBeInTheDocument();
     });
 });

@@ -3,6 +3,7 @@ import { shouldCallGemini, suggestCategoryWithLlm } from '@/lib/ai/suggestWithLl
 import type { CategorySuggestion } from '@/lib/ai/categorizer';
 import { setGeminiApiKey, clearGeminiApiKey } from '@/lib/ai/geminiKey';
 import { setSelectedAiProvider, setAiApiKey, clearAiApiKey } from '@/lib/ai/gateway/config';
+import { db } from '@/lib/db';
 
 vi.mock('@/lib/ai/categorizer', async () => {
     const actual = await vi.importActual<typeof import('@/lib/ai/categorizer')>('@/lib/ai/categorizer');
@@ -66,7 +67,8 @@ describe('shouldCallGemini', () => {
 });
 
 describe('suggestCategoryWithLlm', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
+        await db.suggestionValidations.clear();
         clearGeminiApiKey();
         clearAiApiKey('groq');
         setSelectedAiProvider('gemini');
@@ -391,5 +393,32 @@ describe('suggestCategoryWithLlm', () => {
 
         expect(result).toEqual({ status: 'no-match' });
         expect(suggestWithAiProvider).not.toHaveBeenCalled();
+    });
+
+    it.each(['income', 'expense'] as const)('reuses a validated %s comparison and only calls AI again on regeneration', async (type) => {
+        setGeminiApiKey('AIzaSyDummyKeyForUnitTests1234567890');
+        vi.mocked(suggestCategory).mockResolvedValue(strongLocal);
+        vi.mocked(suggestWithAiProvider).mockResolvedValue({ status: 'success', providerUsed: 'gemini', suggestion: strongLocal });
+
+        await suggestCategoryWithLlm('Descripción completa', type, { isPro: true, online: true });
+        const repeated = await suggestCategoryWithLlm('descripcion completa', type, { isPro: true, online: true });
+        expect(repeated).toMatchObject({ status: 'success', skippedAi: true });
+        expect(suggestWithAiProvider).toHaveBeenCalledOnce();
+
+        await suggestCategoryWithLlm('Descripción completa', type, { isPro: true, online: true, forceRegenerate: true });
+        expect(suggestWithAiProvider).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not persist a comparison that was cancelled before its response arrived', async () => {
+        setGeminiApiKey('AIzaSyDummyKeyForUnitTests1234567890');
+        const controller = new AbortController();
+        vi.mocked(suggestCategory).mockResolvedValue(strongLocal);
+        vi.mocked(suggestWithAiProvider).mockImplementation(async () => {
+            controller.abort();
+            return { status: 'success', providerUsed: 'gemini', suggestion: strongLocal };
+        });
+        const result = await suggestCategoryWithLlm('Descripción anterior', 'expense', { isPro: true, online: true, signal: controller.signal });
+        expect(result.status).toBe('no-match');
+        expect(await db.suggestionValidations.count()).toBe(0);
     });
 });
