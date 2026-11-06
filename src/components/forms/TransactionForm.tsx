@@ -52,6 +52,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
         provider: AiProviderType;
     } | null>(null);
     const [regenerateNonce, setRegenerateNonce] = useState(0);
+    const [isDescriptionFocused, setIsDescriptionFocused] = useState(false);
     const categoryTouchedRef = useRef(false);
     const forceRegenerateRef = useRef(false);
 
@@ -108,6 +109,10 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
 
         if (type !== 'income' && type !== 'expense') return;
 
+        setAiSuggestion(null);
+        setShowAiSuggestion(false);
+        setSuggestionConflict(null);
+        setAiDiagnosticNotice(null);
         let isCancelled = false;
 
         async function loadInitialLocal() {
@@ -156,7 +161,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
         };
     }, [description, type, initialData, setValue]);
 
-    // AI Suggestions Logic (Validación Inicial / Regeneración)
+    // Compare with AI after leaving the description, or on explicit regeneration.
     useEffect(() => {
         if (initialData) return; // Don't suggest when editing
         if (!description || description.trim().length < 3) return;
@@ -165,6 +170,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
         const controller = new AbortController();
         const forceRegenerate = forceRegenerateRef.current;
         forceRegenerateRef.current = false;
+        if (isDescriptionFocused && !forceRegenerate) return;
 
         const delay = forceRegenerate ? 0 : 500;
         const timer = setTimeout(async () => {
@@ -172,6 +178,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
             const mayCallAi = isPro && hasAiApiKey(activeProvider);
             const providerName = getProviderMeta(activeProvider).label;
             const validated = await getValidatedSuggestion(description, type);
+            if (controller.signal.aborted) return;
             const shouldResolveSuggestion = shouldAutoCallAi(validated, forceRegenerate);
 
             if (!shouldResolveSuggestion) {
@@ -188,7 +195,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                     signal: controller.signal,
                     forceRegenerate,
                     onProgress: (_attempt, msg) => {
-                        setAiProgressMessage(msg);
+                        if (!controller.signal.aborted) setAiProgressMessage(msg);
                     },
                 });
                 if (controller.signal.aborted) return;
@@ -241,8 +248,10 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
         return () => {
             clearTimeout(timer);
             controller.abort();
+            setAiPending(false);
+            setAiProgressMessage(null);
         };
-    }, [description, type, initialData, setValue, isPro, t, regenerateNonce]);
+    }, [description, type, initialData, setValue, isPro, t, regenerateNonce, isDescriptionFocused]);
 
     const canRegenerateAi =
         !initialData &&
@@ -540,10 +549,12 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                 label={t.forms.description}
                 placeholder={t.forms.descriptionPlaceholder}
                 error={errors.description?.message}
+                onFocus={() => setIsDescriptionFocused(true)}
                 {...register('description', {
                     onBlur: (e) => {
                         const formatted = toSentenceCase(e.target.value);
                         setValue('description', formatted, { shouldValidate: true });
+                        setIsDescriptionFocused(false);
                     }
                 })}
                 data-testid="description-input"
