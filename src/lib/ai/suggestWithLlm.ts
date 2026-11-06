@@ -85,6 +85,7 @@ export async function suggestCategoryWithLlm(
 
     const localRule = await suggestCategory(description, type);
     const validated = await getValidatedSuggestion(description, type);
+    if (options.signal?.aborted) return { status: 'no-match' };
     const local = validated ? suggestionFromValidation(validated) : localRule;
 
     if (!shouldAutoCallAi(validated, forceRegenerate) && validated) {
@@ -112,6 +113,7 @@ export async function suggestCategoryWithLlm(
     if (canUseAi) {
         try {
             const aiResult = await suggestWithAiProvider(description, type, options.signal, options.onProgress);
+            if (options.signal?.aborted) return { status: 'no-match' };
 
             if (aiResult.status === 'success') {
                 void compareWithLocalForDiagnostics(description, type, aiResult);
