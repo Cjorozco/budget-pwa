@@ -18,6 +18,7 @@ import {
     type FixedBudgetSummary,
     type MonthlyTotals,
 } from './monthlyMetrics';
+import { buildMedianTrends, median, type MedianTrends } from './medianTrends';
 
 export type HistoryRange = 'month' | '6' | '12' | 'all';
 
@@ -32,6 +33,12 @@ export interface CategoryStats extends SeriesStats {
     categoryId: string | null;
     name: string;
     activeMonths: number;
+}
+
+export interface HistorySummary {
+    income: SeriesStats | null;
+    expense: SeriesStats | null;
+    expenseByCategory: CategoryStats[];
 }
 
 export interface HistoryMonth {
@@ -63,7 +70,10 @@ export interface MonthlyHistory {
     generatedAt: Date;
     currency: { code: CurrencyCode; minorUnitDigits: 0 | 2 };
     balanceAtExport: BalanceSummary;
-    summary: { income: SeriesStats | null; expense: SeriesStats | null; expenseByCategory: CategoryStats[] };
+    /** Single-month exports only. */
+    summary: HistorySummary | null;
+    /** Exports of 6 months, 12 months or everything. */
+    medianTrends: MedianTrends | null;
     months: HistoryMonth[];
     transactions: HistoryTransaction[];
 }
@@ -90,13 +100,11 @@ function getWindowStart(selectedMonth: Date, range: HistoryRange): Date | null {
 }
 
 function describeSeries(values: number[]): SeriesStats {
-    const sorted = [...values].sort((a, b) => a - b);
-    const middle = Math.floor(sorted.length / 2);
     return {
         average: values.reduce((acc, v) => acc + v, 0) / values.length,
-        median: sorted.length % 2 === 1 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2,
-        min: sorted[0],
-        max: sorted[sorted.length - 1],
+        median: median(values),
+        min: Math.min(...values),
+        max: Math.max(...values),
     };
 }
 
@@ -192,13 +200,14 @@ export function buildMonthlyHistory(input: BuildHistoryInput): MonthlyHistory {
         return buildMonth(key, txsByMonth.get(key) ?? [], input, currentKey);
     });
 
-    // Averages describe behaviour: closed months with movements and no reconciliation adjustments.
+    // A complete month is a closed one with real movements, not only transfers or adjustments.
     const behaviourByMonth = months
         .filter((m) => !m.isPartial)
         .map((m) => (txsByMonth.get(m.month) ?? []).filter((tx) => tx.type !== 'transfer' && !tx.isAdjustment))
         .filter((txs) => txs.length > 0);
     const behaviourTotals = behaviourByMonth.map(getMonthlyTotals);
     const hasCompleteMonths = behaviourByMonth.length > 0;
+    const isSingleMonth = range === 'month';
 
     const transactions = months
         .flatMap((m) => txsByMonth.get(m.month) ?? [])
@@ -218,11 +227,16 @@ export function buildMonthlyHistory(input: BuildHistoryInput): MonthlyHistory {
         generatedAt: now,
         currency: { code: currency, minorUnitDigits: currencyDigits(currency) },
         balanceAtExport: getBalanceSummary(input.accounts, input.reserves),
-        summary: {
-            income: hasCompleteMonths ? describeSeries(behaviourTotals.map((t) => t.income)) : null,
-            expense: hasCompleteMonths ? describeSeries(behaviourTotals.map((t) => t.expense)) : null,
-            expenseByCategory: describeCategories(behaviourByMonth, input),
-        },
+        summary: isSingleMonth
+            ? {
+                income: hasCompleteMonths ? describeSeries(behaviourTotals.map((t) => t.income)) : null,
+                expense: hasCompleteMonths ? describeSeries(behaviourTotals.map((t) => t.expense)) : null,
+                expenseByCategory: describeCategories(behaviourByMonth, input),
+            }
+            : null,
+        medianTrends: isSingleMonth
+            ? null
+            : buildMedianTrends({ selectedMonth, now, txsByMonth, categories: input.categories, labels: input.labels }),
         months,
         transactions,
     };
