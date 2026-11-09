@@ -193,12 +193,12 @@ export function buildMonthlyHistory(input: BuildHistoryInput): MonthlyHistory {
     });
 
     // Averages describe behaviour: closed months with movements and no reconciliation adjustments.
-    const completeMonths = months.filter((m) => !m.isPartial && m.dataQuality.transactionCount > 0);
-    const behaviourByMonth = completeMonths.map((m) =>
-        (txsByMonth.get(m.month) ?? []).filter((tx) => tx.type !== 'transfer' && !tx.isAdjustment)
-    );
+    const behaviourByMonth = months
+        .filter((m) => !m.isPartial)
+        .map((m) => (txsByMonth.get(m.month) ?? []).filter((tx) => tx.type !== 'transfer' && !tx.isAdjustment))
+        .filter((txs) => txs.length > 0);
     const behaviourTotals = behaviourByMonth.map(getMonthlyTotals);
-    const hasCompleteMonths = completeMonths.length > 0;
+    const hasCompleteMonths = behaviourByMonth.length > 0;
 
     const transactions = months
         .flatMap((m) => txsByMonth.get(m.month) ?? [])
@@ -214,7 +214,7 @@ export function buildMonthlyHistory(input: BuildHistoryInput): MonthlyHistory {
         }));
 
     return {
-        range: { from: fromKey, to: toKey, completeMonths: completeMonths.length },
+        range: { from: fromKey, to: toKey, completeMonths: behaviourByMonth.length },
         generatedAt: now,
         currency: { code: currency, minorUnitDigits: currencyDigits(currency) },
         balanceAtExport: getBalanceSummary(input.accounts, input.reserves),

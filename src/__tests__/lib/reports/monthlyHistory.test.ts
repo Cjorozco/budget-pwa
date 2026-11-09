@@ -150,6 +150,15 @@ describe('summary', () => {
         expect(history.summary.expense?.average).toBe(400);
     });
 
+    it('ignores closed months that only have reconciliation adjustments', () => {
+        const adjustment = makeTx({ type: 'expense', amount: 500, date: ts(2026, 9, 2), isAdjustment: true, categoryId: 'cat-adj' });
+        const history = build({ transactions: [adjustment, expenseIn(10, 100, 'cat-2')] });
+
+        expect(history.range.completeMonths).toBe(1);
+        expect(history.summary.expense?.average).toBe(100);
+        expect(history.summary.expenseByCategory).toMatchObject([{ categoryId: 'cat-2', average: 100, activeMonths: 1 }]);
+    });
+
     it('has no statistics when there are no complete months', () => {
         const history = build({ range: 'month', transactions: [expenseIn(11, 100)] });
         expect(history.summary).toEqual({ income: null, expense: null, expenseByCategory: [] });
