@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
 import { formatCurrency, now } from '@/lib/utils';
-import type { Transaction } from '@/lib/types';
+import type { Account, Transaction } from '@/lib/types';
 import { AlertTriangle, Check, Pencil, Trash2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -46,10 +46,20 @@ export default function AmbiguousReviewPage() {
                 if (tx) {
                     const account = await db.accounts.get(tx.accountId);
                     if (account) {
-                        const newBalance = tx.type === 'income'
-                            ? account.calculatedBalance - tx.amount
-                            : account.calculatedBalance + tx.amount;
-                        await db.accounts.update(tx.accountId, { calculatedBalance: newBalance });
+                        const isIncome = tx.type === 'income';
+                        const updateData: Partial<Account> = {
+                            calculatedBalance: isIncome
+                                ? account.calculatedBalance - tx.amount
+                                : account.calculatedBalance + tx.amount,
+                        };
+
+                        if (account.actualBalance !== undefined) {
+                            updateData.actualBalance = isIncome
+                                ? account.actualBalance - tx.amount
+                                : account.actualBalance + tx.amount;
+                        }
+
+                        await db.accounts.update(tx.accountId, updateData);
                     }
                     await db.transactions.delete(id);
                 }

@@ -184,8 +184,11 @@ export default function Reports() {
               {t.reports.reportsSubtitle}
             </p>
           </div>
-          <Button variant="outline" className="shrink-0 gap-2" onClick={() => setIsExportOpen(true)}>
-            <Download size={16} aria-hidden="true" />
+          <Button
+            className="shrink-0 gap-2 rounded-full bg-accent px-5 font-semibold text-on-accent shadow-md shadow-accent/25 transition-[background-color,box-shadow,transform] hover:bg-accent/90 hover:shadow-lg hover:shadow-accent/30 focus-visible:ring-accent motion-safe:active:scale-95"
+            onClick={() => setIsExportOpen(true)}
+          >
+            <Download size={17} strokeWidth={2.5} aria-hidden="true" />
             {t.reports.historyExport.exportButton}
           </Button>
         </div>
