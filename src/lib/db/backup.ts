@@ -13,6 +13,7 @@ import type {
     QuickTemplate,
     BudgetItem,
     SuggestionValidation,
+    UserKeywordRule,
 } from '../types';
 
 // Row-level Zod schemas for backup validation
@@ -142,6 +143,14 @@ export const BackupSuggestionValidationSchema = z.object({
     validatedAt: z.number(),
 }).passthrough();
 
+export const BackupUserKeywordRuleSchema = z.object({
+    id: z.string().min(1),
+    type: z.enum(['income', 'expense']),
+    keyword: z.string().min(1),
+    categoryId: z.string().min(1),
+    createdAt: z.number(),
+}).passthrough();
+
 // Zod schema for backup validation
 export const BackupSchema = z.object({
     version: z.number(),
@@ -157,6 +166,7 @@ export const BackupSchema = z.object({
         quickTemplates: z.array(BackupQuickTemplateSchema).optional().default([]),
         budgetItems: z.array(BackupBudgetItemSchema).optional().default([]),
         suggestionValidations: z.array(BackupSuggestionValidationSchema).optional().default([]),
+        userKeywordRules: z.array(BackupUserKeywordRuleSchema).optional().default([]),
     })
 }).superRefine((data, ctx) => {
     // Balances are summed, so one backup must use a single currency (the app's currency).
@@ -186,6 +196,7 @@ export interface BackupData {
         quickTemplates?: QuickTemplate[];
         budgetItems?: BudgetItem[];
         suggestionValidations?: SuggestionValidation[];
+        userKeywordRules?: UserKeywordRule[];
     };
 }
 
@@ -206,6 +217,7 @@ export async function exportDatabase(): Promise<string> {
             quickTemplates: await db.quickTemplates.toArray(),
             budgetItems: await db.budgetItems.toArray(),
             suggestionValidations: await db.suggestionValidations.toArray(),
+            userKeywordRules: await db.userKeywordRules.toArray(),
         }
     };
 
@@ -242,6 +254,7 @@ export async function importDatabase(jsonString: string): Promise<void> {
         db.quickTemplates,
         db.budgetItems,
         db.suggestionValidations,
+        db.userKeywordRules,
     ], async () => {
         try {
             await Promise.all([
@@ -255,6 +268,7 @@ export async function importDatabase(jsonString: string): Promise<void> {
                 db.quickTemplates.clear(),
                 db.budgetItems.clear(),
                 db.suggestionValidations.clear(),
+                db.userKeywordRules.clear(),
             ]);
 
             if (data.tables.transactions.length > 0) await db.transactions.bulkAdd(data.tables.transactions as Transaction[]);
@@ -268,6 +282,9 @@ export async function importDatabase(jsonString: string): Promise<void> {
             if (data.tables.budgetItems && data.tables.budgetItems.length > 0) await db.budgetItems.bulkAdd(data.tables.budgetItems as BudgetItem[]);
             if (data.tables.suggestionValidations && data.tables.suggestionValidations.length > 0) {
                 await db.suggestionValidations.bulkAdd(data.tables.suggestionValidations as SuggestionValidation[]);
+            }
+            if (data.tables.userKeywordRules && data.tables.userKeywordRules.length > 0) {
+                await db.userKeywordRules.bulkAdd(data.tables.userKeywordRules as UserKeywordRule[]);
             }
         } catch (error) {
             console.error('Error during bulk import:', error);

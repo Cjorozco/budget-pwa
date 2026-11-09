@@ -389,6 +389,28 @@ export interface TranslationSchema {
     categories: {
         categoriesTitle: string;
         categoriesSubtitle: string;
+        suggestionRulesTitle: string;
+        suggestionRulesHint: string;
+        suggestionRulesOpen: string;
+        keywordsTitle: string;
+        keywordLabel: string;
+        keywordPlaceholder: string;
+        keywordCategoryLabel: string;
+        selectSubcategory: string;
+        addKeyword: string;
+        keywordTooShort: string;
+        keywordCategoryRequired: string;
+        keywordSaved: string;
+        keywordDeleted: string;
+        noKeywords: string;
+        learnedTitle: string;
+        noLearned: string;
+        learnedDeleted: string;
+        deleteKeywordTitle: string;
+        deleteKeywordMessage: string;
+        deleteLearnedTitle: string;
+        deleteLearnedMessage: string;
+        unavailableCategory: string;
         newCategory: string;
         incomeCategories: string;
         expenseCategories: string;
@@ -475,6 +497,8 @@ export interface TranslationSchema {
         useAiSuggestion: string;
         orUseExisting: string;
         orUseOther: string;
+        chooseSubcategory: string;
+        noSuggestion: string;
         selectCategory: string;
         selectAccount: string;
         fulfillReserveQuestion: string;

@@ -9,11 +9,11 @@ import { TransactionSchema } from '@/lib/schemas';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { suggestCategory, type CategorySuggestion } from '@/lib/ai/categorizer';
-import { findOrCreateCategory } from '@/lib/ai/categoryResolver';
+import { findOrCreateCategory, resolveCategoryPathLabel } from '@/lib/ai/categoryResolver';
 import { suggestCategoryWithLlm } from '@/lib/ai/suggestWithLlm';
 import { formatAiNotice, getAiNotice } from '@/lib/ai/aiNotice';
 import { getProviderMeta, getSelectedAiProvider, hasAiApiKey } from '@/lib/ai/gateway/config';
-import { saveValidatedSuggestion, shouldAutoCallAi, getValidatedSuggestion, suggestionFromValidation } from '@/lib/ai/suggestionValidation';
+import { learnCategoryForDescription, shouldAutoCallAi, getValidatedSuggestion, suggestionFromValidation } from '@/lib/ai/suggestionValidation';
 import type { AiProviderType } from '@/lib/ai/types';
 import { useUIStore } from '@/store/ui';
 import { useLicenseStore } from '@/store/licenseStore';
@@ -53,8 +53,9 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
     } | null>(null);
     const [regenerateNonce, setRegenerateNonce] = useState(0);
     const [isDescriptionFocused, setIsDescriptionFocused] = useState(false);
-    const categoryTouchedRef = useRef(false);
+    const [hasNoSuggestion, setHasNoSuggestion] = useState(false);
     const forceRegenerateRef = useRef(false);
+    const acceptedSuggestionRef = useRef<{ categoryId: string; suggestion: CategorySuggestion } | null>(null);
 
     const {
         register,
@@ -97,6 +98,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
     // Fast local suggestion effect (Prioridad Local Inicial)
     useEffect(() => {
         if (initialData) return; // Don't suggest when editing
+        setHasNoSuggestion(false);
         if (!description || description.trim().length < 3) {
             setAiSuggestion(null);
             setShowAiSuggestion(false);
@@ -115,24 +117,15 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
         setAiDiagnosticNotice(null);
         let isCancelled = false;
 
+        // Suggestions are only shown: the category changes when the user applies one.
         async function loadInitialLocal() {
             // 1. Check if already validated in local DB
             const validated = await getValidatedSuggestion(description, type);
             if (isCancelled) return;
             if (validated) {
-                const suggestion = suggestionFromValidation(validated);
-                setAiSuggestion(suggestion);
+                setAiSuggestion(suggestionFromValidation(validated));
                 setShowAiSuggestion(true);
                 setSuggestionConflict(null);
-                if (
-                    !categoryTouchedRef.current &&
-                    suggestion.categoryId &&
-                    !suggestion.needsCategoryCreation &&
-                    suggestion.confidence >= 0.7 &&
-                    !suggestion.alternatives?.length
-                ) {
-                    setValue('categoryId', suggestion.categoryId);
-                }
                 return;
             }
 
@@ -142,15 +135,8 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
             if (local) {
                 setAiSuggestion(local);
                 setShowAiSuggestion(true);
-                if (
-                    !categoryTouchedRef.current &&
-                    local.categoryId &&
-                    !local.needsCategoryCreation &&
-                    local.confidence >= 0.7 &&
-                    !local.alternatives?.length
-                ) {
-                    setValue('categoryId', local.categoryId);
-                }
+            } else {
+                setHasNoSuggestion(true);
             }
         }
 
@@ -159,7 +145,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
         return () => {
             isCancelled = true;
         };
-    }, [description, type, initialData, setValue]);
+    }, [description, type, initialData]);
 
     // Compare with AI after leaving the description, or on explicit regeneration.
     useEffect(() => {
@@ -209,28 +195,19 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                     setAiSuggestion(null);
                     setShowAiSuggestion(false);
                     setAiDiagnosticNotice(null);
+                    setHasNoSuggestion(false);
                     return;
                 }
 
                 setSuggestionConflict(null);
 
                 if (result.status === 'success') {
-                    const suggestion = result.suggestion;
-                    setAiSuggestion(suggestion);
+                    setAiSuggestion(result.suggestion);
                     setShowAiSuggestion(true);
+                    setHasNoSuggestion(false);
 
                     const notice = getAiNotice(result);
                     setAiDiagnosticNotice(notice ? formatAiNotice(notice, providerName, t.forms.aiNotice) : null);
-
-                    if (
-                        !categoryTouchedRef.current &&
-                        suggestion.categoryId &&
-                        !suggestion.needsCategoryCreation &&
-                        suggestion.confidence >= 0.7 &&
-                        !suggestion.alternatives?.length
-                    ) {
-                        setValue('categoryId', suggestion.categoryId);
-                    }
                 } else {
                     setAiSuggestion(null);
                     setShowAiSuggestion(false);
@@ -251,7 +228,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
             setAiPending(false);
             setAiProgressMessage(null);
         };
-    }, [description, type, initialData, setValue, isPro, t, regenerateNonce, isDescriptionFocused]);
+    }, [description, type, initialData, isPro, t, regenerateNonce, isDescriptionFocused]);
 
     const canRegenerateAi =
         !initialData &&
@@ -298,29 +275,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
 
             if (categoryId) {
                 setValue('categoryId', categoryId, { shouldValidate: true, shouldDirty: true });
-            }
-
-            // Persist accepted suggestion as validated
-            if (description && (type === 'income' || type === 'expense')) {
-                const chosenCat = categoryId ? await db.categories.get(categoryId) : null;
-                const catPath = chosenCat
-                    ? (chosenCat.parentId
-                        ? `${(await db.categories.get(chosenCat.parentId))?.name ?? ''} / ${chosenCat.name}`
-                        : chosenCat.name)
-                    : suggestion.categoryPath;
-
-                await saveValidatedSuggestion({
-                    description,
-                    type,
-                    suggestion: {
-                        ...suggestion,
-                        categoryId,
-                        categoryPath: catPath,
-                        isValidated: true,
-                    },
-                    chosenSource: suggestion.source === 'gemini' || suggestion.source === 'anthropic' || suggestion.source === 'groq' ? 'ai' : 'local',
-                    provider: suggestion.source === 'gemini' || suggestion.source === 'anthropic' || suggestion.source === 'groq' ? suggestion.source : undefined,
-                });
+                acceptedSuggestionRef.current = { categoryId, suggestion };
             }
 
             setShowAiSuggestion(false);
@@ -334,14 +289,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
     const handleResolveConflict = async (choice: 'local' | 'ai') => {
         if (!suggestionConflict || (type !== 'income' && type !== 'expense')) return;
         const chosen = choice === 'local' ? suggestionConflict.local : suggestionConflict.ai;
-        await saveValidatedSuggestion({
-            description,
-            type,
-            suggestion: { ...chosen, isValidated: true },
-            chosenSource: choice,
-            provider: suggestionConflict.provider,
-        });
-        setAiSuggestion({ ...chosen, isValidated: true });
+        setAiSuggestion(chosen);
         await handleAcceptSuggestion(undefined, chosen);
     };
 
@@ -363,9 +311,22 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
 
     const onSubmit = async (data: TransactionFormData) => {
         try {
+            const accepted = acceptedSuggestionRef.current?.categoryId === data.categoryId
+                ? acceptedSuggestionRef.current.suggestion
+                : null;
+            const aiProvider = accepted?.source && accepted.source !== 'local' ? accepted.source : undefined;
+            const confirmedCategory = {
+                description: data.description,
+                type: data.type,
+                categoryId: data.categoryId,
+                categoryPath: await resolveCategoryPathLabel(data.categoryId),
+                chosenSource: aiProvider ? 'ai' as const : 'local' as const,
+                provider: aiProvider,
+            };
+
             if (initialData?.id) {
                 // EDIT MODE: Calculate balance delta
-                await db.transaction('rw', db.transactions, db.accounts, async () => {
+                await db.transaction('rw', db.transactions, db.accounts, db.suggestionValidations, async () => {
                     const oldTx = initialData;
 
                     // Reverse old transaction effect
@@ -431,10 +392,15 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                         tagIds: [],
                         updatedAt: Date.now(),
                     });
+
+                    const isOrdinaryMovement = !oldTx.isAdjustment && oldTx.type !== 'transfer';
+                    if (isOrdinaryMovement && data.categoryId !== oldTx.categoryId) {
+                        await learnCategoryForDescription(confirmedCategory);
+                    }
                 });
             } else {
                 // CREATE MODE
-                await db.transaction('rw', db.transactions, db.accounts, db.reserves, async () => {
+                await db.transaction('rw', db.transactions, db.accounts, db.reserves, db.suggestionValidations, async () => {
                     // Enrich with AI metadata if applicable
                     const txId = uuidv4();
                     const finalData = {
@@ -485,6 +451,9 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                             updatedAt: Date.now(),
                         });
                     }
+
+                    // 4. Remember the confirmed category for this description
+                    await learnCategoryForDescription(confirmedCategory);
                 });
             }
 
@@ -507,7 +476,6 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                     onClick={() => {
                         setValue('type', 'income');
                         setValue('categoryId', '');
-                        categoryTouchedRef.current = false;
                     }}
                 >
                     {t.transactions.incomeLabel}
@@ -519,7 +487,6 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                     onClick={() => {
                         setValue('type', 'expense');
                         setValue('categoryId', '');
-                        categoryTouchedRef.current = false;
                     }}
                 >
                     {t.transactions.expenseLabel}
@@ -559,6 +526,12 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                 })}
                 data-testid="description-input"
             />
+
+            {hasNoSuggestion && !aiPending && (
+                <p className="text-xs text-slate-600 dark:text-slate-400" data-testid="no-suggestion-message">
+                    {t.forms.noSuggestion}
+                </p>
+            )}
 
             {aiPending && (
                 <p className="text-xs text-teal-700 dark:text-teal-400 font-medium animate-pulse" data-testid="ai-pending">
@@ -683,27 +656,29 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                             </p>
 
                             <div className="flex gap-2 mb-1 flex-wrap">
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    className="h-8 px-4 text-xs bg-teal-700 hover:bg-teal-800"
-                                    data-testid="apply-category-button"
-                                    onClick={() => handleAcceptSuggestion()}
-                                >
-                                    {aiSuggestion.needsCategoryCreation ? (
-                                        <>
-                                            <FolderPlus size={14} className="mr-1" />
-                                            {t.forms.createAndApply}
-                                        </>
-                                    ) : (
-                                        t.forms.applyCategory
-                                    )}
-                                </Button>
+                                {!aiSuggestion.requiresSubcategory && (
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        className="min-h-11 px-4 text-xs bg-teal-700 hover:bg-teal-800"
+                                        data-testid="apply-category-button"
+                                        onClick={() => handleAcceptSuggestion()}
+                                    >
+                                        {aiSuggestion.needsCategoryCreation ? (
+                                            <>
+                                                <FolderPlus size={14} className="mr-1" />
+                                                {t.forms.createAndApply}
+                                            </>
+                                        ) : (
+                                            t.forms.applyCategory
+                                        )}
+                                    </Button>
+                                )}
                                 <Button
                                     type="button"
                                     variant="ghost"
                                     size="sm"
-                                    className="h-8 px-4 text-xs"
+                                    className="min-h-11 px-4 text-xs"
                                     onClick={() => setShowAiSuggestion(false)}
                                 >
                                     {t.forms.ignore}
@@ -712,9 +687,11 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                             {aiSuggestion.alternatives && aiSuggestion.alternatives.length > 0 && (
                                 <div className="mt-2 space-y-1">
                                     <p className="text-xs font-medium text-slate-500">
-                                        {aiSuggestion.needsCategoryCreation
-                                            ? t.forms.orUseExisting
-                                            : t.forms.orUseOther}
+                                        {aiSuggestion.requiresSubcategory
+                                            ? t.forms.chooseSubcategory
+                                            : aiSuggestion.needsCategoryCreation
+                                                ? t.forms.orUseExisting
+                                                : t.forms.orUseOther}
                                     </p>
                                     {aiSuggestion.alternatives.map((alt) => (
                                         <Button
@@ -722,7 +699,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                                             type="button"
                                             variant="outline"
                                             size="sm"
-                                            className="h-8 w-full justify-start px-3 text-xs"
+                                            className="min-h-11 w-full justify-start px-3 text-xs"
                                             onClick={() => handleAcceptSuggestion(alt.categoryId)}
                                         >
                                             {alt.categoryPath}
@@ -743,11 +720,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
                     id="category-select"
                     data-testid="category-select"
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    {...register('categoryId', {
-                        onChange: () => {
-                            categoryTouchedRef.current = true;
-                        },
-                    })}
+                    {...register('categoryId')}
                     value={watch('categoryId') ?? ''}
                 >
                     <option value="">{t.forms.selectCategory}</option>
