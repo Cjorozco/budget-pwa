@@ -12,6 +12,7 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). V
 - Al borrar un movimiento desde la pantalla de Revisión ahora también se revierte el saldo real de la cuenta, así el saldo del Dashboard se actualiza (`2.8.1`).
 
 ### Cambiado
+- Los PR hacia `develop` se fusionan con merge commit, igual que los de `develop` a `master`. Enmienda al ADR 0007. Solo documentación.
 - En el historial exportado, una categoría con mediana 0 solo se marca como atípica si el monto supera el 25% de la mediana de los totales mensuales, para que las compras pequeñas no marquen meses enteros (`2.9.1`).
 - El botón Exportar de Informes se destaca como acción principal de la pantalla (`2.8.1`).
 - Los textos de la IA BYOK (`es`, `en`, `fr`) ya no prometen privacidad total: dicen que, con la clave del usuario, el navegador envía directamente al proveedor la descripción, las categorías y ejemplos recientes, sin montos (`2.8.1`).

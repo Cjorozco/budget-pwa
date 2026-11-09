@@ -40,7 +40,7 @@
 Única fuente de verdad del flujo. Decisión en `docs/adr/0007-flujo-de-ramas.md`.
 
 - `master` es producción; `develop` es integración (preview). Ningún cambio llega a `master` sin pasar antes por `develop`.
-- Cada cambio sale en una rama nueva creada desde `develop` y se lleva a `develop` con PR y **squash merge**.
+- Cada cambio sale en una rama nueva creada desde `develop` y se lleva a `develop` con PR y **merge commit** (no squash).
 - Para publicar: PR `develop` → `master` con **merge commit** (no squash, para que `develop` no diverja de `master`).
 - Hotfix urgente: rama desde `master`, PR a `master` y, el mismo día, PR `master` → `develop`. Es el único caso en que `master` vuelve a `develop`; que `master` tenga de más el commit de merge de cada publicación es normal y no se sincroniza de vuelta.
 - Antes de ramificar: `git fetch origin develop` (otras sesiones también publican).

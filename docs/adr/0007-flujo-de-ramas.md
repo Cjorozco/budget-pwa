@@ -24,3 +24,6 @@ El repo describía el flujo de ramas en cuatro archivos con palabras distintas. 
 
 ### 2026-10-30 — Sin protección de rama en el host
 La protección de rama de GitHub no se activará porque requiere plan de pago. El flujo se sostiene por convención, no por bloqueo técnico: las reglas de los agentes, «push o merge solo cuando se pida», sin push forzado y el flujo de dos PR. Esta enmienda sustituye la línea de Consecuencias que daba por pendiente proteger `master` y `develop`. La rama de producción en Vercel es `master`.
+
+### 2026-11-09 — Merge commit también hacia `develop`
+Los PR hacia `develop` se fusionan con merge commit, igual que los de `develop` a `master`; ya no se usa squash en ninguno de los dos pasos. Esta enmienda sustituye la parte «y squash merge» de la decisión sobre cómo entra cada cambio a `develop`.
