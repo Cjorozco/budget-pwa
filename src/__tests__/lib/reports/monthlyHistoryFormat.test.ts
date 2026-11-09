@@ -37,6 +37,18 @@ function build(overrides: Partial<BuildHistoryInput> = {}) {
 
 const parse = (history: ReturnType<typeof build>) => JSON.parse(toHistoryJson(history));
 
+/** Six closed months: a steady category with a spike in the last one, and one adjustment. */
+const sixMonths = () =>
+    build({
+        budgetItems: [],
+        transactions: [
+            ...[5, 6, 7, 8, 9, 10].map((month, i) =>
+                makeTx({ type: 'expense', amount: i === 5 ? 700000 : 100000, date: ts(2026, month, 5), categoryId: 'cat-2' })
+            ),
+            makeTx({ type: 'expense', amount: 30000, date: ts(2026, 9, 6), categoryId: 'cat-adj', isAdjustment: true }),
+        ],
+    });
+
 function collectNumbers(value: unknown, path = '', out: Array<[string, number]> = []) {
     if (typeof value === 'number') out.push([path, value]);
     else if (Array.isArray(value)) value.forEach((v, i) => collectNumbers(v, `${path}[${i}]`, out));
@@ -54,7 +66,7 @@ describe('toHistoryJson', () => {
             'generatedAt',
             'currency',
             'balanceAtExport',
-            'summary',
+            'medianas_y_tendencias',
             'months',
             'transactions',
         ]);
@@ -125,9 +137,111 @@ describe('toHistoryJson', () => {
         expect(text).not.toContain('color');
     });
 
-    it('stores the summary as null when there are no complete months', () => {
+    it('declares the new schema and no longer writes the averages summary', () => {
+        const json = parse(build());
+        expect(json.schemaVersion).toBe(2);
+        expect(json.summary).toBeUndefined();
+    });
+
+    it('keeps the original structure for a single-month export', () => {
         const json = parse(build({ range: 'month' }));
+        expect(Object.keys(json)).toEqual([
+            'schemaVersion',
+            'range',
+            'generatedAt',
+            'currency',
+            'balanceAtExport',
+            'summary',
+            'months',
+            'transactions',
+        ]);
+        expect(json.schemaVersion).toBe(1);
         expect(json.summary).toEqual({ income: null, expense: null, expenseByCategory: [] });
+    });
+
+    describe('medianas_y_tendencias', () => {
+        const section = (history = sixMonths()) => parse(history).medianas_y_tendencias;
+
+        it('writes the agreed fields in order', () => {
+            expect(Object.keys(section())).toEqual([
+                'periodo',
+                'totales',
+                'meses_atipicos',
+                'ajustes',
+                'categorias',
+                'nota_metodo',
+            ]);
+        });
+
+        it('states the period and how many months were used', () => {
+            expect(section().periodo).toMatchObject({ desde: '2026-05', hasta: '2026-10', meses_usados: 6, meses_objetivo: 6 });
+        });
+
+        it('writes totals with the average only as a reference', () => {
+            expect(section().totales.gastos).toEqual({
+                mediana: 100000,
+                tendencia: { cambio: 0, porcentaje: 0 },
+                promedio_referencia: 200000,
+            });
+        });
+
+        it('writes the metrics of a category with its subcategories', () => {
+            const row = section().categorias.gastos.find((c: { categoria_id: string }) => c.categoria_id === 'cat-2');
+            expect(row).toEqual({
+                categoria_id: 'cat-2',
+                nombre: 'Categoría 2',
+                mediana: 100000,
+                minimo: 100000,
+                maximo: 700000,
+                meses_con_gasto: 6,
+                tendencia: { cambio: 0, porcentaje: 0 },
+                atipico: true,
+                subcategorias: [],
+            });
+        });
+
+        it('writes a subcategory without records at zero', () => {
+            const parent = section().categorias.gastos.find((c: { categoria_id: string }) => c.categoria_id === 'cat-1');
+            expect(parent.subcategorias.find((s: { categoria_id: string }) => s.categoria_id === 'cat-1b')).toEqual({
+                categoria_id: 'cat-1b',
+                nombre: 'Subcategoría 1B',
+                mediana: 0,
+                minimo: 0,
+                maximo: 0,
+                meses_con_gasto: 0,
+                tendencia: 'no aplica',
+                atipico: false,
+            });
+        });
+
+        it('writes "no aplica" when the trend cannot be computed', () => {
+            expect(section(build()).totales.gastos.tendencia).toBe('no aplica');
+        });
+
+        it('lists outlier months and the median without them', () => {
+            const json = section();
+            expect(json.meses_atipicos).toEqual([
+                { mes: '2026-10', gastos: 700000, categorias_responsables: [{ categoria_id: 'cat-2', nombre: 'Categoría 2', monto: 700000, mediana: 100000 }] },
+            ]);
+            expect(json.totales.gastos_sin_atipicos).toEqual({ mediana: 100000, meses_usados: 5 });
+        });
+
+        it('reports adjustments apart', () => {
+            expect(section().ajustes).toEqual({ ingresos: 0, gastos: 30000 });
+        });
+
+        it('explains the method', () => {
+            expect(Object.keys(section().nota_metodo)).toEqual(['periodo', 'atipico', 'tendencia', 'promedio']);
+            expect(section().nota_metodo.periodo).toContain('6');
+        });
+
+        it('uses cents for a currency with decimals', () => {
+            const json = section(build({
+                currency: 'CAD',
+                transactions: [makeTx({ type: 'expense', amount: 12.34, date: ts(2026, 10, 5), categoryId: 'cat-2' })],
+            }));
+            expect(json.totales.gastos.mediana).toBe(1234);
+        });
     });
 });
 
@@ -175,12 +289,77 @@ describe('toHistoryMarkdown', () => {
         expect(render(history)).toContain('| septiembre 2026 (sin datos) |');
     });
 
-    it('shows the statistics of each category', () => {
-        expect(render(build())).toContain('| Categoría 2 | $ 750.000 | $ 750.000 | $ 0 | $ 1.500.000 | 1 |');
+    it('titles the section and states the months used', () => {
+        const md = render(build());
+        expect(md).toContain('## Medianas y tendencias de los últimos 6 meses');
+        expect(md).toContain('septiembre 2026 a octubre 2026 · 2 de 6 meses');
+    });
+
+    it('replaces the averages table', () => {
+        const md = render(sixMonths());
+        expect(md).not.toContain('Promedios de meses completos');
+        expect(md.indexOf('Mediana')).toBeLessThan(md.indexOf('Promedio (referencia)'));
+    });
+
+    it('shows totals with median, trend and the average as a reference', () => {
+        expect(render(sixMonths())).toContain('| Gastos | $ 100.000 | $ 0 (0%) | $ 200.000 |');
+    });
+
+    it('shows the metrics of each category', () => {
+        expect(render(sixMonths())).toContain('| Categoría 2 | $ 100.000 | $ 100.000 | $ 700.000 | 6 | $ 0 (0%) | Sí |');
+    });
+
+    it('shows a subcategory without records at zero', () => {
+        expect(render(sixMonths())).toContain('| ↳ Subcategoría 1B | $ 0 | $ 0 | $ 0 | 0 | no aplica | No |');
+    });
+
+    it('signs a rising trend', () => {
+        const rising = build({
+            transactions: [5, 6, 7, 8, 9, 10].map((month, i) =>
+                makeTx({ type: 'expense', amount: i < 3 ? 100000 : 150000, date: ts(2026, month, 5), categoryId: 'cat-2' })
+            ),
+        });
+        expect(render(rising)).toContain('| Gastos | $ 125.000 | +$ 50.000 (+50%) |');
+    });
+
+    it('lists outlier months with the category responsible', () => {
+        const md = render(sixMonths());
+        expect(md).toContain('| octubre 2026 | $ 700.000 | Categoría 2 ($ 700.000; mediana $ 100.000) |');
+        expect(md).toContain('Mediana de gastos sin meses atípicos: $ 100.000 (5 meses).');
+    });
+
+    it('reports adjustments apart from the medians', () => {
+        expect(render(sixMonths())).toContain('Ajustes de conciliación, fuera de las medianas: ingresos $ 0, gastos $ 30.000.');
+    });
+
+    it('writes the method note', () => {
+        const md = render(sixMonths());
+        expect(md).toContain('### Nota de método');
+        expect(md).toMatch(/6 de 6 meses completos/);
+        expect(md).toMatch(/supera 2 veces la mediana/);
+        expect(md).toMatch(/3 meses anteriores/);
+        expect(md).toMatch(/se distorsiona/);
     });
 
     it('explains that there are no complete months yet', () => {
-        expect(render(build({ range: 'month' }))).toContain('Aún no hay meses completos');
+        expect(render(build({ selectedMonth: new Date(2026, 8, 1), transactions: [], budgetItems: [] }))).toContain('Aún no hay meses completos');
+    });
+
+    it('says which months the method used when the file has more', () => {
+        const history = build({
+            transactions: [2, 3, 4, 5, 6, 7, 8, 9, 10].map((month) =>
+                makeTx({ type: 'expense', amount: 100000, date: ts(2026, month, 5), categoryId: 'cat-2' })
+            ),
+        });
+        expect(render(history)).toContain('Período: mayo 2026 a octubre 2026, 6 de 6 meses completos');
+    });
+
+    it('leaves the section out of a single-month export and keeps its averages', () => {
+        const md = render(build({ range: 'month', selectedMonth: new Date(2026, 9, 1) }));
+        expect(md).not.toContain('Medianas y tendencias');
+        expect(md).not.toContain('### Nota de método');
+        expect(md).toContain('## Promedios de meses completos (1)');
+        expect(md).toMatch(/Los promedios no los incluyen/);
     });
 
     it('breaks down categories when the range is a single month', () => {
@@ -193,7 +372,7 @@ describe('toHistoryMarkdown', () => {
         expect(md).toContain('| Disponible | $ 1.100.000 |');
         expect(md).toContain('$ 20.000');
         expect(md).toMatch(/foto del momento/);
-        expect(md).toMatch(/no entra en los promedios/);
+        expect(md).toMatch(/no entra en las medianas/);
     });
 
     it('warns about demo data only when there is some', () => {

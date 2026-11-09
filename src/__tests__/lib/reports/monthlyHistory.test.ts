@@ -97,48 +97,17 @@ describe('partial months', () => {
     });
 });
 
-describe('summary', () => {
-    it('leaves the current partial month out of the averages', () => {
+describe('complete months', () => {
+    it('leaves the current partial month out', () => {
         const history = build({ transactions: [expenseIn(9, 100), expenseIn(10, 300), expenseIn(11, 9000)] });
         expect(history.range.completeMonths).toBe(2);
-        expect(history.summary.expense).toEqual({ average: 200, median: 200, min: 100, max: 300 });
     });
 
-    it('takes the middle value as median with an odd number of months', () => {
-        const history = build({ transactions: [expenseIn(8, 100), expenseIn(9, 100), expenseIn(10, 700)] });
-        expect(history.summary.expense).toMatchObject({ average: 300, median: 100 });
-    });
-
-    it('leaves reconciliation adjustments out of the averages but inside the month totals', () => {
+    it('keeps reconciliation adjustments inside the month totals', () => {
         const adjustment = makeTx({ type: 'expense', amount: 500, date: ts(2026, 10, 2), isAdjustment: true, categoryId: 'cat-adj' });
         const history = build({ transactions: [expenseIn(10, 100), adjustment] });
-        expect(history.summary.expense?.average).toBe(100);
-        expect(history.summary.expenseByCategory.map((c) => c.categoryId)).toEqual(['cat-1']);
         expect(history.months[0].totals.expense).toBe(600);
         expect(history.months[0].adjustments).toEqual({ income: 0, expense: 500 });
-    });
-
-    it('averages a category over all complete months, including those at zero', () => {
-        const history = build({
-            transactions: [expenseIn(8, 300, 'cat-2'), expenseIn(9, 100), expenseIn(10, 100)],
-        });
-        expect(history.summary.expenseByCategory.find((c) => c.categoryId === 'cat-2')).toEqual({
-            categoryId: 'cat-2',
-            name: 'Categoría 2',
-            average: 100,
-            median: 0,
-            min: 0,
-            max: 300,
-            activeMonths: 1,
-        });
-    });
-
-    it('keeps one series under the current name when a category was renamed', () => {
-        const renamed = categories.map((c) => (c.id === 'cat-2' ? { ...c, name: 'Nombre nuevo' } : c));
-        const history = build({ categories: renamed, transactions: [expenseIn(9, 100, 'cat-2'), expenseIn(10, 300, 'cat-2')] });
-        expect(history.summary.expenseByCategory).toMatchObject([
-            { categoryId: 'cat-2', name: 'Nombre nuevo', average: 200, activeMonths: 2 },
-        ]);
     });
 
     it('ignores months that only have a budget', () => {
@@ -147,19 +116,67 @@ describe('summary', () => {
             budgetItems: [makeBudgetItem({ type: 'expense', amount: 50, month: '2026-08' })],
         });
         expect(history.range.completeMonths).toBe(1);
-        expect(history.summary.expense?.average).toBe(400);
     });
 
     it('ignores closed months that only have reconciliation adjustments', () => {
         const adjustment = makeTx({ type: 'expense', amount: 500, date: ts(2026, 9, 2), isAdjustment: true, categoryId: 'cat-adj' });
         const history = build({ transactions: [adjustment, expenseIn(10, 100, 'cat-2')] });
-
         expect(history.range.completeMonths).toBe(1);
-        expect(history.summary.expense?.average).toBe(100);
-        expect(history.summary.expenseByCategory).toMatchObject([{ categoryId: 'cat-2', average: 100, activeMonths: 1 }]);
+    });
+});
+
+describe('median trends section', () => {
+    const monthly = (months: number[]) => months.map((month) => expenseIn(month, 100 * month));
+
+    it('is not built for a single-month export', () => {
+        const history = build({ range: 'month', transactions: monthly([9, 10]) });
+        expect(history.medianTrends).toBeNull();
     });
 
-    it('has no statistics when there are no complete months', () => {
+    it.each(['6', '12', 'all'] as const)('is built for the %s range and replaces the summary', (range) => {
+        const history = build({ range, transactions: monthly([9, 10]) });
+        expect(history.medianTrends?.period).toMatchObject({ from: '2026-09', to: '2026-10', monthsUsed: 2 });
+        expect(history.summary).toBeNull();
+    });
+
+    it('uses only the last 6 complete months when the file has more', () => {
+        const history = build({ range: '12', transactions: monthly([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) });
+        expect(history.months).toHaveLength(11);
+        expect(history.medianTrends?.period).toMatchObject({ from: '2026-05', to: '2026-10', monthsUsed: 6 });
+    });
+
+    it('uses the 5 complete months of a 6-month export that ends in the month in progress', () => {
+        const history = build({ range: '6', transactions: monthly([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]) });
+        expect(history.medianTrends?.period).toMatchObject({ from: '2026-06', to: '2026-10', monthsUsed: 5 });
+    });
+
+    it('uses all 6 months of a 6-month export that ends in a closed month', () => {
+        const history = build({ range: '6', selectedMonth: new Date(2026, 9, 15), transactions: monthly([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) });
+        expect(history.medianTrends?.period).toMatchObject({ from: '2026-05', to: '2026-10', monthsUsed: 6 });
+    });
+
+    it('applies the category catalog', () => {
+        const history = build({ transactions: [expenseIn(10, 100, 'cat-2')] });
+        expect(history.medianTrends?.categories.expense.map((c) => c.categoryId)).toContain('cat-1');
+    });
+});
+
+describe('single-month summary', () => {
+    const october = new Date(2026, 9, 15);
+
+    it('keeps the statistics of a closed month', () => {
+        const history = build({ range: 'month', selectedMonth: october, transactions: [expenseIn(10, 300, 'cat-2')] });
+        expect(history.summary?.expense).toEqual({ average: 300, median: 300, min: 300, max: 300 });
+        expect(history.summary?.expenseByCategory).toMatchObject([{ categoryId: 'cat-2', average: 300, activeMonths: 1 }]);
+    });
+
+    it('leaves adjustments out of the statistics', () => {
+        const adjustment = makeTx({ type: 'expense', amount: 500, date: ts(2026, 10, 2), isAdjustment: true, categoryId: 'cat-adj' });
+        const history = build({ range: 'month', selectedMonth: october, transactions: [expenseIn(10, 100), adjustment] });
+        expect(history.summary?.expense?.average).toBe(100);
+    });
+
+    it('has no statistics for the month in progress', () => {
         const history = build({ range: 'month', transactions: [expenseIn(11, 100)] });
         expect(history.summary).toEqual({ income: null, expense: null, expenseByCategory: [] });
     });
@@ -236,6 +253,12 @@ describe('loadMonthlyHistory', () => {
         const history = await load('month');
         expect(history.months.map((m) => m.month)).toEqual(['2026-10']);
         expect(history.transactions).toHaveLength(1);
+    });
+
+    it('builds the median section from the exported window', async () => {
+        const history = await load('6');
+        expect(history.medianTrends?.period).toMatchObject({ from: '2026-09', to: '2026-10', monthsUsed: 2 });
+        expect(history.medianTrends?.totals.expense.median).toBe(200);
     });
 
     it('reads every month up to the selected one with the all-time range', async () => {
