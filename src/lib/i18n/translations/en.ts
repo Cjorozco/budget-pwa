@@ -326,7 +326,7 @@ export const en: TranslationSchema = {
             mdNo: 'No',
             mdMethodTitle: 'Method note',
             mdMethodPeriod: 'Period: {period}, {used} of {target} complete months, the most recent of the exported history, excluding the month in progress.',
-            mdMethodOutlier: 'Outlier: the period maximum is more than 2 times the median and the difference exceeds one median. With a median of 0, any record counts as an outlier. Every month in which a category exceeds that threshold is listed.',
+            mdMethodOutlier: 'Outlier: the period maximum is more than 2 times the median and the difference exceeds one median. With a median of 0, it only counts if the amount exceeds 25% of the median monthly total of the period. Every month in which a category exceeds that threshold is listed.',
             mdMethodTrend: 'Trend: median of the last 3 months against the 3 months before them. It is "n/a" if either is 0 or with fewer than 6 months.',
             mdMethodAverage: 'The average is only a reference: outliers distort it.',
             mdNoCompleteMonths: 'There are no complete months with transactions in this period yet.',

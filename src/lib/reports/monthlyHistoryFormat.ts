@@ -66,7 +66,7 @@ function medianTrendsJson(section: MedianTrends, money: (amount: number) => numb
         categorias: { gastos: categories.expense.map(category), ingresos: categories.income.map(category) },
         nota_metodo: {
             periodo: `Últimos ${period.targetMonths} meses completos del historial exportado, sin el mes en curso. Meses usados: ${period.monthsUsed} (${period.months.join(', ')}).`,
-            atipico: 'El máximo supera 2 veces la mediana y la diferencia es mayor a una mediana. Con mediana 0, cualquier registro cuenta como atípico. Se lista cada mes en que una categoría supere ese umbral.',
+            atipico: 'El máximo supera 2 veces la mediana y la diferencia es mayor a una mediana. Con mediana 0, solo cuenta si el monto supera el 25% de la mediana de los totales mensuales del período. Se lista cada mes en que una categoría supere ese umbral.',
             tendencia: `Mediana de los últimos 3 meses contra la de los 3 meses anteriores. Es "${TREND_NOT_APPLICABLE}" si alguna es 0 o si hay menos de 6 meses.`,
             promedio: 'Solo referencia secundaria: se distorsiona por valores atípicos.',
         },

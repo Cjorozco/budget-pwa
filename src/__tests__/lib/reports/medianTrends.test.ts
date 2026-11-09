@@ -80,19 +80,62 @@ describe('computeTrend', () => {
 
 describe('isOutlier', () => {
     it('flags a maximum above twice the median', () => {
-        expect(isOutlier(100, 201)).toBe(true);
+        expect(isOutlier(100, 201, 1000)).toBe(true);
     });
 
     it('does not flag a maximum of exactly twice the median', () => {
-        expect(isOutlier(100, 200)).toBe(false);
+        expect(isOutlier(100, 200, 1000)).toBe(false);
     });
 
-    it('flags any spending when the median is zero', () => {
-        expect(isOutlier(0, 50)).toBe(true);
+    it('flags spending above 25% of the typical total when the median is zero', () => {
+        expect(isOutlier(0, 251, 1000)).toBe(true);
+    });
+
+    it('does not flag exactly 25% of the typical total when the median is zero', () => {
+        expect(isOutlier(0, 250, 1000)).toBe(false);
+    });
+
+    it('does not flag small spending when the median is zero', () => {
+        expect(isOutlier(0, 50, 1000)).toBe(false);
+    });
+
+    it('ignores the typical total when the median is above zero', () => {
+        expect(isOutlier(100, 201, 1000000)).toBe(true);
     });
 
     it('does not flag a series without records', () => {
-        expect(isOutlier(0, 0)).toBe(false);
+        expect(isOutlier(0, 0, 0)).toBe(false);
+    });
+});
+
+describe('categories used in few months', () => {
+    const steady = () => series([1000, 1000, 1000, 1000, 1000, 1000]);
+
+    it('does not mark a small one-off purchase', () => {
+        const result = build([...steady(), ...series([0, 0, 0, 0, 0, 50], { categoryId: 'cat-1a' })]);
+        expect(expenseRow(result, 'cat-1')?.outlier).toBe(false);
+        expect(result.outlierMonths).toEqual([]);
+        expect(result.totals.expenseWithoutOutliers.monthsUsed).toBe(6);
+    });
+
+    it('marks a large one-off purchase and names its category', () => {
+        const result = build([...steady(), ...series([0, 0, 0, 0, 0, 600], { categoryId: 'cat-1a' })]);
+        expect(expenseRow(result, 'cat-1')?.outlier).toBe(true);
+        expect(result.outlierMonths).toMatchObject([{ month: '2026-10', categories: [{ categoryId: 'cat-1', amount: 600, median: 0 }] }]);
+        expect(result.totals.expenseWithoutOutliers.monthsUsed).toBe(5);
+    });
+
+    it('measures a subcategory against the same typical total', () => {
+        const result = build([...steady(), ...series([0, 0, 0, 0, 0, 600], { categoryId: 'cat-1a' })]);
+        expect(expenseRow(result, 'cat-1')?.subcategories.find((s) => s.categoryId === 'cat-1a')?.outlier).toBe(true);
+    });
+
+    it('measures income categories against the typical income', () => {
+        const income = series([4000, 4000, 4000, 4000, 4000, 4000], { type: 'income', categoryId: 'cat-inc-1' });
+        const bonus = series([0, 0, 0, 0, 0, 500], { type: 'income', categoryId: 'cat-extra' });
+        const extra = { ...categories[5], id: 'cat-extra', name: 'Ingreso B' };
+        const result = build([...income, ...bonus], { categories: [...categories, extra] });
+        expect(result.categories.income.find((c) => c.categoryId === 'cat-extra')?.outlier).toBe(false);
     });
 });
 
