@@ -3,9 +3,75 @@ import type { TranslationSchema } from '@/lib/i18n/types';
 import { toMinorUnits } from '@/lib/money';
 import type { BudgetItem } from '@/lib/types';
 import type { CategoryAggregate } from './monthlyMetrics';
+import type { CategoryMetrics, MedianTrends, TotalMetrics, Trend } from './medianTrends';
 import type { HistoryMonth, MonthlyHistory, SeriesStats } from './monthlyHistory';
 
-const SCHEMA_VERSION = 1;
+/** Single-month exports keep version 1; the median section defines version 2. */
+const SCHEMA_VERSION_SINGLE_MONTH = 1;
+const SCHEMA_VERSION_WITH_MEDIANS = 2;
+const TREND_NOT_APPLICABLE = 'no aplica';
+
+function medianTrendsJson(section: MedianTrends, money: (amount: number) => number) {
+    const trend = (t: Trend | null) => (t ? { cambio: money(t.change), porcentaje: t.percent } : TREND_NOT_APPLICABLE);
+
+    const total = (t: TotalMetrics) => ({
+        mediana: money(t.median),
+        tendencia: trend(t.trend),
+        promedio_referencia: money(t.averageReference),
+    });
+
+    const metrics = (c: CategoryMetrics) => ({
+        categoria_id: c.categoryId,
+        nombre: c.name,
+        mediana: money(c.median),
+        minimo: money(c.min),
+        maximo: money(c.max),
+        meses_con_gasto: c.monthsWithRecords,
+        tendencia: trend(c.trend),
+        atipico: c.outlier,
+    });
+
+    const category = (c: CategoryMetrics) => ({ ...metrics(c), subcategorias: c.subcategories.map(metrics) });
+
+    const { period, totals, outlierMonths, adjustments, categories } = section;
+
+    return {
+        periodo: {
+            desde: period.from,
+            hasta: period.to,
+            meses: period.months,
+            meses_usados: period.monthsUsed,
+            meses_objetivo: period.targetMonths,
+        },
+        totales: {
+            ingresos: total(totals.income),
+            gastos: total(totals.expense),
+            neto: total(totals.net),
+            gastos_sin_atipicos: {
+                mediana: totals.expenseWithoutOutliers.median === null ? null : money(totals.expenseWithoutOutliers.median),
+                meses_usados: totals.expenseWithoutOutliers.monthsUsed,
+            },
+        },
+        meses_atipicos: outlierMonths.map((m) => ({
+            mes: m.month,
+            gastos: money(m.expense),
+            categorias_responsables: m.categories.map((c) => ({
+                categoria_id: c.categoryId,
+                nombre: c.name,
+                monto: money(c.amount),
+                mediana: money(c.median),
+            })),
+        })),
+        ajustes: { ingresos: money(adjustments.income), gastos: money(adjustments.expense) },
+        categorias: { gastos: categories.expense.map(category), ingresos: categories.income.map(category) },
+        nota_metodo: {
+            periodo: `Últimos ${period.targetMonths} meses completos del historial exportado, sin el mes en curso. Meses usados: ${period.monthsUsed} (${period.months.join(', ')}).`,
+            atipico: 'El máximo supera 2 veces la mediana y la diferencia es mayor a una mediana. Con mediana 0, cualquier registro cuenta como atípico. Se lista cada mes en que una categoría supere ese umbral.',
+            tendencia: `Mediana de los últimos 3 meses contra la de los 3 meses anteriores. Es "${TREND_NOT_APPLICABLE}" si alguna es 0 o si hay menos de 6 meses.`,
+            promedio: 'Solo referencia secundaria: se distorsiona por valores atípicos.',
+        },
+    };
+}
 
 /** Stable, machine-readable output: amounts are whole minor units declared in `currency`. */
 export function toHistoryJson(history: MonthlyHistory): string {
@@ -62,7 +128,7 @@ export function toHistoryJson(history: MonthlyHistory): string {
 
     return JSON.stringify(
         {
-            schemaVersion: SCHEMA_VERSION,
+            schemaVersion: history.medianTrends ? SCHEMA_VERSION_WITH_MEDIANS : SCHEMA_VERSION_SINGLE_MONTH,
             range: history.range,
             generatedAt: history.generatedAt.toISOString(),
             currency: history.currency,
@@ -71,16 +137,20 @@ export function toHistoryJson(history: MonthlyHistory): string {
                 reserved: money(history.balanceAtExport.totalReserved),
                 available: money(history.balanceAtExport.totalAvailable),
             },
-            summary: {
-                income: stats(history.summary.income),
-                expense: stats(history.summary.expense),
-                expenseByCategory: history.summary.expenseByCategory.map((c) => ({
-                    categoryId: c.categoryId,
-                    name: c.name,
-                    ...stats(c),
-                    activeMonths: c.activeMonths,
-                })),
-            },
+            ...(history.medianTrends
+                ? { medianas_y_tendencias: medianTrendsJson(history.medianTrends, money) }
+                : {
+                    summary: history.summary && {
+                        income: stats(history.summary.income),
+                        expense: stats(history.summary.expense),
+                        expenseByCategory: history.summary.expenseByCategory.map((c) => ({
+                            categoryId: c.categoryId,
+                            name: c.name,
+                            ...stats(c),
+                            activeMonths: c.activeMonths,
+                        })),
+                    },
+                }),
             months: history.months.map(month),
             transactions: history.transactions.map((tx) => ({ ...tx, amount: money(tx.amount) })),
         },
@@ -106,14 +176,91 @@ function table(headers: string[], rows: string[][], alignFrom = 1): string {
     return [line(headers), line(separator), ...rows.map(line)].join('\n');
 }
 
+/** Fills {placeholders}; a function replacer keeps "$" in user text and amounts literal. */
+function fill(template: string, values: Record<string, string | number>): string {
+    return template.replace(/\{(\w+)\}/g, (match, key: string) => (key in values ? String(values[key]) : match));
+}
+
+function medianTrendsMarkdown(
+    section: MedianTrends,
+    options: HistoryMarkdownOptions,
+    monthName: (key: string) => string
+): string {
+    const { labels, formatMoney } = options;
+    const { period, totals, outlierMonths, adjustments, categories } = section;
+    const title = `## ${labels.mdTrendsTitle}`;
+    if (period.from === null || period.to === null) return `${title}\n\n${labels.mdNoCompleteMonths}`;
+
+    const periodName = period.from === period.to
+        ? monthName(period.to)
+        : fill(labels.mdRange, { from: monthName(period.from), to: monthName(period.to) });
+    const counts = { period: periodName, used: period.monthsUsed, target: period.targetMonths };
+
+    const trendCell = (t: Trend | null) => {
+        if (!t) return labels.mdNotApplicable;
+        const sign = t.change > 0 ? '+' : '';
+        return `${sign}${formatMoney(t.change)} (${sign}${t.percent}%)`;
+    };
+
+    const totalRow = (name: string, t: TotalMetrics) => [name, formatMoney(t.median), trendCell(t.trend), formatMoney(t.averageReference)];
+
+    const categoryCells = (name: string, c: CategoryMetrics) => [
+        name,
+        formatMoney(c.median),
+        formatMoney(c.min),
+        formatMoney(c.max),
+        String(c.monthsWithRecords),
+        trendCell(c.trend),
+        c.outlier ? labels.mdYes : labels.mdNo,
+    ];
+
+    const categoryTable = (items: CategoryMetrics[]) =>
+        table(
+            [labels.mdCategory, labels.mdMedian, labels.mdMin, labels.mdMax, labels.mdActiveMonths, labels.mdTrend, labels.mdOutlier],
+            items.flatMap((c) => [
+                categoryCells(escapeCell(c.name), c),
+                ...c.subcategories.map((s) => categoryCells(`↳ ${escapeCell(s.name)}`, s)),
+            ])
+        );
+
+    const { median: cleanMedian, monthsUsed: cleanMonths } = totals.expenseWithoutOutliers;
+    const cleanLine = cleanMedian === null
+        ? labels.mdExpenseNoOutliersNone
+        : fill(labels.mdExpenseNoOutliers, { amount: formatMoney(cleanMedian), count: cleanMonths });
+
+    const outlierBlock = outlierMonths.length === 0
+        ? labels.mdNoOutliers
+        : table(
+            [labels.mdMonth, labels.mdExpense, labels.mdResponsible],
+            outlierMonths.map((m) => [
+                monthName(m.month),
+                formatMoney(m.expense),
+                m.categories
+                    .map((c) => fill(labels.mdResponsibleDetail, { name: escapeCell(c.name), amount: formatMoney(c.amount), median: formatMoney(c.median) }))
+                    .join('; '),
+            ]),
+            1
+        );
+
+    return [
+        `${title}\n\n${fill(labels.mdTrendsPeriod, counts)}`,
+        `### ${labels.mdTotalsTitle}\n\n${table(
+            [labels.mdConcept, labels.mdMedian, labels.mdTrend, labels.mdAverageReference],
+            [totalRow(labels.mdIncome, totals.income), totalRow(labels.mdExpense, totals.expense), totalRow(labels.mdNet, totals.net)]
+        )}\n\n${cleanLine}\n\n${fill(labels.mdAdjustmentsApart, { income: formatMoney(adjustments.income), expense: formatMoney(adjustments.expense) })}`,
+        `### ${labels.mdOutlierMonths}\n\n${outlierBlock}`,
+        `### ${labels.mdExpenseByCategory}\n\n${categoryTable(categories.expense)}`,
+        `### ${labels.mdIncomeByCategory}\n\n${categoryTable(categories.income)}`,
+        `### ${labels.mdMethodTitle}\n\n${[fill(labels.mdMethodPeriod, counts), labels.mdMethodOutlier, labels.mdMethodTrend, labels.mdMethodAverage].map((n) => `- ${n}`).join('\n')}`,
+    ].join('\n\n');
+}
+
 /** Human-readable summary. Individual movements stay in the JSON to keep it short. */
 export function toHistoryMarkdown(history: MonthlyHistory, options: HistoryMarkdownOptions): string {
     const { labels, formatMoney, dateLocale } = options;
-    const { from, to, completeMonths } = history.range;
+    const { from, to } = history.range;
 
     const monthName = (key: string) => format(parse(key, 'yyyy-MM', history.generatedAt), 'MMMM yyyy', { locale: dateLocale });
-    const statCells = (s: SeriesStats) => [s.average, s.median, s.min, s.max].map((amount) => formatMoney(amount));
-    const statHeaders = [labels.mdAverage, labels.mdMedian, labels.mdMin, labels.mdMax];
 
     const monthRow = (m: HistoryMonth) => {
         let name = monthName(m.month);
@@ -147,19 +294,21 @@ export function toHistoryMarkdown(history: MonthlyHistory, options: HistoryMarkd
         )}`,
     ];
 
-    const { income, expense, expenseByCategory } = history.summary;
-    if (income && expense) {
+    if (history.medianTrends) {
+        sections.push(medianTrendsMarkdown(history.medianTrends, options, monthName));
+    } else if (history.summary?.income && history.summary.expense) {
+        const cells = (s: SeriesStats) => [s.average, s.median, s.min, s.max].map((amount) => formatMoney(amount));
         sections.push(
-            `## ${labels.mdAverages.replace('{count}', String(completeMonths))}\n\n${table(
-                [labels.mdConcept, ...statHeaders],
+            `## ${fill(labels.mdAverages, { count: history.range.completeMonths })}\n\n${table(
+                [labels.mdConcept, labels.mdAverage, labels.mdMedian, labels.mdMin, labels.mdMax],
                 [
-                    [labels.mdIncome, ...statCells(income)],
-                    [labels.mdExpense, ...statCells(expense)],
+                    [labels.mdIncome, ...cells(history.summary.income)],
+                    [labels.mdExpense, ...cells(history.summary.expense)],
                 ]
             )}`
         );
     } else {
-        sections.push(`## ${labels.mdAverages.replace('{count}', '0')}\n\n${labels.mdNoCompleteMonths}`);
+        sections.push(`## ${fill(labels.mdAverages, { count: 0 })}\n\n${labels.mdNoCompleteMonths}`);
     }
 
     if (history.months.length === 1) {
@@ -170,13 +319,6 @@ export function toHistoryMarkdown(history: MonthlyHistory, options: HistoryMarkd
         if (month.income.byCategory.length > 0) {
             sections.push(`## ${labels.mdIncomeByCategory}\n\n${categoryTable(month.income.byCategory)}`);
         }
-    } else if (expenseByCategory.length > 0) {
-        sections.push(
-            `## ${labels.mdExpenseByCategory}\n\n${table(
-                [labels.mdCategory, ...statHeaders, labels.mdActiveMonths],
-                expenseByCategory.map((c) => [escapeCell(c.name), ...statCells(c), String(c.activeMonths)])
-            )}`
-        );
     }
 
     const { totalRealBalance, totalReserved, totalAvailable } = history.balanceAtExport;
@@ -198,10 +340,12 @@ export function toHistoryMarkdown(history: MonthlyHistory, options: HistoryMarkd
     const demo = sumOf((m) => m.dataQuality.demoTransactionCount);
 
     const notes = [labels.noteBalance];
-    if (history.months.some((m) => m.isPartial)) notes.push(labels.notePartial);
+    if (history.months.some((m) => m.isPartial)) {
+        notes.push(history.medianTrends ? labels.notePartialMedians : labels.notePartial);
+    }
     if (adjustmentIncome > 0 || adjustmentExpense > 0) {
         notes.push(
-            labels.noteAdjustments
+            (history.medianTrends ? labels.noteAdjustmentsMedians : labels.noteAdjustments)
                 .replace('{income}', formatMoney(adjustmentIncome))
                 .replace('{expense}', formatMoney(adjustmentExpense))
         );
