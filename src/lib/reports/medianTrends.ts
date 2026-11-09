@@ -4,6 +4,8 @@ import { aggregateByCategory, getMonthlyTotals, type CategoryLabels, type Hierar
 
 const TARGET_MONTHS = 6;
 const TREND_WINDOW = 3;
+/** Share of the typical monthly total that a category with median 0 must exceed to be an outlier. */
+const ZERO_MEDIAN_SHARE = 0.25;
 
 export interface Trend {
     change: number;
@@ -77,9 +79,13 @@ export function computeTrend(values: number[]): Trend | null {
     return { change, percent: Math.round((change / Math.abs(previous)) * 100) || 0 };
 }
 
-/** The peak exceeds twice the median, that is, it is more than one median above it. */
-export function isOutlier(medianValue: number, max: number): boolean {
-    return max > 2 * medianValue && max - medianValue > medianValue;
+/**
+ * The amount exceeds twice the median, that is, it is more than one median above it. A category
+ * with median 0 has no usual amount to compare with, so only a significant amount counts.
+ */
+export function isOutlier(medianValue: number, amount: number, typicalMonthlyTotal: number): boolean {
+    if (medianValue === 0) return amount > typicalMonthlyTotal * ZERO_MEDIAN_SHARE;
+    return amount > 2 * medianValue && amount - medianValue > medianValue;
 }
 
 /** First month after the analysis: past the selected month, and never past the month in progress. */
@@ -114,6 +120,7 @@ function describeCategory(
     categoryId: string | null,
     name: string,
     values: number[],
+    typicalMonthlyTotal: number,
     subcategories: CategoryMetrics[]
 ): CategoryMetrics {
     const medianValue = median(values);
@@ -126,7 +133,7 @@ function describeCategory(
         max,
         monthsWithRecords: values.filter((v) => v > 0).length,
         trend: computeTrend(values),
-        outlier: isOutlier(medianValue, max),
+        outlier: isOutlier(medianValue, max, typicalMonthlyTotal),
         subcategories,
     };
 }
@@ -152,6 +159,7 @@ function describeCategories(
     const parents = collectSeries(typed, categories, 'parents', labels);
     const children = collectSeries(typed, categories, 'children', labels);
     const zeros = new Array<number>(monthCount).fill(0);
+    const typicalMonthlyTotal = median(typed.map((txs) => getMonthlyTotals(txs)[type]));
 
     const catalogRoots = categories.filter(
         (c) => !c.parentId && ((c.type === type && c.isActive) || parents.has(c.id))
@@ -163,9 +171,9 @@ function describeCategories(
         .map(([key, name]) => {
             const subcategories = categories
                 .filter((c) => c.parentId === key && ((c.type === type && c.isActive) || children.has(c.id)))
-                .map((c) => describeCategory(c.id, c.name, children.get(c.id)?.values ?? zeros, []))
+                .map((c) => describeCategory(c.id, c.name, children.get(c.id)?.values ?? zeros, typicalMonthlyTotal, []))
                 .sort(byMedian);
-            return describeCategory(key, name, parents.get(key)?.values ?? zeros, subcategories);
+            return describeCategory(key, name, parents.get(key)?.values ?? zeros, typicalMonthlyTotal, subcategories);
         })
         .sort(byMedian);
 }
@@ -178,11 +186,12 @@ function findOutlierMonths(
 ): OutlierMonth[] {
     const expenses = txsPerMonth.map((txs) => txs.filter((tx) => tx.type === 'expense'));
     const responsible = new Map<number, OutlierMonth['categories']>();
+    const typicalMonthlyTotal = median(expenseTotals);
 
     for (const [categoryId, { name, values }] of collectSeries(expenses, input.categories, 'parents', input.labels)) {
         const medianValue = median(values);
         values.forEach((amount, index) => {
-            if (!isOutlier(medianValue, amount)) return;
+            if (!isOutlier(medianValue, amount, typicalMonthlyTotal)) return;
             responsible.set(index, [...(responsible.get(index) ?? []), { categoryId, name, amount, median: medianValue }]);
         });
     }
