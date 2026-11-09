@@ -11,6 +11,7 @@ import {
     type QuickTemplate,
     type BudgetItem,
     type SuggestionValidation,
+    type UserKeywordRule,
 } from '../types';
 
 // Database definition
@@ -25,6 +26,7 @@ export class PersonalBudgetDB extends Dexie {
     quickTemplates!: EntityTable<QuickTemplate, 'id'>;
     budgetItems!: EntityTable<BudgetItem, 'id'>;
     suggestionValidations!: EntityTable<SuggestionValidation, 'id'>;
+    userKeywordRules!: EntityTable<UserKeywordRule, 'id'>;
 
     constructor() {
         super('PersonalBudgetDB');
@@ -75,6 +77,10 @@ export class PersonalBudgetDB extends Dexie {
 
         this.version(10).stores({
             suggestionValidations: 'id, type, normalizedDescription',
+        });
+
+        this.version(11).stores({
+            userKeywordRules: 'id, type, categoryId',
         });
     }
 }

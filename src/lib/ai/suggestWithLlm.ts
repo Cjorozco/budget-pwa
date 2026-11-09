@@ -1,10 +1,9 @@
-import { suggestCategory, type CategorySuggestion } from './categorizer';
+import { askForSubcategoryWhenBroad, suggestCategory, type CategorySuggestion } from './categorizer';
 import { getSelectedAiProvider, hasAiApiKey } from './gateway/config';
-import { sanitizePii, suggestWithAiProvider } from './geminiSuggest';
+import { suggestWithAiProvider } from './geminiSuggest';
 import {
     categorySuggestionsMatch,
     getValidatedSuggestion,
-    saveValidatedSuggestion,
     shouldAutoCallAi,
     suggestionFromValidation,
 } from './suggestionValidation';
@@ -42,7 +41,6 @@ async function compareWithLocalForDiagnostics(
         const winnerByConfidence = localCandidate && localConfidence > aiConfidence ? 'local' : 'ai';
 
         console.debug('[suggestCategoryWithLlm:diagnostics] AI vs Local priority comparison:', {
-            description: sanitizePii(description),
             aiConfidence,
             localConfidence: localCandidate ? localConfidence : null,
             winnerByConfidence,
@@ -67,9 +65,9 @@ function localSuccess(
 }
 
 /**
- * Local rules first. The configured AI is compared at most once per description
- * until the user regenerates. A matching pair is auto-validated; a mismatch
- * is returned as conflict for a manual choice.
+ * Local rules first. The AI is skipped when the user's own data already decided (saved
+ * description, same past description or keyword) unless they regenerate. A mismatch is returned
+ * as conflict for a manual choice. Nothing is stored here: the form learns when a movement is saved.
  */
 export async function suggestCategoryWithLlm(
     description: string,
@@ -98,6 +96,10 @@ export async function suggestCategoryWithLlm(
         };
     }
 
+    if (!forceRegenerate && localRule?.matchKind) {
+        return localSuccess(localRule, { skippedAi: true });
+    }
+
     let aiUnavailableReason: 'not-pro' | 'no-api-key' | 'offline' | null = null;
     if (!options.isPro) {
         aiUnavailableReason = 'not-pro';
@@ -117,25 +119,19 @@ export async function suggestCategoryWithLlm(
 
             if (aiResult.status === 'success') {
                 void compareWithLocalForDiagnostics(description, type, aiResult);
-                const aiSuggestion = aiResult.suggestion;
+                const aiSuggestion = await askForSubcategoryWhenBroad(aiResult.suggestion);
                 const provider: AiProviderType = aiResult.providerUsed ?? activeProvider;
+                const localIsApplicable = local && !local.requiresSubcategory;
 
-                if (local && categorySuggestionsMatch(local, aiSuggestion)) {
-                    await saveValidatedSuggestion({
-                        description,
-                        type,
-                        suggestion: local,
-                        chosenSource: 'local',
-                        provider,
-                    });
-                    return localSuccess({ ...local, isValidated: true }, {
+                if (localIsApplicable && (aiSuggestion.requiresSubcategory || categorySuggestionsMatch(local, aiSuggestion))) {
+                    return localSuccess(local, {
                         comparedWithAi: true,
                         aiDiagnosis: aiResult,
                         geminiDiagnosis: aiResult,
                     });
                 }
 
-                if (local) {
+                if (localIsApplicable) {
                     return {
                         status: 'conflict',
                         local: { ...local, source: local.source ?? 'local' },
@@ -146,16 +142,9 @@ export async function suggestCategoryWithLlm(
                     };
                 }
 
-                await saveValidatedSuggestion({
-                    description,
-                    type,
-                    suggestion: aiSuggestion,
-                    chosenSource: 'ai',
-                    provider,
-                });
                 return {
                     status: 'success',
-                    suggestion: { ...aiSuggestion, isValidated: true },
+                    suggestion: aiSuggestion,
                     source: provider,
                     comparedWithAi: true,
                     aiDiagnosis: aiResult,
@@ -197,7 +186,7 @@ export async function suggestCategoryWithLlm(
 
     if (local) {
         if (import.meta.env?.DEV) {
-            console.debug('[suggestCategoryWithLlm] Local fallback matched successfully:', local);
+            console.debug('[suggestCategoryWithLlm] Local fallback matched successfully.');
         }
         return {
             ...localSuccess(local),

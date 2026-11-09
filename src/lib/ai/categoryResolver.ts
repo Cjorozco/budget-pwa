@@ -56,6 +56,18 @@ export function formatCategoryPath(parentName: string, subcategoryName?: string)
     return subcategoryName ? `${parentName} › ${subcategoryName}` : parentName;
 }
 
+/** True when the transaction form can list it: active and without active subcategories. */
+export async function isSelectableCategory(categoryId: string): Promise<boolean> {
+    const category = await db.categories.get(categoryId);
+    if (!category?.isActive) return false;
+    const activeChildren = await db.categories
+        .where('parentId')
+        .equals(categoryId)
+        .filter((c) => c.isActive)
+        .count();
+    return activeChildren === 0;
+}
+
 export async function resolveCategoryPathLabel(categoryId: string): Promise<string> {
     const cat = await db.categories.get(categoryId);
     if (!cat) return 'Sin categoría';

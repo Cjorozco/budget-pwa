@@ -64,7 +64,7 @@ export function categoryNamesAreSimilar(a: string, b: string, parentName?: strin
 
 const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-function containsWholeWord(desc: string, keyword: string): boolean {
+export function containsWholeWord(desc: string, keyword: string): boolean {
     return new RegExp(`(^|[^a-z0-9])${escapeRegExp(keyword)}($|[^a-z0-9])`).test(desc);
 }
 

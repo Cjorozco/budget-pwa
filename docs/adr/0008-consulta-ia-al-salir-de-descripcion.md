@@ -1,6 +1,6 @@
 # 0008 — Consulta de IA al salir de la descripción
 
-Aceptada el 2026-11-06.
+Aceptada el 2026-11-06. Enmendada por el ADR 0009: la coincidencia entre IA y motor local ya no se guarda sola.
 
 ## Contexto
 
