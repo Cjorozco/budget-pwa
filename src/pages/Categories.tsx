@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { CategoryForm } from '@/components/forms/CategoryForm';
+import { SuggestionRulesSection } from '@/components/categories/SuggestionRulesSection';
 import { Plus, Pencil, Trash2, ChevronRight } from 'lucide-react';
 import type { Category } from '@/lib/types';
 import { useUIStore } from '@/store/ui';
@@ -16,6 +17,7 @@ export default function CategoriesPage() {
     const [editingCategory, setEditingCategory] = useState<Category | null>(null);
     const [defaultType, setDefaultType] = useState<'income' | 'expense'>('expense');
     const [defaultParentId, setDefaultParentId] = useState<string | undefined>(undefined);
+    const [isRulesOpen, setIsRulesOpen] = useState(false);
 
     const categories = useLiveQuery(() => db.categories.filter(c => c.isActive).toArray()) || [];
 
@@ -144,6 +146,21 @@ export default function CategoriesPage() {
                 </Button>
             </div>
 
+            <section className="flex items-center justify-between gap-3 p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
+                <div className="min-w-0">
+                    <h2 className="font-semibold text-slate-900 dark:text-white">{t.categories.suggestionRulesTitle}</h2>
+                    <p className="text-xs text-slate-500">{t.categories.suggestionRulesHint}</p>
+                </div>
+                <Button
+                    size="sm"
+                    variant="outline"
+                    className="min-h-11 shrink-0"
+                    onClick={() => setIsRulesOpen(true)}
+                >
+                    {t.categories.suggestionRulesOpen}
+                </Button>
+            </section>
+
             {/* Income Categories */}
             <section className="space-y-3">
                 <h2 className="text-lg font-semibold text-green-600 dark:text-green-400">{t.categories.incomeCategories}</h2>
@@ -181,6 +198,14 @@ export default function CategoriesPage() {
                     </div>
                 )}
             </section>
+
+            <Modal
+                isOpen={isRulesOpen}
+                onClose={() => setIsRulesOpen(false)}
+                title={t.categories.suggestionRulesTitle}
+            >
+                <SuggestionRulesSection />
+            </Modal>
 
             <Modal
                 isOpen={isModalOpen}

@@ -129,3 +129,14 @@ export interface SuggestionValidation {
     };
     validatedAt: number;
 }
+
+/** Word chosen by the user that points a description at a subcategory. */
+export interface UserKeywordRule {
+    /** `${type}:${keyword}`, so a keyword exists only once per movement type. */
+    id: string;
+    type: 'income' | 'expense';
+    /** Normalized: lowercase, no accents, single spaces. */
+    keyword: string;
+    categoryId: string;
+    createdAt: number;
+}

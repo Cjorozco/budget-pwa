@@ -29,5 +29,6 @@ Qué se gana y qué se paga.
 | [0006](0006-tokens-de-diseno-y-movimiento.md) | Tokens de diseño (Figma → `@theme`) y movimiento |
 | [0007](0007-flujo-de-ramas.md) | Flujo de ramas: `develop` integra, `master` publica |
 | [0008](0008-consulta-ia-al-salir-de-descripcion.md) | Consulta de IA al salir de la descripción |
+| [0009](0009-asignacion-de-subcategoria.md) | Asignación de subcategoría desde la descripción |
 
 Las excepciones del proyecto a la capa común están en `.agents/rules/architecture.md`.

@@ -11,8 +11,10 @@ import {
 import {
     findCategoryByPath,
     formatCategoryPath,
+    isSelectableCategory,
     resolveCategoryPathLabel,
 } from './categoryResolver';
+import { matchUserKeywordRules } from './userKeywordRules';
 import type { Category } from '../types';
 
 export interface CategorySuggestion {
@@ -32,7 +34,15 @@ export interface CategorySuggestion {
     /** local = reglas/historial; o proveedor de IA (gemini, groq, etc.) */
     source?: 'local' | 'gemini' | 'openai' | 'anthropic' | 'groq' | 'ollama' | 'deepseek' | 'custom';
     isValidated?: boolean;
+    /** The user's own data decided it (same description or keyword), so the AI is not consulted. */
+    matchKind?: 'exact' | 'keyword';
+    /** Only the parent is known: `alternatives` holds its subcategories and one must be picked. */
+    requiresSubcategory?: boolean;
 }
+
+const MIN_DESCRIPTION_LENGTH = 3;
+const MAX_CATALOG_ALTERNATIVES = 2;
+const MAX_SUBCATEGORY_OPTIONS = 4;
 
 const KNOWN_ESTABLISHMENTS = [
     'oxxo', '7-eleven', 'crepes', 'starbucks', 'uber', 'didi', 'netflix', 'spotify',
@@ -135,7 +145,7 @@ interface CatalogMatch {
     category: Category;
     /** Categoría raíz con hijos: es un cajón amplio, no una hoja donde clasificar */
     isBroadParent: boolean;
-    runnerUp?: Category;
+    alternatives: Category[];
 }
 
 async function matchUserCatalog(
@@ -161,29 +171,30 @@ async function matchUserCatalog(
             return { cat, score };
         })
         .filter((row) => row.score >= 4)
-        .sort((a, b) => b.score - a.score);
+        .sort((a, b) => b.score - a.score || a.cat.name.localeCompare(b.cat.name) || a.cat.id.localeCompare(b.cat.id));
 
     if (ranked.length === 0) return null;
 
     const best = ranked[0];
-    const runnerUp = ranked[1];
-    const closeSecond = runnerUp && runnerUp.score >= best.score - 2 && runnerUp.cat.id !== best.cat.id;
+    // A parent with subcategories is not an option: the form only lists its leaves.
+    const others = ranked.filter((row) => row.cat.id !== best.cat.id && !parentsWithChildren.has(row.cat.id));
+    const hasCloseSecond = others.some((row) => row.score >= best.score - 2);
 
     return {
         category: best.cat,
         isBroadParent: !best.cat.parentId,
-        runnerUp: closeSecond ? runnerUp.cat : undefined,
+        alternatives: hasCloseSecond ? others.slice(0, MAX_CATALOG_ALTERNATIVES).map((row) => row.cat) : [],
     };
 }
 
 async function buildCatalogSuggestion(match: CatalogMatch): Promise<CategorySuggestion> {
-    const alternatives = match.runnerUp
-        ? [
-              {
-                  categoryId: match.runnerUp.id,
-                  categoryPath: await resolveCategoryPathLabel(match.runnerUp.id),
-              },
-          ]
+    const alternatives = match.alternatives.length > 0
+        ? await Promise.all(
+              match.alternatives.map(async (category) => ({
+                  categoryId: category.id,
+                  categoryPath: await resolveCategoryPathLabel(category.id),
+              }))
+          )
         : undefined;
 
     return {
@@ -237,6 +248,91 @@ async function buildRuleSuggestion(
     };
 }
 
+/** Category of the most recent movement with this same description, across the whole history. */
+async function matchExactHistory(
+    description: string,
+    type: 'income' | 'expense'
+): Promise<CategorySuggestion | null> {
+    const target = normalizeForMatch(description.trim());
+    const sameDescription = await db.transactions
+        .where('type')
+        .equals(type)
+        .filter((tx) => !tx.isAdjustment && Boolean(tx.categoryId) && normalizeForMatch(tx.description.trim()) === target)
+        .toArray();
+    if (sameDescription.length === 0) return null;
+
+    const latest = sameDescription.reduce((newest, tx) =>
+        tx.date > newest.date || (tx.date === newest.date && tx.createdAt > newest.createdAt) ? tx : newest
+    );
+    const category = await db.categories.get(latest.categoryId);
+    if (!category?.isActive) return null;
+
+    return {
+        categoryId: latest.categoryId,
+        categoryPath: await resolveCategoryPathLabel(latest.categoryId),
+        confidence: 0.95,
+        reason: 'Coincide con tus transacciones anteriores.',
+        needsCategoryCreation: false,
+        matchKind: 'exact',
+    };
+}
+
+async function matchUserKeywords(
+    description: string,
+    type: 'income' | 'expense'
+): Promise<CategorySuggestion | null> {
+    const [first, ...tied] = await matchUserKeywordRules(description, type);
+    if (!first) return null;
+
+    const alternatives = await Promise.all(
+        tied.map(async (rule) => ({
+            categoryId: rule.categoryId,
+            categoryPath: await resolveCategoryPathLabel(rule.categoryId),
+        }))
+    );
+    const isTied = alternatives.length > 0;
+
+    return {
+        categoryId: first.categoryId,
+        categoryPath: await resolveCategoryPathLabel(first.categoryId),
+        confidence: isTied ? 0.62 : 0.92,
+        reason: isTied ? 'Varias de tus palabras clave coinciden. Elige una.' : `Coincide con tu palabra clave "${first.keyword}".`,
+        needsCategoryCreation: false,
+        alternatives: isTied ? alternatives : undefined,
+        matchKind: 'keyword',
+    };
+}
+
+/**
+ * The form lists only the leaves of a parent, so a parent with subcategories cannot be applied:
+ * turn it into a choice among them. The confidence is kept: the parent itself is not in doubt.
+ */
+export async function askForSubcategoryWhenBroad(suggestion: CategorySuggestion): Promise<CategorySuggestion> {
+    if (!suggestion.categoryId) return suggestion;
+
+    const children = await db.categories
+        .where('parentId')
+        .equals(suggestion.categoryId)
+        .filter((c) => c.isActive)
+        .toArray();
+    if (children.length === 0) return suggestion;
+
+    const specific = children.filter((c) => !isGenericCategoryName(c.name));
+    const options = (specific.length > 0 ? specific : children)
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .slice(0, MAX_SUBCATEGORY_OPTIONS);
+
+    return {
+        ...suggestion,
+        categoryId: null,
+        reason: `Elige la subcategoría dentro de "${suggestion.categoryPath}".`,
+        alternatives: await Promise.all(
+            options.map(async (c) => ({ categoryId: c.id, categoryPath: await resolveCategoryPathLabel(c.id) }))
+        ),
+        requiresSubcategory: true,
+    };
+}
+
 async function matchTransactionHistory(
     description: string,
     type: 'income' | 'expense'
@@ -245,32 +341,15 @@ async function matchTransactionHistory(
     const currentTokens = tokenize(description);
 
     const allTransactions = await db.transactions
-        .where('type')
-        .equals(type)
+        .orderBy('date')
         .reverse()
+        .filter((tx) => tx.type === type && !tx.isAdjustment)
         .limit(200)
         .toArray();
 
     if (allTransactions.length === 0) return null;
 
-    // 1. Coincidencia exacta de texto con transacciones previas
-    const exactTx = allTransactions.find(
-        (tx) => normalizeForMatch(tx.description) === lowerDesc && Boolean(tx.categoryId)
-    );
-    if (exactTx) {
-        const activeCat = await db.categories.get(exactTx.categoryId);
-        if (activeCat && activeCat.isActive) {
-            return {
-                categoryId: exactTx.categoryId,
-                categoryPath: await resolveCategoryPathLabel(exactTx.categoryId),
-                confidence: 0.95,
-                reason: 'Coincide con tus transacciones anteriores.',
-                needsCategoryCreation: false,
-            };
-        }
-    }
-
-    // 2. Establecimientos conocidos con transacciones previas
+    // Establecimientos conocidos con transacciones previas
     let establishmentMatch: string | null = null;
     for (const est of activeEstablishments()) {
         if (lowerDesc.includes(est)) {
@@ -374,16 +453,28 @@ async function matchTransactionHistory(
 }
 
 /**
- * Sugiere categoría según historial aprendido, árbol del usuario y reglas locales.
+ * Sugiere categoría: misma descripción, palabras clave del usuario y luego historial, árbol y reglas.
  */
 export async function suggestCategory(
     description: string,
     type: 'income' | 'expense' = 'expense'
 ): Promise<CategorySuggestion | null> {
-    if (!description || description.length < 2) return null;
+    if (!description || description.trim().length < MIN_DESCRIPTION_LENGTH) return null;
 
+    const match =
+        (await matchExactHistory(description, type)) ??
+        (await matchUserKeywords(description, type)) ??
+        (await suggestFromEngine(description, type));
+
+    return match && askForSubcategoryWhenBroad(match);
+}
+
+async function suggestFromEngine(
+    description: string,
+    type: 'income' | 'expense'
+): Promise<CategorySuggestion | null> {
     // 1. Historial previo del usuario (aprendizaje de transacciones reales).
-    // Si el usuario ya categorizó esta descripción o establecimiento antes, esa elección manda.
+    // Si el usuario ya categorizó este establecimiento antes, esa elección manda.
     const historyMatch = await matchTransactionHistory(description, type);
     if (historyMatch && historyMatch.confidence >= 0.8) {
         return historyMatch;
@@ -409,7 +500,7 @@ export async function suggestCategory(
 
     const ruleSuggestion = rule ? await buildRuleSuggestion(rule, type) : null;
     if (ruleSuggestion) {
-        if (!catalogMatch) return ruleSuggestion;
+        if (!catalogMatch || !(await isSelectableCategory(catalogMatch.category.id))) return ruleSuggestion;
         // La raíz que ya tiene sigue disponible por si prefiere no crear la hoja.
         return {
             ...ruleSuggestion,

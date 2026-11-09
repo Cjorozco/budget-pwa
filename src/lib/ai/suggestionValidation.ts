@@ -1,8 +1,12 @@
 import { db } from '../db';
 import type { SuggestionValidation } from '../types';
+import { isSelectableCategory } from './categoryResolver';
 import { categoryNamesAreSimilar, normalizeForMatch } from './categoryRules';
 import type { CategorySuggestion } from './categorizer';
 import type { AiProviderType } from './types';
+
+const MIN_LEARNABLE_DESCRIPTION_LENGTH = 3;
+const CONFIRMED_BY_USER_REASON = 'La elegiste antes para esta descripción.';
 
 export function suggestionValidationId(
     description: string,
@@ -40,7 +44,38 @@ export async function getValidatedSuggestion(
     description: string,
     type: 'income' | 'expense'
 ): Promise<SuggestionValidation | undefined> {
-    return db.suggestionValidations.get(suggestionValidationId(description, type));
+    const record = await db.suggestionValidations.get(suggestionValidationId(description, type));
+    if (record?.categoryId && !(await isSelectableCategory(record.categoryId))) return undefined;
+    return record;
+}
+
+/** Remembers the category the user saved for a description. Runs only when a movement is saved. */
+export async function learnCategoryForDescription(input: {
+    description: string;
+    type: 'income' | 'expense';
+    categoryId: string;
+    categoryPath: string;
+    chosenSource?: 'local' | 'ai';
+    provider?: AiProviderType;
+}): Promise<void> {
+    if (input.description.trim().length < MIN_LEARNABLE_DESCRIPTION_LENGTH) return;
+    await saveValidatedSuggestion({
+        description: input.description,
+        type: input.type,
+        suggestion: {
+            categoryId: input.categoryId,
+            categoryPath: input.categoryPath,
+            confidence: 1,
+            reason: CONFIRMED_BY_USER_REASON,
+            needsCategoryCreation: false,
+        },
+        chosenSource: input.chosenSource ?? 'local',
+        provider: input.provider,
+    });
+}
+
+export async function deleteValidatedSuggestion(id: string): Promise<void> {
+    await db.suggestionValidations.delete(id);
 }
 
 export function suggestionFromValidation(record: SuggestionValidation): CategorySuggestion {
