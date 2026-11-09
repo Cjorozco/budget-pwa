@@ -125,6 +125,13 @@ describe('period', () => {
         expect(result.totals.expense.median).toBe(200);
     });
 
+    it('keeps empty months at the start when the history is older than the period', () => {
+        const older = makeTx({ type: 'expense', amount: 400, date: ts(2026, 1, 10), categoryId: 'cat-2' });
+        const result = build([['2026-01', older], ...series([100, 300])]);
+        expect(result.period).toMatchObject({ from: '2026-05', to: '2026-10', monthsUsed: 6 });
+        expect(result.totals.expense.median).toBe(0);
+    });
+
     it('counts an empty month after the first record as zero', () => {
         const result = build(series([100, 0, 0, 100, 0, 100]));
         expect(result.period.monthsUsed).toBe(6);
@@ -255,6 +262,12 @@ describe('period totals', () => {
     it('lists every category behind the same outlier month', () => {
         const rows = [...series([100, 100, 100, 100, 100, 900]), ...series([50, 50, 50, 50, 50, 500], { categoryId: 'cat-1a' })];
         expect(build(rows).outlierMonths[0].categories.map((c) => c.categoryId)).toEqual(['cat-2', 'cat-1']);
+    });
+
+    it('marks every month above the threshold, not only the maximum', () => {
+        const result = build(series([10, 20, 30, 40, 100, 200]));
+        expect(result.outlierMonths.map((m) => m.month)).toEqual(['2026-09', '2026-10']);
+        expect(result.totals.expenseWithoutOutliers).toEqual({ median: 25, monthsUsed: 4 });
     });
 
     it('has no median without spikes when every month is an outlier', () => {

@@ -181,10 +181,8 @@ function findOutlierMonths(
 
     for (const [categoryId, { name, values }] of collectSeries(expenses, input.categories, 'parents', input.labels)) {
         const medianValue = median(values);
-        const max = Math.max(...values);
-        if (!isOutlier(medianValue, max)) continue;
         values.forEach((amount, index) => {
-            if (amount !== max) return;
+            if (!isOutlier(medianValue, amount)) return;
             responsible.set(index, [...(responsible.get(index) ?? []), { categoryId, name, amount, median: medianValue }]);
         });
     }
@@ -206,9 +204,13 @@ export function buildMedianTrends(input: BuildMedianTrendsInput): MedianTrends {
     );
 
     const isBehaviour = (tx: Transaction) => tx.type !== 'transfer' && !tx.isAdjustment;
-    const hasBehaviour = (key: string) => (txsByMonth.get(key) ?? []).some(isBehaviour);
-    const firstWithData = candidates.findIndex(hasBehaviour);
-    const months = firstWithData === -1 ? [] : candidates.slice(firstWithData);
+    // Only months before the first record are missing data; later empty months are real zeros.
+    const firstRecordKey = [...txsByMonth.entries()]
+        .filter(([, txs]) => txs.some(isBehaviour))
+        .map(([key]) => key)
+        .sort()[0];
+    const firstIndex = firstRecordKey === undefined ? -1 : candidates.findIndex((key) => key >= firstRecordKey);
+    const months = firstIndex === -1 ? [] : candidates.slice(firstIndex);
 
     const movements = months.map((key) => (txsByMonth.get(key) ?? []).filter((tx) => tx.type !== 'transfer'));
     const txsPerMonth = movements.map((txs) => txs.filter(isBehaviour));

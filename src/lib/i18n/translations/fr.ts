@@ -326,7 +326,7 @@ export const fr: TranslationSchema = {
             mdNo: 'Non',
             mdMethodTitle: 'Note de méthode',
             mdMethodPeriod: "Période : {period}, {used} mois complets sur {target}, les plus récents de l'historique exporté, sans le mois en cours.",
-            mdMethodOutlier: "Atypique : le maximum de la période dépasse 2 fois la médiane et l'écart est supérieur à une médiane. Avec une médiane de 0, tout enregistrement est atypique.",
+            mdMethodOutlier: "Atypique : le maximum de la période dépasse 2 fois la médiane et l'écart est supérieur à une médiane. Avec une médiane de 0, tout enregistrement est atypique. Chaque mois où une catégorie dépasse ce seuil est listé.",
             mdMethodTrend: 'Tendance : médiane des 3 derniers mois comparée à celle des 3 mois précédents. Elle est "sans objet" si l\'une des deux vaut 0 ou avec moins de 6 mois.',
             mdMethodAverage: 'La moyenne est seulement une référence : les valeurs atypiques la faussent.',
             mdNoCompleteMonths: "Il n'y a pas encore de mois complet avec des opérations sur cette période.",
