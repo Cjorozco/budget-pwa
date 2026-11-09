@@ -4,7 +4,11 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). V
 
 ## [Sin publicar]
 
+### Agregado
+- Exportación del historial financiero desde Informes en JSON y Markdown, por rango de meses (este mes, 6, 12 o todo), para análisis y proyecciones externas. Se genera en el dispositivo y funciona sin conexión (`2.8.0`).
+
 ### Cambiado
+- Dashboard e Informes obtienen sus cifras de funciones compartidas (`src/lib/reports/monthlyMetrics.ts`), las mismas que usa la exportación. No cambia lo que muestran.
 - Documentado que no se activa la protección de rama (requiere plan de pago): el flujo se sostiene por convención. Enmienda al ADR 0007.
 - Flujo de ramas unificado: `develop` integra (squash) y `master` publica (merge commit). Ver `docs/adr/0007-flujo-de-ramas.md`. Solo documentación y CI; la versión de la app no cambia (`2.7.1`).
 - CI corre en pull requests hacia `develop` y `master` y en push a ambas.
