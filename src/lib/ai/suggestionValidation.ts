@@ -45,7 +45,7 @@ export async function getValidatedSuggestion(
     type: 'income' | 'expense'
 ): Promise<SuggestionValidation | undefined> {
     const record = await db.suggestionValidations.get(suggestionValidationId(description, type));
-    if (record?.categoryId && !(await isSelectableCategory(record.categoryId))) return undefined;
+    if (record?.categoryId && !(await isSelectableCategory(record.categoryId, type))) return undefined;
     return record;
 }
 

@@ -265,7 +265,7 @@ async function matchExactHistory(
         tx.date > newest.date || (tx.date === newest.date && tx.createdAt > newest.createdAt) ? tx : newest
     );
     const category = await db.categories.get(latest.categoryId);
-    if (!category?.isActive) return null;
+    if (!category?.isActive || category.type !== type) return null;
 
     return {
         categoryId: latest.categoryId,
@@ -388,7 +388,7 @@ async function matchTransactionHistory(
 
             const bestCategoryId = Array.from(catFreq.entries()).sort((a, b) => b[1] - a[1])[0][0];
             const activeCat = await db.categories.get(bestCategoryId);
-            if (activeCat && activeCat.isActive) {
+            if (activeCat && activeCat.isActive && activeCat.type === type) {
                 const confidence = prevTxsWithMatch.length >= 2 ? 0.95 : 0.85;
                 return {
                     categoryId: bestCategoryId,
@@ -438,7 +438,7 @@ async function matchTransactionHistory(
 
     if (!bestCategoryId) return null;
     const activeCat = await db.categories.get(bestCategoryId);
-    if (!activeCat || !activeCat.isActive) return null;
+    if (!activeCat || !activeCat.isActive || activeCat.type !== type) return null;
 
     const topMatch = highSimilarityMatches[0];
     const confidence = Math.min((topMatch.similarity * 0.5) + (maxCatScore > 1.2 ? 0.4 : 0.25), 0.9);
@@ -500,7 +500,7 @@ async function suggestFromEngine(
 
     const ruleSuggestion = rule ? await buildRuleSuggestion(rule, type) : null;
     if (ruleSuggestion) {
-        if (!catalogMatch || !(await isSelectableCategory(catalogMatch.category.id))) return ruleSuggestion;
+        if (!catalogMatch || !(await isSelectableCategory(catalogMatch.category.id, type))) return ruleSuggestion;
         // La raíz que ya tiene sigue disponible por si prefiere no crear la hoja.
         return {
             ...ruleSuggestion,

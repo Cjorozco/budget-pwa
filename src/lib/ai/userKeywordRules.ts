@@ -15,7 +15,7 @@ export async function addUserKeywordRule(input: { keyword: string; categoryId: s
     if (keyword.length < MIN_KEYWORD_LENGTH) throw new Error('Keyword too short');
 
     const category = await db.categories.get(input.categoryId);
-    if (!category || !(await isSelectableCategory(category.id))) throw new Error('Category cannot receive movements');
+    if (!category || !(await isSelectableCategory(category.id, category.type))) throw new Error('Category cannot receive movements');
 
     await db.userKeywordRules.put({
         id: `${category.type}:${keyword}`,
@@ -40,7 +40,7 @@ export async function matchUserKeywordRules(
 
     const matches: UserKeywordRule[] = [];
     for (const rule of rules) {
-        if (containsWholeWord(normalized, rule.keyword) && (await isSelectableCategory(rule.categoryId))) {
+        if (containsWholeWord(normalized, rule.keyword) && (await isSelectableCategory(rule.categoryId, type))) {
             matches.push(rule);
         }
     }

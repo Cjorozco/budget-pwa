@@ -71,6 +71,50 @@ beforeEach(async () => {
     await db.categories.bulkAdd(catalog);
 });
 
+describe('category moved to the other movement type', () => {
+    const moveToIncome = (id: string) => db.categories.update(id, { type: 'income' });
+
+    it('ignores a keyword pointing to it', async () => {
+        await addUserKeywordRule({ keyword: 'barrio', categoryId: 'rest' });
+        await moveToIncome('rest');
+
+        expect(await matchUserKeywordRules('Compra del barrio', 'expense')).toEqual([]);
+    });
+
+    it('ignores a learned description pointing to it', async () => {
+        await learnCategoryForDescription({
+            description: 'Compra del barrio',
+            type: 'expense',
+            categoryId: 'rest',
+            categoryPath: 'Gastos diarios › Restaurantes',
+        });
+        await moveToIncome('rest');
+
+        expect(await getValidatedSuggestion('Compra del barrio', 'expense')).toBeUndefined();
+    });
+
+    it('ignores an exact past description pointing to it', async () => {
+        await db.transactions.add(tx('t-1', 'Xyzqwk', 'rest', 1_000));
+        await moveToIncome('rest');
+
+        expect(await suggestCategory('Xyzqwk', 'expense')).toBeNull();
+    });
+
+    it('ignores a similar past description pointing to it', async () => {
+        await db.transactions.add(tx('t-1', 'Xyzqwk abono mensual', 'rest', 1_000));
+        await moveToIncome('rest');
+
+        expect(await suggestCategory('Xyzqwk abono', 'expense')).toBeNull();
+    });
+
+    it('ignores a known merchant learned from it', async () => {
+        await db.transactions.add(tx('t-1', 'Pedido tostao centro', 'rest', 1_000));
+        await moveToIncome('rest');
+
+        expect((await suggestCategory('Tostao norte', 'expense'))?.categoryId).not.toBe('rest');
+    });
+});
+
 describe('exact description', () => {
     it('uses the category of the most recent movement by date, not by id', async () => {
         await db.transactions.bulkAdd([
