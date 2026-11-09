@@ -763,11 +763,11 @@ export const fr: TranslationSchema = {
     userGuide: {
         modalBadge: 'Manuel d’Utilisation',
         modalTitle: 'Guide d’Utilisation et Philosophie',
-        modalSubtitle: 'Découvrez le fonctionnement 100% privé et sécurisé de Personal Budget.',
+        modalSubtitle: 'Découvrez le fonctionnement de Personal Budget et le stockage de vos données.',
         closeButton: 'Compris, fermer le guide',
         closeAriaLabel: 'Fermer le manuel',
         sections: {
-            noBankTitle: '1. Aucune Connexion Bancaire Automatique (100% Sûr et Privé)',
+            noBankTitle: '1. Aucune Connexion Bancaire Automatique',
             noBankDesc: 'Personal Budget ne se connecte JAMAIS à vos banques et ne requiert aucun identifiant bancaire. Vos comptes sont des références manuelles où vous gardez le contrôle total. Tout reste enregistré localement sur votre appareil sans serveurs intermédiaires.',
             atomicBalancesTitle: '2. Soldes Atomiques et Traçabilité Complète',
             atomicBalancesDesc: 'Le solde de vos comptes n’est pas une valeur modifiable au hasard : il découle de la somme mathématique exacte de toutes vos transactions passées. Aucun écart inexpliqué ni perte de données.',
@@ -781,7 +781,7 @@ export const fr: TranslationSchema = {
             quickTemplatesTitle: '6. Modèles Rapides (1-Clic)',
             quickTemplatesDesc: 'Créez des raccourcis pour vos dépenses récurrentes (café, transport, épicerie). Un simple clic depuis l’accueil ou le formulaire préremplit la transaction instantanément.',
             privacyOfflineTitle: '7. Confidentialité Hors-Ligne et Sauvegardes',
-            privacyOfflineDesc: 'Vos données financières sont 100% privées et stockées uniquement dans la base locale de votre navigateur (IndexedDB). Vous pouvez exporter des sauvegardes JSON complètes ou des fichiers CSV pour Excel à tout moment.',
+            privacyOfflineDesc: 'Vos données financières sont stockées dans la base locale de votre navigateur (IndexedDB), pas sur nos serveurs. Si vous activez l’IA, le fournisseur choisi reçoit ce que décrit la section 4, jamais les montants. Vous pouvez exporter des sauvegardes JSON complètes ou des fichiers CSV pour Excel à tout moment.',
         },
     },
     upgradeModal: {

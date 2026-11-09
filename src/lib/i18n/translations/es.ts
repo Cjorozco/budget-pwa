@@ -763,12 +763,12 @@ export const es: TranslationSchema = {
     userGuide: {
         modalBadge: 'Manual de Usuario',
         modalTitle: 'Guía de Uso y Filosofía',
-        modalSubtitle: 'Aprende cómo funciona Personal Budget de forma 100% privada y segura.',
+        modalSubtitle: 'Aprende cómo funciona Personal Budget y cómo se guardan tus datos.',
         closeButton: 'Entendido, cerrar guía',
         closeAriaLabel: 'Cerrar manual',
         sections: {
-            noBankTitle: '1. Sin Conexión Bancaria Automática (100% Seguro y Privado)',
-            noBankDesc: 'Personal Budget NO se conecta a tus bancos ni te pide contraseñas financieras. Las cuentas son representaciones referenciales donde tú tienes el control total. Todo se registra de forma manual y privada directamente en tu propio dispositivo sin servidores intermediarios.',
+            noBankTitle: '1. Sin Conexión Bancaria Automática',
+            noBankDesc: 'Personal Budget NO se conecta a tus bancos ni te pide contraseñas financieras. Las cuentas son representaciones referenciales donde tú tienes el control total. Todo se registra de forma manual y se guarda en tu propio dispositivo, sin servidores intermediarios.',
             atomicBalancesTitle: '2. Saldos Atómicos y Trazabilidad Total',
             atomicBalancesDesc: 'El saldo de tus cuentas no es un número editable al azar: se calcula sumando y restando matemáticamente cada una de tus transacciones históricas. De esta forma nunca hay descuadres inexplicables ni pérdida de información.',
             reconciliationTitle: '3. Cuadrar el Saldo sin Borrar el Pasado',
@@ -781,7 +781,7 @@ export const es: TranslationSchema = {
             quickTemplatesTitle: '6. Plantillas Rápidas (1-Tap)',
             quickTemplatesDesc: 'Configura accesos directos para tus gastos cotidianos (almuerzo, transporte, compras frecuentes). Con un solo toque en la pantalla de inicio o formulario, la transacción se autocompleta al instante ahorrándote tiempo.',
             privacyOfflineTitle: '7. Privacidad Offline-First y Respaldo de Datos',
-            privacyOfflineDesc: 'Tus finanzas son 100% privadas y residen únicamente en la base de datos local de tu navegador (IndexedDB). Puedes exportar un respaldo completo en archivo JSON o exportar a CSV para Excel en cualquier momento desde Ajustes.',
+            privacyOfflineDesc: 'Tus finanzas se guardan en la base de datos local de tu navegador (IndexedDB), no en servidores nuestros. Si activas la IA, al proveedor que elijas le llega lo que explica la sección 4, nunca los montos. Puedes exportar un respaldo completo en archivo JSON o exportar a CSV para Excel en cualquier momento desde Ajustes.',
         },
     },
     upgradeModal: {

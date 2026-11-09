@@ -16,6 +16,7 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). V
 - Los PR hacia `develop` se fusionan con merge commit, igual que los de `develop` a `master`. Enmienda al ADR 0007. Solo documentación.
 - En el historial exportado, una categoría con mediana 0 solo se marca como atípica si el monto supera el 25% de la mediana de los totales mensuales, para que las compras pequeñas no marquen meses enteros (`2.9.1`).
 - El botón Exportar de Informes se destaca como acción principal de la pantalla (`2.8.1`).
+- La guía de usuario (`es`, `en`, `fr`) ya no dice "100% privado" ni "100% seguro": explica que las finanzas se guardan en el navegador y que, con la IA activa, al proveedor elegido le llega lo descrito en la sección 4, nunca los montos. README y reglas de arquitectura alineados (`2.10.1`).
 - Los textos de la IA BYOK (`es`, `en`, `fr`) ya no prometen privacidad total: dicen que, con la clave del usuario, el navegador envía directamente al proveedor la descripción, las categorías y ejemplos recientes, sin montos (`2.8.1`).
 - Dashboard e Informes obtienen sus cifras de funciones compartidas (`src/lib/reports/monthlyMetrics.ts`), las mismas que usa la exportación. No cambia lo que muestran.
 - Documentado que no se activa la protección de rama (requiere plan de pago): el flujo se sostiene por convención. Enmienda al ADR 0007.
