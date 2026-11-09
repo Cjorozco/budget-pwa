@@ -763,12 +763,12 @@ export const en: TranslationSchema = {
     userGuide: {
         modalBadge: 'User Guide',
         modalTitle: 'User Guide & Philosophy',
-        modalSubtitle: 'Learn how Personal Budget works 100% privately and securely.',
+        modalSubtitle: 'Learn how Personal Budget works and how your data is stored.',
         closeButton: 'Got it, close guide',
         closeAriaLabel: 'Close manual',
         sections: {
-            noBankTitle: '1. No Automatic Bank Sync (100% Safe & Private)',
-            noBankDesc: 'Personal Budget NEVER connects to your banks or asks for banking credentials. Accounts are referential entities where you stay in full control. Everything is logged manually and privately directly in your device without intermediary servers.',
+            noBankTitle: '1. No Automatic Bank Sync',
+            noBankDesc: 'Personal Budget NEVER connects to your banks or asks for banking credentials. Accounts are referential entities where you stay in full control. Everything is logged manually and stored on your own device, with no intermediary servers.',
             atomicBalancesTitle: '2. Atomic Balances & Total Auditability',
             atomicBalancesDesc: 'Your account balance is not an arbitrary editable number: it is calculated by mathematically summing and subtracting every single historical transaction. No unexplained gaps or lost records.',
             reconciliationTitle: '3. Match Your Balance without Erasing History',
@@ -781,7 +781,7 @@ export const en: TranslationSchema = {
             quickTemplatesTitle: '6. Quick Templates (1-Tap)',
             quickTemplatesDesc: 'Set up 1-tap shortcuts for your routine expenses (coffee, commute, groceries). One tap from the dashboard or form auto-fills the transaction instantly, saving you time.',
             privacyOfflineTitle: '7. Offline-First Privacy & Data Backup',
-            privacyOfflineDesc: 'Your financial data is 100% private and stays exclusively in your local browser database (IndexedDB). You can export complete JSON backups or CSV files for Excel at any time in Settings.',
+            privacyOfflineDesc: 'Your financial data is stored in your local browser database (IndexedDB), not on our servers. If you turn on AI, the provider you choose receives what section 4 describes, never the amounts. You can export complete JSON backups or CSV files for Excel at any time in Settings.',
         },
     },
     upgradeModal: {

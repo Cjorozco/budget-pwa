@@ -29,7 +29,7 @@ El desarrollo del proyecto se ejecutó mediante un flujo de **co-creación y orq
 
 ## 🤖 PRO: Gateway de IA Multi-Proveedor (BYOK)
 
-La app **no** requiere ni incluye API keys centralizadas en el servidor. El plan PRO desbloquea ingresar **tu propia API key (Bring Your Own Key)** para máxima privacidad y costo cero de infraestructura:
+La app **no** requiere ni incluye API keys centralizadas en el servidor. El plan PRO desbloquea ingresar **tu propia API key (Bring Your Own Key)**, sin proxy y con costo cero de infraestructura. El navegador envía directamente al proveedor elegido la descripción, las categorías y ejemplos recientes, sin montos. Proveedores disponibles:
 
 | Proveedor | Modelos Soportados | Endpoint / CORS | Costo de la API |
 |---|---|---|---|
