@@ -7,6 +7,19 @@ export function roundMoney(value: number): number {
     return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
+/**
+ * Whole number of minor units (pesos for COP, cents for CAD/USD). Rounds through Intl so an
+ * exported figure always equals what formatCurrency() shows for the same amount.
+ */
+export function toMinorUnits(amount: number, digits: 0 | 2): number {
+    const text = new Intl.NumberFormat('en-US', {
+        useGrouping: false,
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits,
+    }).format(amount);
+    return Number(text.replace('.', '')) || 0;
+}
+
 export interface NumberSeparators {
     group: string;
     decimal: string;

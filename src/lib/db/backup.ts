@@ -284,17 +284,11 @@ export async function importDatabase(jsonString: string): Promise<void> {
     useRegionStore.getState().setCountry(restoredCountry);
 }
 
-export function downloadBackup(jsonString: string) {
-    const blob = new Blob([jsonString], { type: 'application/json' });
+/** Saves text as a local file. Nothing leaves the device. */
+export function downloadTextFile(content: string, filename: string, mimeType: string) {
+    const blob = new Blob([content], { type: mimeType });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-
-    // Exact format requested: budget-backup-YYYY-MM-DD.json
-    const date = new Date();
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const filename = `budget-backup-${year}-${month}-${day}.json`;
 
     a.href = url;
     a.download = filename;
@@ -302,6 +296,16 @@ export function downloadBackup(jsonString: string) {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+}
+
+export function downloadBackup(jsonString: string) {
+    // Exact format requested: budget-backup-YYYY-MM-DD.json
+    const date = new Date();
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    downloadTextFile(jsonString, `budget-backup-${year}-${month}-${day}.json`, 'application/json');
 }
 
 /**
@@ -337,16 +341,7 @@ export async function exportToCSV(): Promise<string> {
 }
 
 export function downloadCSV(csvString: string) {
-    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
     const timestamp = new Date().toISOString().split('T')[0];
-
-    a.href = url;
-    a.download = `movimientos_${timestamp}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    downloadTextFile(csvString, `movimientos_${timestamp}.csv`, 'text/csv;charset=utf-8;');
 }
 

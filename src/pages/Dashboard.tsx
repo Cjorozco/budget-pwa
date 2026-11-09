@@ -1,7 +1,8 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
 import { cn, formatCurrency, now } from '@/lib/utils';
-import { startOfMonth, endOfMonth, format } from 'date-fns';
+import { getBalanceSummary, getMonthlyTotals, getMonthRange, isPendingReview } from '@/lib/reports/monthlyMetrics';
+import { format } from 'date-fns';
 import { ArrowDownCircle, ArrowUpCircle, Wallet, AlertTriangle, ArrowRightLeft, Info } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useMemo, useState } from 'react';
@@ -29,23 +30,13 @@ export default function Dashboard() {
             db.reserves.filter(r => r.isActive).toArray()
         ]);
 
-        const totalRealBalance = accounts.reduce((acc, curr) => acc + (curr.actualBalance ?? curr.calculatedBalance), 0);
-        const totalReserved = reserves.reduce((acc, curr) => acc + curr.amount, 0);
-
-        return {
-            totalRealBalance,
-            totalReserved,
-            totalAvailable: totalRealBalance - totalReserved,
-            accounts
-        };
+        return { ...getBalanceSummary(accounts, reserves), accounts };
     });
 
     // 2. Secondary Data: Counts & Templates
     const secondaryData = useLiveQuery(async () => {
         const [ambiguousCount, quickTemplates] = await Promise.all([
-            db.transactions
-                .filter(tx => tx.isAmbiguous === true || (tx.aiConfidence !== undefined && tx.aiConfidence < 0.7))
-                .count(),
+            db.transactions.filter(isPendingReview).count(),
             db.quickTemplates.toArray()
         ]);
         return { ambiguousCount, quickTemplates };
@@ -53,29 +44,16 @@ export default function Dashboard() {
 
     // 3. Heavy Data: Stats (Current Month) - EXCLUDING TRANSFERS
     const stats = useLiveQuery(async () => {
-        const now = new Date();
-        const start = startOfMonth(now).getTime();
-        const end = endOfMonth(now).getTime();
+        const { start, end } = getMonthRange(new Date());
 
-        if (isNaN(start) || isNaN(end)) return { income: 0, expense: 0 };
+        if (isNaN(start) || isNaN(end)) return { income: 0, expense: 0, net: 0 };
 
         const txs = await db.transactions
             .where('date')
             .between(start, end)
             .toArray();
 
-        // Filter out transfers explicitly
-        const validTxs = txs.filter(t => t.type !== 'transfer');
-
-        const income = validTxs
-            .filter(t => t.type === 'income')
-            .reduce((acc, t) => acc + t.amount, 0);
-
-        const expense = validTxs
-            .filter(t => t.type === 'expense')
-            .reduce((acc, t) => acc + t.amount, 0);
-
-        return { income, expense };
+        return getMonthlyTotals(txs);
     });
 
     // 4. Heavy Data: Recent Transactions - EXCLUDING TRANSFERS (Optional: or include them visually distinct)
@@ -255,11 +233,11 @@ export default function Dashboard() {
                         <span className="text-slate-500 dark:text-slate-400 font-medium">{t.dashboard.netSavings}:</span>
                         <span className={cn(
                             "font-bold",
-                            stats.income - stats.expense >= 0
+                            stats.net >= 0
                                 ? "text-emerald-600 dark:text-emerald-400"
                                 : "text-amber-600 dark:text-amber-400"
                         )}>
-                            {stats.income - stats.expense >= 0 ? "+" : ""}{formatCurrency(stats.income - stats.expense)}
+                            {stats.net >= 0 ? "+" : ""}{formatCurrency(stats.net)}
                         </span>
                     </div>
                 )}
