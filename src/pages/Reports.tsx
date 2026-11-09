@@ -1,12 +1,22 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
-import { startOfMonth, endOfMonth, format, subMonths, addMonths } from 'date-fns';
+import { format, subMonths, addMonths } from 'date-fns';
+import {
+  aggregateByCategory,
+  getFixedBudgetSummary,
+  getMonthlyTotals,
+  getMonthRange,
+  type HierarchyView,
+} from '@/lib/reports/monthlyMetrics';
 import { ExpenseBarChart, type CategoryChartData } from '@/components/charts/ExpenseBarChart';
 import { BudgetVsActualChart, type BudgetVsActualItem } from '@/components/charts/BudgetVsActualChart';
+import { ExportHistoryModal } from '@/components/reports/ExportHistoryModal';
+import { Button } from '@/components/ui/Button';
 import {
   ChevronLeft,
   ChevronRight,
+  Download,
   TrendingDown,
   TrendingUp,
   Target,
@@ -21,7 +31,6 @@ import { Link } from 'react-router-dom';
 import { useTranslation, getDateFnsLocale } from '@/lib/i18n';
 
 type ReportTab = 'expenses' | 'income' | 'fixed-budget';
-type HierarchyView = 'parents' | 'children';
 
 export default function Reports() {
   const { t, language } = useTranslation();
@@ -29,10 +38,10 @@ export default function Reports() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [activeTab, setActiveTab] = useState<ReportTab>('expenses');
   const [hierarchyView, setHierarchyView] = useState<HierarchyView>('parents');
+  const [isExportOpen, setIsExportOpen] = useState(false);
 
   const reportData = useLiveQuery(async () => {
-    const start = startOfMonth(currentDate).getTime();
-    const end = endOfMonth(currentDate).getTime();
+    const { monthKey, start, end } = getMonthRange(currentDate);
 
     // 1. Fetch transactions for month
     const txs = await db.transactions
@@ -45,83 +54,26 @@ export default function Reports() {
       db.categories.toArray(),
       db.budgetItems.toArray(),
     ]);
-    const catMap = new Map(cats.map(c => [c.id, c]));
 
     // 3. Separate expenses and incomes
     const expenses = txs.filter(t => t.type === 'expense');
     const incomes = txs.filter(t => t.type === 'income');
 
-    let totalExpense = 0;
-    let totalIncome = 0;
+    const { income: totalIncome, expense: totalExpense, net: realNetFlow } = getMonthlyTotals(txs);
 
-    expenses.forEach(t => { totalExpense += t.amount; });
-    incomes.forEach(t => { totalIncome += t.amount; });
+    const categoryLabels = {
+      uncategorized: t.transactions.uncategorized,
+      parentFallback: t.reports.parentCategories,
+    };
 
     // Helper to aggregate transactions by parents or children
     const aggregateTxs = (
       txList: typeof txs,
       viewMode: HierarchyView
     ): CategoryChartData[] => {
-      const aggregated: Record<string, { amount: number; name: string; parentName?: string; color: string }> = {};
-      const total = txList.reduce((acc, t) => acc + t.amount, 0);
-
-      txList.forEach(tx => {
-        const cat = catMap.get(tx.categoryId);
-
-        if (viewMode === 'parents') {
-          // Roll up to parent if exists
-          if (cat?.parentId) {
-            const parent = catMap.get(cat.parentId);
-            const key = parent?.id || cat.parentId;
-            if (!aggregated[key]) {
-              aggregated[key] = {
-                amount: 0,
-                name: parent?.name || t.reports.parentCategories,
-                color: parent?.color || cat.color || '#94a3b8',
-              };
-            }
-            aggregated[key].amount += tx.amount;
-          } else if (cat) {
-            const key = cat.id;
-            if (!aggregated[key]) {
-              aggregated[key] = {
-                amount: 0,
-                name: cat.name,
-                color: cat.color || '#94a3b8',
-              };
-            }
-            aggregated[key].amount += tx.amount;
-          } else {
-            const key = '__uncategorized__';
-            if (!aggregated[key]) {
-              aggregated[key] = {
-                amount: 0,
-                name: t.transactions.uncategorized,
-                color: '#94a3b8',
-              };
-            }
-            aggregated[key].amount += tx.amount;
-          }
-        } else {
-          // Specific subcategory/category (children view)
-          const key = tx.categoryId || '__uncategorized__';
-          if (!aggregated[key]) {
-            const parentName = cat?.parentId ? catMap.get(cat.parentId)?.name : undefined;
-            aggregated[key] = {
-              amount: 0,
-              name: cat?.name || t.transactions.uncategorized,
-              parentName,
-              color: cat?.color || '#94a3b8',
-            };
-          }
-          aggregated[key].amount += tx.amount;
-        }
-      });
-
       const usedColors: Record<string, number> = {};
-      return Object.entries(aggregated)
-        .sort(([, a], [, b]) => b.amount - a.amount)
-        .map(([, item]) => {
+      return aggregateByCategory(txList, cats, viewMode, categoryLabels)
+        .map((item) => {
           let baseColor = item.color;
           if (usedColors[baseColor] !== undefined) {
             usedColors[baseColor] += 1;
@@ -138,7 +90,7 @@ export default function Reports() {
             parentName: item.parentName,
             value: item.amount,
             color: baseColor,
-            percentage: total > 0 ? (item.amount / total) * 100 : 0,
+            percentage: item.percentage,
           };
         });
     };
@@ -149,19 +101,14 @@ export default function Reports() {
     const incomeDataChildren = aggregateTxs(incomes, 'children');
 
     // Fixed Budget calculations for the selected month
-    const currentMonthKey = format(currentDate, 'yyyy-MM');
-    const monthBudgetItems = budgetItems.filter(b => {
-      const itemMonth = b.month || format(new Date(b.createdAt || Date.now()), 'yyyy-MM');
-      return itemMonth === currentMonthKey;
-    });
-
-    const fixedExpenses = monthBudgetItems.filter(b => b.type === 'expense');
-    const fixedIncomes = monthBudgetItems.filter(b => b.type === 'income');
-
-    const totalFixedExpense = fixedExpenses.reduce((acc, curr) => acc + curr.amount, 0);
-    const totalFixedIncome = fixedIncomes.reduce((acc, curr) => acc + curr.amount, 0);
-    const plannedAvailable = totalFixedIncome - totalFixedExpense;
-    const realNetFlow = totalIncome - totalExpense;
+    const fixedBudget = getFixedBudgetSummary(budgetItems, monthKey, { income: totalIncome, expense: totalExpense });
+    const {
+      plannedExpense: totalFixedExpense,
+      plannedIncome: totalFixedIncome,
+      plannedAvailable,
+      expenseItems: fixedExpenses,
+      incomeItems: fixedIncomes,
+    } = fixedBudget;
 
     const budgetComparisonChart: BudgetVsActualItem[] = [
       {
@@ -194,6 +141,9 @@ export default function Reports() {
       realNetFlow,
       fixedExpenses,
       fixedIncomes,
+      expensePercentage: fixedBudget.expenseUsedPercent,
+      incomePercentage: fixedBudget.incomeReceivedPercent,
+      expenseDifference: fixedBudget.expenseDifference,
       budgetComparisonChart,
     };
   }, [currentDate, language]);
@@ -219,16 +169,9 @@ export default function Reports() {
     ? reportData?.totalExpense ?? 0
     : reportData?.totalIncome ?? 0;
 
-  // Fixed Budget calculations
-  const expensePercentage = (reportData && reportData.totalFixedExpense > 0)
-    ? Math.round((reportData.totalExpense / reportData.totalFixedExpense) * 100)
-    : 0;
-
-  const incomePercentage = (reportData && reportData.totalFixedIncome > 0)
-    ? Math.round((reportData.totalIncome / reportData.totalFixedIncome) * 100)
-    : 0;
-
-  const expenseDifference = (reportData?.totalFixedExpense ?? 0) - (reportData?.totalExpense ?? 0);
+  const expensePercentage = reportData?.expensePercentage ?? 0;
+  const incomePercentage = reportData?.incomePercentage ?? 0;
+  const expenseDifference = reportData?.expenseDifference ?? 0;
 
   return (
     <div className="p-4 space-y-6">
@@ -241,6 +184,10 @@ export default function Reports() {
               {t.reports.reportsSubtitle}
             </p>
           </div>
+          <Button variant="outline" className="shrink-0 gap-2" onClick={() => setIsExportOpen(true)}>
+            <Download size={16} aria-hidden="true" />
+            {t.reports.historyExport.exportButton}
+          </Button>
         </div>
 
         <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-2 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
@@ -611,6 +558,12 @@ export default function Reports() {
           )}
         </section>
       )}
+
+      <ExportHistoryModal
+        isOpen={isExportOpen}
+        onClose={() => setIsExportOpen(false)}
+        selectedMonth={currentDate}
+      />
     </div>
   );
 }
