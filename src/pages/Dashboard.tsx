@@ -12,6 +12,7 @@ import { TransactionForm } from '@/components/forms/TransactionForm';
 import { TransferForm } from '@/components/forms/TransferForm';
 import { useTranslation, getDateFnsLocale } from '@/lib/i18n';
 import { DemoEmptyState } from '@/components/DemoEmptyState';
+import { SupportCard } from '@/components/SupportCard';
 
 export default function Dashboard() {
     const { t, language } = useTranslation();
@@ -307,6 +308,9 @@ export default function Dashboard() {
                     )}
                 </div>
             </section>
+
+            {/* Last on the page: never competes with the balance or the main actions */}
+            <SupportCard />
 
             <Modal
                 isOpen={isModalOpen}

@@ -14,9 +14,7 @@ import { useTourStore } from '@/store/tour';
 import { useTranslation } from '@/lib/i18n';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { clearDemoData, hasDemoData } from '@/lib/db/demoMode';
-
-// Voluntary one-time contribution: a plain link to the checkout, it unlocks nothing.
-const SUPPORT_URL: string | undefined = import.meta.env.VITE_LEMON_CHECKOUT_URL;
+import { SUPPORT_URL } from '@/lib/support';
 
 export default function SettingsPage() {
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
