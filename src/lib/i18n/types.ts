@@ -175,8 +175,6 @@ export interface TranslationSchema {
         reserveSaved: string;
         reserveDeleted: string;
         noAccountsYet: string;
-        proLimitAccounts: string;
-        proLimitReserves: string;
         manageSources: string;
         newAccountBtn: string;
         reconcileWith: string;
@@ -343,6 +341,8 @@ export interface TranslationSchema {
             mdTrend: string;
             mdNotApplicable: string;
             mdExpenseNoOutliers: string;
+            mdMonthOne: string;
+            mdMonthOther: string;
             mdExpenseNoOutliersNone: string;
             mdAdjustmentsApart: string;
             mdOutlierMonths: string;
@@ -434,7 +434,6 @@ export interface TranslationSchema {
     templates: {
         templatesTitle: string;
         templatesSubtitle: string;
-        proLimitTemplates: string;
         newTemplate: string;
         noDescription: string;
         deleteTemplateTitle: string;
@@ -567,10 +566,7 @@ export interface TranslationSchema {
         exportCSVDesc: string;
         aiSection: string;
         aiDesc: string;
-        licenseSection: string;
-        licenseDesc: string;
         activeTier: string;
-        manageLicense: string;
         userGuideSection: string;
         userGuideDesc: string;
         openUserGuide: string;
@@ -602,16 +598,10 @@ export interface TranslationSchema {
         testProvider: string;
         forgetKey: string;
         replaceKey: string;
-        viewStatusManageLicense: string;
-        viewPlansAndPricing: string;
-        aiSmartCategorization: string;
-        aiUnlockPrompt: string;
-        unlockAiButton: string;
         uploadButton: string;
         overwriteWarning: string;
         fullResetWarning: string;
         transactionsResetWarning: string;
-        csvRequiresPro: string;
         backupDownloaded: string;
         backupExportError: string;
         csvExportSuccess: string;
@@ -741,28 +731,11 @@ export interface TranslationSchema {
             privacyOfflineDesc: string;
         };
     };
-    upgradeModal: {
-        modalTitle: string;
-        modalSubtitle: string;
-        plansTab: string;
-        keyTab: string;
-        supportPitch: string;
-        oneTimeNote: string;
-        checkoutButton: string;
-        securePaymentNote: string;
-        enterKeyLabel: string;
-        keyPlaceholder: string;
-        activateButton: string;
-        verifying: string;
-        deactivateButton: string;
-        activeMembership: string;
-        proMemberDesc: string;
-        featuresHeader: string;
-        featureUnlimitedAccounts: string;
-        featureAiCategorization: string;
-        featureAmbiguousReview: string;
-        featureQuickTemplates: string;
-        featureAdvancedReports: string;
+    support: {
+        sectionTitle: string;
+        pitch: string;
+        note: string;
+        button: string;
     };
     demo: {
         emptyTitle: string;

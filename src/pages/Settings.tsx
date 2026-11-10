@@ -2,20 +2,21 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { db } from '@/lib/db';
 import { Button } from '@/components/ui/Button';
-import { Trash2, AlertTriangle, RefreshCw, FolderTree, Download, FileJson, FileSpreadsheet, Upload, Crown, Lock, BookOpen, Bot, Sparkles, Compass } from 'lucide-react';
+import { Trash2, AlertTriangle, RefreshCw, FolderTree, Download, FileJson, FileSpreadsheet, Upload, BookOpen, Compass, Coffee, ExternalLink } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { exportDatabase, downloadBackup, importDatabase, exportToCSV, downloadCSV } from '@/lib/db/backup';
 import { GeminiKeyCard } from '@/components/settings/GeminiKeyCard';
 import { UserGuideModal } from '@/components/settings/UserGuideModal';
 import { LanguageSelector } from '@/components/settings/LanguageSelector';
 import { RegionSelector } from '@/components/settings/RegionSelector';
-import { useLicenseStore, getTierDisplayName } from '@/store/licenseStore';
 import { useUIStore } from '@/store/ui';
 import { useTourStore } from '@/store/tour';
-import { ProBadge } from '@/components/ui/ProBadge';
 import { useTranslation } from '@/lib/i18n';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { clearDemoData, hasDemoData } from '@/lib/db/demoMode';
+
+// Voluntary one-time contribution: a plain link to the checkout, it unlocks nothing.
+const SUPPORT_URL: string | undefined = import.meta.env.VITE_LEMON_CHECKOUT_URL;
 
 export default function SettingsPage() {
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -24,7 +25,6 @@ export default function SettingsPage() {
     const [importJson, setImportJson] = useState<string | null>(null);
     const [isGuideOpen, setIsGuideOpen] = useState(false);
     const { addToast, confirm } = useUIStore();
-    const { tier, isPro, openUpgradeModal } = useLicenseStore();
     const { t } = useTranslation();
     const navigate = useNavigate();
     const tourStart = useTourStore((s) => s.start);
@@ -69,10 +69,6 @@ export default function SettingsPage() {
     };
 
     const handleExportCSV = async () => {
-        if (!isPro) {
-            openUpgradeModal(t.settings.csvRequiresPro);
-            return;
-        }
         try {
             const csv = await exportToCSV();
             downloadCSV(csv);
@@ -318,71 +314,33 @@ export default function SettingsPage() {
             </section>
 
             <section className="space-y-4">
-                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{t.settings.licenseSection}</h2>
-                <div className="p-5 rounded-2xl text-white shadow-lg relative overflow-hidden bg-gradient-to-br from-amber-500 via-orange-500 to-rose-600">
-                    <div className="relative z-10 space-y-3">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <Crown size={22} className="text-yellow-200" />
-                                <h3 className="font-bold text-lg text-white">
-                                    {getTierDisplayName(tier)}
-                                </h3>
-                            </div>
-                            <ProBadge size="md" />
-                        </div>
-
-                        <p className="text-xs text-amber-50 leading-relaxed opacity-95">
-                            {isPro ? t.upgradeModal.proMemberDesc : t.upgradeModal.modalSubtitle}
-                        </p>
-
-                        <div className="pt-1">
-                            <Button
-                                onClick={() => openUpgradeModal()}
-                                className="font-bold border-none shadow-sm text-xs py-2 px-3.5 bg-white text-orange-600 hover:bg-amber-50"
-                            >
-                                {isPro ? t.settings.viewStatusManageLicense : t.settings.viewPlansAndPricing}
-                            </Button>
-                        </div>
-                    </div>
-                    {/* Decorative background elements */}
-                    <div className="absolute -right-6 -top-6 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
-                    <div className="absolute -left-6 -bottom-6 w-24 h-24 bg-black/10 rounded-full blur-xl" />
-                </div>
-
-                {/* AI Configuration: Show GeminiKeyCard if PRO, or PRO Locked Teaser if FREE */}
-                {isPro ? (
-                    <GeminiKeyCard />
-                ) : (
-                    <div className="p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-3">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2.5">
-                                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                                    <Bot className="text-blue-600 dark:text-blue-400" size={20} />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-slate-900 dark:text-white text-sm">{t.settings.aiSmartCategorization}</h3>
-                                    <p className="text-xs text-slate-500">Google Gemini · OpenAI · Anthropic Claude · Groq</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-1 text-xs font-semibold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-1 rounded-full border border-amber-200 dark:border-amber-800">
-                                <Lock size={12} />
-                                <span>PRO</span>
-                            </div>
-                        </div>
-                        <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                            {t.settings.aiUnlockPrompt}
-                        </p>
-                        <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => openUpgradeModal(t.settings.unlockAiButton)}
-                            className="w-full text-xs"
-                        >
-                            <Sparkles className="w-3.5 h-3.5 mr-1.5 text-amber-700 dark:text-amber-500" /> {t.settings.unlockAiButton}
-                        </Button>
-                    </div>
-                )}
+                <GeminiKeyCard />
             </section>
+
+            {SUPPORT_URL && (
+                <section className="space-y-4">
+                    <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{t.support.sectionTitle}</h2>
+                    <div className="p-5 rounded-2xl text-white shadow-lg relative overflow-hidden bg-gradient-to-br from-amber-500 via-orange-500 to-rose-600">
+                        <div className="relative z-10 space-y-3">
+                            <p className="text-sm text-white leading-relaxed">{t.support.pitch}</p>
+                            <p className="text-xs text-amber-50 leading-relaxed">{t.support.note}</p>
+                            <a
+                                href={SUPPORT_URL}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-4 text-sm font-bold text-orange-700 shadow-sm transition-colors hover:bg-amber-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                            >
+                                <Coffee size={16} aria-hidden="true" />
+                                {t.support.button}
+                                <ExternalLink size={14} aria-hidden="true" />
+                            </a>
+                        </div>
+                        {/* Decorative background elements */}
+                        <div className="absolute -right-6 -top-6 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
+                        <div className="absolute -left-6 -bottom-6 w-24 h-24 bg-black/10 rounded-full blur-xl" />
+                    </div>
+                </section>
+            )}
 
             <section className="space-y-4">
                 <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{t.settings.backupSection}</h2>
@@ -414,16 +372,11 @@ export default function SettingsPage() {
                             <div>
                                 <h3 className="font-medium text-slate-900 dark:text-white text-sm flex items-center gap-1.5">
                                     {t.settings.exportCSV}
-                                    {!isPro && <Lock size={14} className="text-amber-700 dark:text-amber-500" />}
                                 </h3>
                                 <p className="text-xs text-slate-500">{t.settings.exportCSVDesc}</p>
                             </div>
                         </div>
-                        {!isPro ? (
-                            <div className="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 text-xs font-bold px-2 py-1 rounded">PRO</div>
-                        ) : (
-                            <Download size={18} className="text-slate-600 dark:text-slate-400" />
-                        )}
+                        <Download size={18} className="text-slate-600 dark:text-slate-400" />
                     </button>
 
                     <label className="flex items-center justify-between p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl hover:bg-slate-50 transition-colors cursor-pointer">

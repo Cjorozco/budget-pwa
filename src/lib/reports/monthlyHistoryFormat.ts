@@ -48,7 +48,7 @@ function medianTrendsJson(section: MedianTrends, money: (amount: number) => numb
             gastos: total(totals.expense),
             neto: total(totals.net),
             gastos_sin_atipicos: {
-                mediana: totals.expenseWithoutOutliers.median === null ? null : money(totals.expenseWithoutOutliers.median),
+                mediana: totals.expenseWithoutOutliers.median === null ? TREND_NOT_APPLICABLE : money(totals.expenseWithoutOutliers.median),
                 meses_usados: totals.expenseWithoutOutliers.monthsUsed,
             },
         },
@@ -66,7 +66,7 @@ function medianTrendsJson(section: MedianTrends, money: (amount: number) => numb
         categorias: { gastos: categories.expense.map(category), ingresos: categories.income.map(category) },
         nota_metodo: {
             periodo: `Últimos ${period.targetMonths} meses completos del historial exportado, sin el mes en curso. Meses usados: ${period.monthsUsed} (${period.months.join(', ')}).`,
-            atipico: 'El máximo supera 2 veces la mediana y la diferencia es mayor a una mediana. Con mediana 0, solo cuenta si el monto supera el 25% de la mediana de los totales mensuales del período. Se lista cada mes en que una categoría supere ese umbral.',
+            atipico: 'El máximo supera 2 veces la mediana y la diferencia es mayor a una mediana. Con mediana 0, solo cuenta si el monto supera el 25% de la mediana de los totales mensuales del período. Un mes es atípico cuando su gasto total cumple ese criterio frente a la mediana de los gastos mensuales. La mediana sin atípicos requiere al menos 3 meses.',
             tendencia: `Mediana de los últimos 3 meses contra la de los 3 meses anteriores. Es "${TREND_NOT_APPLICABLE}" si alguna es 0 o si hay menos de 6 meses.`,
             promedio: 'Solo referencia secundaria: se distorsiona por valores atípicos.',
         },
@@ -224,9 +224,10 @@ function medianTrendsMarkdown(
         );
 
     const { median: cleanMedian, monthsUsed: cleanMonths } = totals.expenseWithoutOutliers;
+    const cleanMonthsText = cleanMonths === 1 ? labels.mdMonthOne : fill(labels.mdMonthOther, { count: cleanMonths });
     const cleanLine = cleanMedian === null
-        ? labels.mdExpenseNoOutliersNone
-        : fill(labels.mdExpenseNoOutliers, { amount: formatMoney(cleanMedian), count: cleanMonths });
+        ? fill(labels.mdExpenseNoOutliersNone, { months: cleanMonthsText })
+        : fill(labels.mdExpenseNoOutliers, { amount: formatMoney(cleanMedian), months: cleanMonthsText });
 
     const outlierBlock = outlierMonths.length === 0
         ? labels.mdNoOutliers

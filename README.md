@@ -27,9 +27,9 @@ El desarrollo del proyecto se ejecutó mediante un flujo de **co-creación y orq
 
 ---
 
-## 🤖 PRO: Gateway de IA Multi-Proveedor (BYOK)
+## 🤖 Gateway de IA Multi-Proveedor (BYOK)
 
-La app **no** requiere ni incluye API keys centralizadas en el servidor. El plan PRO desbloquea ingresar **tu propia API key (Bring Your Own Key)**, sin proxy y con costo cero de infraestructura. El navegador envía directamente al proveedor elegido la descripción, las categorías y ejemplos recientes, sin montos. Proveedores disponibles:
+La app **no** requiere ni incluye API keys centralizadas en el servidor. Cualquiera puede ingresar **su propia API key (Bring Your Own Key)**, sin proxy y con costo cero de infraestructura. El navegador envía directamente al proveedor elegido la descripción, las categorías y ejemplos recientes, sin montos. Proveedores disponibles:
 
 | Proveedor | Modelos Soportados | Endpoint / CORS | Costo de la API |
 |---|---|---|---|
@@ -44,15 +44,11 @@ La app **no** requiere ni incluye API keys centralizadas en el servidor. El plan
 
 ---
 
-## 💳 Sistema de Licenciamiento (Lemon Squeezy)
+## ☕ Gratis, con apoyo voluntario
 
-La app es gratuita. Quien quiera apoyarla puede "invitar un café" con un **pago único de monto libre**, que desbloquea PRO para siempre. Todo funciona sin backend propio:
-- **Activación en vivo:** Conexión con `api.lemonsqueezy.com` para activar claves (requiere internet) y verificar que pertenezcan a nuestra tienda/producto.
-- **Revalidación y gracia offline:** Se revalida en segundo plano (máx. 1 vez cada 24 h) y se tolera hasta 14 días sin conexión (`licenseConfig.ts`). No existen claves offline ni maestras.
-- **Configuración:** los IDs de la tienda y de los productos/variantes se leen de `.env` (`VITE_LEMON_*`, no son secretos). Sin ellos no se puede activar ninguna licencia (falla cerrado) y la prueba `src/__tests__/release/` falla para que no se publique así. Ver `docs/adr/0004-licencias.md` y `docs/adr/0005-apoyo-pago-unico.md`.
-- **Planes:**
-  - **Free (Local Core):** Categorizador por reglas locales, presupuesto, cuentas, reportes y reconciliación ilimitada sin costo.
-  - **PRO (aporte único):** IA multi-proveedor (BYOK), cuentas y reservas ilimitadas, plantillas, etiquetas y exportación CSV.
+La app es gratis completa: no hay plan PRO, licencias ni límites de cuentas, reservas o plantillas. La IA (BYOK) y la exportación a CSV están abiertas para todos.
+
+Quien quiera apoyar el proyecto puede "invitar un café" desde Ajustes. Es un enlace al checkout de Lemon Squeezy (`VITE_LEMON_CHECKOUT_URL` en `.env`) con pago único de monto libre. **No desbloquea nada**: es una colaboración. La app no llama a la API de Lemon Squeezy. Ver `docs/adr/0010-app-gratis-sin-pro.md`.
 
 ---
 
@@ -97,7 +93,7 @@ La app separa intencionalmente la **liquidez patrimonial acumulada** del **flujo
 - **React 19** + **TypeScript** (Strict) + **Vite 7**
 - **Tailwind CSS 4** (Mobile-First UI & Utilities)
 - **Dexie.js 4** (IndexedDB wrapper reactivo con `dexie-react-hooks`)
-- **Zustand** (Estado transitorio de UI y licencias)
+- **Zustand** (Estado transitorio de UI)
 - **React Hook Form** + **Zod** (Formularios, validación de schemas y contratos de IA)
 - **TanStack Charts** (Visualización interactiva)
 - **Lucide React** (Iconografía)

@@ -58,7 +58,7 @@ describe('i18n Internationalization System', () => {
             expect(dict.budget.monthlyBudget).toBeTruthy();
             expect(dict.reports.parentCategories).toBeTruthy();
             expect(dict.settings.languageSection).toBeTruthy();
-            expect(dict.upgradeModal.modalTitle).toBeTruthy();
+            expect(dict.support.button).toBeTruthy();
         }
     });
 });

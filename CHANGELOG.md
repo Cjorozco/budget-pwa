@@ -10,9 +10,11 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). V
 - Exportación del historial financiero desde Informes en JSON y Markdown, por rango de meses (este mes, 6, 12 o todo), para análisis y proyecciones externas. Se genera en el dispositivo y funciona sin conexión (`2.8.0`).
 
 ### Corregido
+- En el historial exportado, un mes solo se lista como atípico si su gasto total cumple el criterio, no por un pico en una categoría. La mediana sin atípicos muestra "no aplica" con menos de 3 meses, y la etiqueta distingue "1 mes" de varios meses (`2.10.2`).
 - Al borrar un movimiento desde la pantalla de Revisión ahora también se revierte el saldo real de la cuenta, así el saldo del Dashboard se actualiza (`2.8.1`).
 
 ### Cambiado
+- La app es gratis completa: se quita el plan PRO y el sistema de licencias de Lemon Squeezy. Sin límites de cuentas, reservas ni plantillas, y la IA (BYOK) y la exportación a CSV quedan abiertas para todos. En Ajustes, "Apoya el proyecto" mantiene el botón "Invítame un café" como aporte voluntario que no desbloquea nada. La app ya no llama a la API de Lemon Squeezy. ADR 0010 reemplaza a 0004 y 0005 (`2.11.0`).
 - Los PR hacia `develop` se fusionan con merge commit, igual que los de `develop` a `master`. Enmienda al ADR 0007. Solo documentación.
 - En el historial exportado, una categoría con mediana 0 solo se marca como atípica si el monto supera el 25% de la mediana de los totales mensuales, para que las compras pequeñas no marquen meses enteros (`2.9.1`).
 - El botón Exportar de Informes se destaca como acción principal de la pantalla (`2.8.1`).

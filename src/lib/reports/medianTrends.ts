@@ -4,6 +4,8 @@ import { aggregateByCategory, getMonthlyTotals, type CategoryLabels, type Hierar
 
 const TARGET_MONTHS = 6;
 const TREND_WINDOW = 3;
+/** With fewer months, a median without outliers would say nothing useful. */
+const MIN_MONTHS_WITHOUT_OUTLIERS = 3;
 /** Share of the typical monthly total that a category with median 0 must exceed to be an outlier. */
 const ZERO_MEDIAN_SHARE = 0.25;
 
@@ -185,24 +187,24 @@ function findOutlierMonths(
     input: BuildMedianTrendsInput
 ): OutlierMonth[] {
     const expenses = txsPerMonth.map((txs) => txs.filter((tx) => tx.type === 'expense'));
-    const responsible = new Map<number, OutlierMonth['categories']>();
     const typicalMonthlyTotal = median(expenseTotals);
+    const series = Array.from(collectSeries(expenses, input.categories, 'parents', input.labels).entries()).map(
+        ([categoryId, { name, values }]) => ({ categoryId, name, values, median: median(values) })
+    );
 
-    for (const [categoryId, { name, values }] of collectSeries(expenses, input.categories, 'parents', input.labels)) {
-        const medianValue = median(values);
-        values.forEach((amount, index) => {
-            if (!isOutlier(medianValue, amount, typicalMonthlyTotal)) return;
-            responsible.set(index, [...(responsible.get(index) ?? []), { categoryId, name, amount, median: medianValue }]);
-        });
-    }
-
-    return Array.from(responsible.entries())
-        .sort(([a], [b]) => a - b)
-        .map(([index, list]) => ({
-            month: months[index],
-            expense: expenseTotals[index],
-            categories: list.sort((a, b) => b.amount - a.amount),
-        }));
+    // A month is judged by its total; a spike in one category alone does not make the month atypical.
+    return expenseTotals.flatMap((expense, index) => {
+        if (!isOutlier(typicalMonthlyTotal, expense, typicalMonthlyTotal)) return [];
+        const [mainCause] = series
+            .map(({ categoryId, name, values, median: categoryMedian }) => ({
+                categoryId,
+                name,
+                amount: values[index],
+                median: categoryMedian,
+            }))
+            .sort((a, b) => b.amount - b.median - (a.amount - a.median));
+        return [{ month: months[index], expense, categories: [mainCause] }];
+    });
 }
 
 export function buildMedianTrends(input: BuildMedianTrendsInput): MedianTrends {
@@ -244,7 +246,7 @@ export function buildMedianTrends(input: BuildMedianTrendsInput): MedianTrends {
             expense: describeTotal(expenseTotals),
             net: describeTotal(totals.map((t) => t.net)),
             expenseWithoutOutliers: {
-                median: withoutOutliers.length > 0 ? median(withoutOutliers) : null,
+                median: withoutOutliers.length >= MIN_MONTHS_WITHOUT_OUTLIERS ? median(withoutOutliers) : null,
                 monthsUsed: withoutOutliers.length,
             },
         },

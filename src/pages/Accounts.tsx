@@ -11,8 +11,6 @@ import { ReconciliationHistory } from '@/components/accounts/ReconciliationHisto
 import { ReserveForm } from '@/components/forms/ReserveForm';
 import { ReservesList } from '@/components/accounts/ReservesList';
 import type { Account, Reserve } from '@/lib/types';
-import { useLicenseStore } from '@/store/licenseStore';
-import { ProBadge } from '@/components/ui/ProBadge';
 import { useTranslation } from '@/lib/i18n';
 
 export default function AccountsPage() {
@@ -28,24 +26,13 @@ export default function AccountsPage() {
     const [reserveAccount, setReserveAccount] = useState<Account | null>(null);
     const [editingReserve, setEditingReserve] = useState<Reserve | null>(null);
     const accounts = useLiveQuery(() => db.accounts.orderBy('name').toArray());
-    const activeReservesCount = useLiveQuery(() => db.reserves.filter(r => r.isActive).count()) || 0;
-
-    const { canCreateAccount, canCreateReserve, openUpgradeModal, isPro } = useLicenseStore();
 
     const handleOpenNewAccount = () => {
-        if (!canCreateAccount(accounts?.length || 0)) {
-            openUpgradeModal(t.accounts.proLimitAccounts);
-            return;
-        }
         setEditingAccount(null);
         setIsModalOpen(true);
     };
 
     const handleOpenAddReserve = (acc: Account) => {
-        if (!canCreateReserve(activeReservesCount)) {
-            openUpgradeModal(t.accounts.proLimitReserves);
-            return;
-        }
         setReserveAccount(acc);
         setEditingReserve(null);
         setIsReserveModalOpen(true);
@@ -58,7 +45,6 @@ export default function AccountsPage() {
                     <div>
                         <div className="flex items-center gap-2">
                             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t.accounts.title}</h1>
-                            {!isPro && <ProBadge showUnlockAction size="sm" />}
                         </div>
                         <p className="text-sm text-slate-500">{t.accounts.subtitle}</p>
                     </div>

@@ -82,7 +82,7 @@ describe('suggestCategoryWithLlm', () => {
         vi.mocked(suggestCategory).mockResolvedValue({ ...strongLocal, matchKind });
         setGeminiApiKey('AIzaSyDummyKeyForUnitTests1234567890');
 
-        const result = await suggestCategoryWithLlm('foo', 'expense', { isPro: true, online: true });
+        const result = await suggestCategoryWithLlm('foo', 'expense', { online: true });
 
         expect(result).toMatchObject({ status: 'success', source: 'local', skippedAi: true });
         expect(suggestWithAiProvider).not.toHaveBeenCalled();
@@ -93,7 +93,7 @@ describe('suggestCategoryWithLlm', () => {
         vi.mocked(suggestWithAiProvider).mockResolvedValue({ status: 'no-match', reason: 'model-none' });
         setGeminiApiKey('AIzaSyDummyKeyForUnitTests1234567890');
 
-        await suggestCategoryWithLlm('foo', 'expense', { isPro: true, online: true, forceRegenerate: true });
+        await suggestCategoryWithLlm('foo', 'expense', { online: true, forceRegenerate: true });
 
         expect(suggestWithAiProvider).toHaveBeenCalledOnce();
     });
@@ -107,7 +107,7 @@ describe('suggestCategoryWithLlm', () => {
         });
         setGeminiApiKey('AIzaSyDummyKeyForUnitTests1234567890');
 
-        await suggestCategoryWithLlm('foo', 'expense', { isPro: true, online: true });
+        await suggestCategoryWithLlm('foo', 'expense', { online: true });
 
         expect(await db.suggestionValidations.count()).toBe(0);
     });
@@ -121,7 +121,7 @@ describe('suggestCategoryWithLlm', () => {
         });
         setGeminiApiKey('AIzaSyDummyKeyForUnitTests1234567890');
 
-        await suggestCategoryWithLlm('foo', 'expense', { isPro: true, online: true });
+        await suggestCategoryWithLlm('foo', 'expense', { online: true });
 
         expect(await db.suggestionValidations.count()).toBe(0);
     });
@@ -136,49 +136,18 @@ describe('suggestCategoryWithLlm', () => {
         });
         setGeminiApiKey('AIzaSyDummyKeyForUnitTests1234567890');
 
-        await suggestCategoryWithLlm('TEXTO-CENTINELA', 'expense', { isPro: true, online: true });
-        await suggestCategoryWithLlm('TEXTO-CENTINELA', 'expense', { isPro: false, online: true });
+        await suggestCategoryWithLlm('TEXTO-CENTINELA', 'expense', { online: true });
         await new Promise((resolve) => setTimeout(resolve, 0));
 
         expect(JSON.stringify(debug.mock.calls)).not.toContain('TEXTO-CENTINELA');
         debug.mockRestore();
     });
 
-    it('returns local suggestion without calling AI when not PRO', async () => {
-        vi.mocked(suggestCategory).mockResolvedValue(weakLocal);
-        setGeminiApiKey('AIzaSyDummyKeyForUnitTests1234567890');
-
-        const result = await suggestCategoryWithLlm('foo', 'expense', { isPro: false, online: true });
-
-        expect(result).toEqual({
-            status: 'success',
-            suggestion: { ...weakLocal, source: 'local' },
-            source: 'local',
-            geminiDiagnosis: { status: 'unavailable', reason: 'not-pro' },
-            aiDiagnosis: { status: 'unavailable', reason: 'not-pro' },
-        });
-        expect(suggestWithAiProvider).not.toHaveBeenCalled();
-    });
-
-    it('returns no-match when not PRO and local also finds nothing', async () => {
-        vi.mocked(suggestCategory).mockResolvedValue(null);
-        setGeminiApiKey('AIzaSyDummyKeyForUnitTests1234567890');
-
-        const result = await suggestCategoryWithLlm('desconocido', 'expense', { isPro: false, online: true });
-
-        expect(result).toEqual({
-            status: 'no-match',
-            geminiDiagnosis: { status: 'unavailable', reason: 'not-pro' },
-            aiDiagnosis: { status: 'unavailable', reason: 'not-pro' },
-        });
-        expect(suggestWithAiProvider).not.toHaveBeenCalled();
-    });
-
-    it('returns no-match when PRO is active but no key is stored and local has no match', async () => {
+    it('returns no-match when no key is stored and local has no match', async () => {
         vi.mocked(suggestCategory).mockResolvedValue(null);
         clearGeminiApiKey();
 
-        const result = await suggestCategoryWithLlm('desconocido', 'expense', { isPro: true, online: true });
+        const result = await suggestCategoryWithLlm('desconocido', 'expense', { online: true });
 
         expect(result).toEqual({
             status: 'no-match',
@@ -192,7 +161,7 @@ describe('suggestCategoryWithLlm', () => {
         vi.mocked(suggestCategory).mockResolvedValue(null);
         setGeminiApiKey('AIzaSyDummyKeyForUnitTests1234567890');
 
-        const result = await suggestCategoryWithLlm('desconocido', 'expense', { isPro: true, online: false });
+        const result = await suggestCategoryWithLlm('desconocido', 'expense', { online: false });
 
         expect(result).toEqual({
             status: 'no-match',
@@ -216,7 +185,7 @@ describe('suggestCategoryWithLlm', () => {
         });
         setGeminiApiKey('AIzaSyDummyKeyForUnitTests1234567890');
 
-        const result = await suggestCategoryWithLlm('luz', 'expense', { isPro: true, online: true });
+        const result = await suggestCategoryWithLlm('luz', 'expense', { online: true });
 
         expect(suggestWithAiProvider).toHaveBeenCalledOnce();
         expect(result.status).toBe('conflict');
@@ -241,7 +210,7 @@ describe('suggestCategoryWithLlm', () => {
             },
         });
 
-        const result = await suggestCategoryWithLlm('restaurante', 'expense', { isPro: true, online: true });
+        const result = await suggestCategoryWithLlm('restaurante', 'expense', { online: true });
 
         expect(suggestWithAiProvider).toHaveBeenCalledOnce();
         expect(result.status).toBe('conflict');
@@ -267,7 +236,7 @@ describe('suggestCategoryWithLlm', () => {
         });
         setGeminiApiKey('AIzaSyDummyKeyForUnitTests1234567890');
 
-        const result = await suggestCategoryWithLlm('gasto test', 'expense', { isPro: true, online: true });
+        const result = await suggestCategoryWithLlm('gasto test', 'expense', { online: true });
 
         expect(result.status).toBe('conflict');
         if (result.status === 'conflict') {
@@ -280,7 +249,7 @@ describe('suggestCategoryWithLlm', () => {
         vi.mocked(suggestWithAiProvider).mockResolvedValue({ status: 'no-match', reason: 'model-none' });
         setGeminiApiKey('AIzaSyDummyKeyForUnitTests1234567890');
 
-        const result = await suggestCategoryWithLlm('algo raro', 'expense', { isPro: true, online: true });
+        const result = await suggestCategoryWithLlm('algo raro', 'expense', { online: true });
 
         expect(result).toEqual({
             status: 'success',
@@ -296,7 +265,7 @@ describe('suggestCategoryWithLlm', () => {
         vi.mocked(suggestWithAiProvider).mockResolvedValue({ status: 'rejected', reason: 'unknown-root' });
         setGeminiApiKey('AIzaSyDummyKeyForUnitTests1234567890');
 
-        const result = await suggestCategoryWithLlm('Uniforme de Sofia en Falabella', 'expense', { isPro: true, online: true });
+        const result = await suggestCategoryWithLlm('Uniforme de Sofia en Falabella', 'expense', { online: true });
 
         expect(result.status).toBe('success');
         if (result.status === 'success') {
@@ -312,7 +281,7 @@ describe('suggestCategoryWithLlm', () => {
         vi.mocked(suggestWithAiProvider).mockResolvedValue({ status: 'error', reason: 'timeout' });
         setGeminiApiKey('AIzaSyDummyKeyForUnitTests1234567890');
 
-        const result = await suggestCategoryWithLlm('Bombillos y tornillos Homecenter', 'expense', { isPro: true, online: true });
+        const result = await suggestCategoryWithLlm('Bombillos y tornillos Homecenter', 'expense', { online: true });
 
         expect(result.status).toBe('success');
         if (result.status === 'success') {
@@ -328,7 +297,7 @@ describe('suggestCategoryWithLlm', () => {
         vi.mocked(suggestWithAiProvider).mockResolvedValue({ status: 'rejected', reason: 'invalid-json' });
         setGeminiApiKey('AIzaSyDummyKeyForUnitTests1234567890');
 
-        const result = await suggestCategoryWithLlm('recibo de energia', 'expense', { isPro: true, online: true });
+        const result = await suggestCategoryWithLlm('recibo de energia', 'expense', { online: true });
 
         expect(result).toEqual({
             status: 'success',
@@ -344,7 +313,7 @@ describe('suggestCategoryWithLlm', () => {
         vi.mocked(suggestWithAiProvider).mockResolvedValue({ status: 'rejected', reason: 'invalid-schema' });
         setGeminiApiKey('AIzaSyDummyKeyForUnitTests1234567890');
 
-        const result = await suggestCategoryWithLlm('recibo de energia', 'expense', { isPro: true, online: true });
+        const result = await suggestCategoryWithLlm('recibo de energia', 'expense', { online: true });
 
         expect(result).toEqual({
             status: 'success',
@@ -360,7 +329,7 @@ describe('suggestCategoryWithLlm', () => {
         vi.mocked(suggestWithAiProvider).mockResolvedValue({ status: 'rejected', reason: 'invalid-category-id' });
         setGeminiApiKey('AIzaSyDummyKeyForUnitTests1234567890');
 
-        const result = await suggestCategoryWithLlm('recibo de energia', 'expense', { isPro: true, online: true });
+        const result = await suggestCategoryWithLlm('recibo de energia', 'expense', { online: true });
 
         expect(result).toEqual({
             status: 'success',
@@ -376,7 +345,7 @@ describe('suggestCategoryWithLlm', () => {
         vi.mocked(suggestWithAiProvider).mockResolvedValue({ status: 'error', reason: 'http-401' });
         setGeminiApiKey('AIzaSyDummyKeyForUnitTests1234567890');
 
-        const result = await suggestCategoryWithLlm('recibo de energia', 'expense', { isPro: true, online: true });
+        const result = await suggestCategoryWithLlm('recibo de energia', 'expense', { online: true });
 
         expect(result).toEqual({
             status: 'success',
@@ -392,7 +361,7 @@ describe('suggestCategoryWithLlm', () => {
         vi.mocked(suggestWithAiProvider).mockResolvedValue({ status: 'error', reason: 'http-429' });
         setGeminiApiKey('AIzaSyDummyKeyForUnitTests1234567890');
 
-        const result = await suggestCategoryWithLlm('recibo de energia', 'expense', { isPro: true, online: true });
+        const result = await suggestCategoryWithLlm('recibo de energia', 'expense', { online: true });
 
         expect(result).toEqual({
             status: 'success',
@@ -408,7 +377,7 @@ describe('suggestCategoryWithLlm', () => {
         vi.mocked(suggestWithAiProvider).mockResolvedValue({ status: 'error', reason: 'http-5xx' });
         setGeminiApiKey('AIzaSyDummyKeyForUnitTests1234567890');
 
-        const result = await suggestCategoryWithLlm('recibo de energia', 'expense', { isPro: true, online: true });
+        const result = await suggestCategoryWithLlm('recibo de energia', 'expense', { online: true });
 
         expect(result).toEqual({
             status: 'success',
@@ -424,7 +393,7 @@ describe('suggestCategoryWithLlm', () => {
         vi.mocked(suggestWithAiProvider).mockResolvedValue({ status: 'error', reason: 'network-error' });
         setGeminiApiKey('AIzaSyDummyKeyForUnitTests1234567890');
 
-        const result = await suggestCategoryWithLlm('recibo de energia', 'expense', { isPro: true, online: true });
+        const result = await suggestCategoryWithLlm('recibo de energia', 'expense', { online: true });
 
         expect(result).toEqual({
             status: 'success',
@@ -440,7 +409,7 @@ describe('suggestCategoryWithLlm', () => {
         vi.mocked(suggestWithAiProvider).mockResolvedValue({ status: 'rejected', reason: 'unknown-root' });
         setGeminiApiKey('AIzaSyDummyKeyForUnitTests1234567890');
 
-        const result = await suggestCategoryWithLlm('gasto totalmente nuevo', 'expense', { isPro: true, online: true });
+        const result = await suggestCategoryWithLlm('gasto totalmente nuevo', 'expense', { online: true });
 
         expect(result).toEqual({
             status: 'no-match',
@@ -454,7 +423,6 @@ describe('suggestCategoryWithLlm', () => {
         controller.abort();
 
         const result = await suggestCategoryWithLlm('gasto test', 'expense', {
-            isPro: true,
             online: true,
             signal: controller.signal,
         });
@@ -470,11 +438,11 @@ describe('suggestCategoryWithLlm', () => {
         await db.categories.put({ id: 'luz', name: 'Electricidad', type, color: '#0f766e', usageCount: 0, isActive: true });
         await learnCategoryForDescription({ description: 'Descripción completa', type, categoryId: 'luz', categoryPath: strongLocal.categoryPath });
 
-        const repeated = await suggestCategoryWithLlm('descripcion completa', type, { isPro: true, online: true });
+        const repeated = await suggestCategoryWithLlm('descripcion completa', type, { online: true });
         expect(repeated).toMatchObject({ status: 'success', skippedAi: true });
         expect(suggestWithAiProvider).not.toHaveBeenCalled();
 
-        await suggestCategoryWithLlm('Descripción completa', type, { isPro: true, online: true, forceRegenerate: true });
+        await suggestCategoryWithLlm('Descripción completa', type, { online: true, forceRegenerate: true });
         expect(suggestWithAiProvider).toHaveBeenCalledOnce();
     });
 
@@ -483,7 +451,7 @@ describe('suggestCategoryWithLlm', () => {
         vi.mocked(suggestCategory).mockResolvedValue({ ...strongLocal, categoryId: null, categoryPath: 'Servicios básicos', requiresSubcategory: true });
         vi.mocked(suggestWithAiProvider).mockResolvedValue({ status: 'success', providerUsed: 'gemini', suggestion: { ...strongLocal, source: 'gemini' } });
 
-        const result = await suggestCategoryWithLlm('foo', 'expense', { isPro: true, online: true });
+        const result = await suggestCategoryWithLlm('foo', 'expense', { online: true });
 
         expect(result).toMatchObject({ status: 'success', source: 'gemini', suggestion: { categoryId: 'luz' } });
     });
@@ -501,7 +469,7 @@ describe('suggestCategoryWithLlm', () => {
             suggestion: { ...strongLocal, categoryId: 'root-ai', categoryPath: 'Servicios', source: 'gemini' },
         });
 
-        const result = await suggestCategoryWithLlm('foo', 'expense', { isPro: true, online: true });
+        const result = await suggestCategoryWithLlm('foo', 'expense', { online: true });
 
         expect(result).toMatchObject({ status: 'success', source: 'local', suggestion: { categoryId: 'luz' } });
     });
@@ -514,7 +482,7 @@ describe('suggestCategoryWithLlm', () => {
             controller.abort();
             return { status: 'success', providerUsed: 'gemini', suggestion: strongLocal };
         });
-        const result = await suggestCategoryWithLlm('Descripción anterior', 'expense', { isPro: true, online: true, signal: controller.signal });
+        const result = await suggestCategoryWithLlm('Descripción anterior', 'expense', { online: true, signal: controller.signal });
         expect(result.status).toBe('no-match');
         expect(await db.suggestionValidations.count()).toBe(0);
     });

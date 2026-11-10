@@ -9,7 +9,7 @@
 - **Vite 7**
 - **Tailwind CSS 4** (mobile-first, ver `ux-principles.md`) con tokens de diseño en `src/index.css` (ver sección "Tokens de diseño")
 - **Dexie.js (IndexedDB)** + `dexie-react-hooks` para persistencia y reactividad offline-first
-- **Zustand** para estado de UI transitorio (toasts, flags, confirm dialogs) y estado de licencia
+- **Zustand** para estado de UI transitorio (toasts, flags, confirm dialogs)
 - **React Router** para navegación
 - **React Hook Form + Zod** para formularios, contratos de IA y backups
 - **TanStack Charts** (`@tanstack/charts`) para las gráficas
@@ -54,19 +54,19 @@ No negociables:
 - **Trazabilidad total:** cualquier ajuste al saldo es una transacción explícita (`isAdjustment: true`).
 - **Offline-first:** los datos financieros se persisten en IndexedDB y no salen del dispositivo. La excepción es la IA BYOK: al proveedor elegido van la descripción, las categorías y ejemplos recientes, sin montos.
 - **Saldos atómicos:** el saldo calculado es la verdad derivada de la historia de transacciones.
-- **IA multi-proveedor BYOK (PRO):** Google Gemini, Anthropic Claude, OpenAI y Groq directo desde el navegador con claves del usuario. Sin proxy ni backend. Puntos de extensión: `src/lib/ai/gateway/` y el orquestador `categorizer.ts`. Los IDs de modelo y su orden de respaldo viven solo en `src/lib/ai/models.ts` (ver `docs/adr/0001-modelos-ia-centralizados.md`). En New Transaction, la sugerencia sigue este orden: misma descripción (`suggestionValidations` y luego el movimiento más reciente), palabras clave del usuario (`userKeywordRules`), motor local e IA activa. La IA se omite si la misma descripción o una palabra clave ya decidieron, salvo **Regenerar sugerencia**. La sugerencia nunca llena la categoría: el usuario la aplica y la relación se aprende al guardar (ver `docs/adr/0009-asignacion-de-subcategoria.md`).
-- **Licenciamiento Lemon Squeezy:** solo una licencia real de nuestra tienda (store y producto verificados con IDs de configuración) activa PRO, y siempre en línea contra `api.lemonsqueezy.com`. Se revalida cada 24 h, hay 14 días de gracia sin conexión y no existe ningún formato de clave que se acepte sin Lemon Squeezy. Un solo plan pago: PRO con un aporte único de monto libre ("invítame un café"); no hay suscripciones ni GOD. Ver `docs/adr/0004-licencias.md` y `docs/adr/0005-apoyo-pago-unico.md`.
+- **IA multi-proveedor BYOK:** Google Gemini, Anthropic Claude, OpenAI y Groq directo desde el navegador con claves del usuario. Sin proxy ni backend. Puntos de extensión: `src/lib/ai/gateway/` y el orquestador `categorizer.ts`. Los IDs de modelo y su orden de respaldo viven solo en `src/lib/ai/models.ts` (ver `docs/adr/0001-modelos-ia-centralizados.md`). En New Transaction, la sugerencia sigue este orden: misma descripción (`suggestionValidations` y luego el movimiento más reciente), palabras clave del usuario (`userKeywordRules`), motor local e IA activa. La IA se omite si la misma descripción o una palabra clave ya decidieron, salvo **Regenerar sugerencia**. La sugerencia nunca llena la categoría: el usuario la aplica y la relación se aprende al guardar (ver `docs/adr/0009-asignacion-de-subcategoria.md`).
+- **App gratis, sin PRO ni licencias:** todas las funciones están abiertas y no hay límites por plan. El apoyo es voluntario: "Invítame un café" en Ajustes es un enlace al checkout de Lemon Squeezy (`VITE_LEMON_CHECKOUT_URL`) que no desbloquea nada. La app no llama a la API de Lemon Squeezy. Volver a bloquear funciones requiere un ADR nuevo. Ver `docs/adr/0010-app-gratis-sin-pro.md`.
 
 ## PWA, Dexie y estado
 
 - Persistencia: IndexedDB vía Dexie. `useLiveQuery` en componentes; nunca async crudo en render.
 - Escrituras multi-tabla: `db.transaction()`. IDs: `uuid`. Índices en campos de `.where()`.
 - Totales: derivar de la historia; no guardar saldos stale.
-- Zustand solo para UI (toasts, modales, flags) y estado transitorio de licencias. No duplicar la DB en Zustand.
+- Zustand solo para UI (toasts, modales, flags). No duplicar la DB en Zustand.
 - Formularios: React Hook Form + Zod.
 - Service Worker: `vite-plugin-pwa`, `registerType: 'autoUpdate'`. El core funciona sin red.
 - `manifest.webmanifest` consistente con la UX (tema, íconos, display standalone).
-- Runtime caching: `NetworkOnly` para APIs de IA (`generativelanguage.googleapis.com`, `api.anthropic.com`, `api.openai.com`, `api.groq.com`) y Lemon Squeezy.
+- Runtime caching: `NetworkOnly` para APIs de IA (`generativelanguage.googleapis.com`, `api.anthropic.com`, `api.openai.com`, `api.groq.com`).
 - Offline UX: toda acción de persistencia funciona sin red, con feedback claro y no invasivo.
 - Seguridad y privacidad: sin telemetría ni tracking; validación con Zod en fronteras de persistencia y backups.
 - BYOK keys: NUNCA en `VITE_*`, Dexie ni backups. Solo `localStorage`.
