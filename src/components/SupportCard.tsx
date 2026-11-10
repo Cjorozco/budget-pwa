@@ -35,14 +35,14 @@ export function SupportCard({ url = SUPPORT_URL }: SupportCardProps) {
         <aside
             data-testid="support-card"
             aria-label={t.support.sectionTitle}
-            className="relative rounded-2xl border border-slate-200 bg-white p-4 pr-12 dark:border-slate-800 dark:bg-slate-900"
+            className="relative rounded-2xl border border-surface-raised bg-surface p-4 pr-12 text-text"
         >
-            <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">{t.support.dashboardText}</p>
+            <p className="text-sm leading-relaxed text-text-muted">{t.support.dashboardText}</p>
             <a
                 href={url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-2 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-amber-700 underline-offset-4 hover:underline dark:text-amber-400"
+                className="mt-2 inline-flex min-h-11 items-center gap-2 rounded-lg text-sm font-semibold text-info underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-info"
             >
                 <Coffee size={16} aria-hidden="true" />
                 {t.support.button}
@@ -53,7 +53,7 @@ export function SupportCard({ url = SUPPORT_URL }: SupportCardProps) {
                 onClick={handleDismiss}
                 aria-label={t.support.dismiss}
                 title={t.support.dismiss}
-                className="absolute right-1 top-1 flex h-11 w-11 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                className="absolute right-1 top-1 flex h-11 w-11 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-surface-raised hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-info"
             >
                 <X size={18} aria-hidden="true" />
             </button>
