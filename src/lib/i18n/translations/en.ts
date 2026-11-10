@@ -779,6 +779,8 @@ export const en: TranslationSchema = {
         pitch: 'I built this app for myself and share it for free, with no ads or tracking. Every feature is open. If it helps you, you can buy me a coffee.',
         note: 'It is a voluntary contribution: you choose the amount and it unlocks nothing.',
         button: 'Buy me a coffee',
+        dashboardText: 'This app is free and has no ads. If it helps you, you can buy me a coffee.',
+        dismiss: 'Don\'t show again',
     },
     demo: {
         emptyTitle: 'Your budget is empty',
