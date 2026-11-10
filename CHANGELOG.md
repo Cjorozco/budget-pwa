@@ -10,6 +10,7 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). V
 - Exportación del historial financiero desde Informes en JSON y Markdown, por rango de meses (este mes, 6, 12 o todo), para análisis y proyecciones externas. Se genera en el dispositivo y funciona sin conexión (`2.8.0`).
 
 ### Corregido
+- En el historial exportado, un mes solo se lista como atípico si su gasto total cumple el criterio, no por un pico en una categoría. La mediana sin atípicos muestra "no aplica" con menos de 3 meses, y la etiqueta distingue "1 mes" de varios meses (`2.10.2`).
 - Al borrar un movimiento desde la pantalla de Revisión ahora también se revierte el saldo real de la cuenta, así el saldo del Dashboard se actualiza (`2.8.1`).
 
 ### Cambiado

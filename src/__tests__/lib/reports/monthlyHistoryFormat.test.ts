@@ -226,6 +226,11 @@ describe('toHistoryJson', () => {
             expect(json.totales.gastos_sin_atipicos).toEqual({ mediana: 100000, meses_usados: 5 });
         });
 
+        it('writes "no aplica" when fewer than 3 months remain without spikes', () => {
+            const history = build({ budgetItems: [], transactions: [makeTx({ type: 'expense', amount: 500000, date: ts(2026, 10, 5), categoryId: 'cat-2' })] });
+            expect(section(history).totales.gastos_sin_atipicos).toEqual({ mediana: 'no aplica', meses_usados: 1 });
+        });
+
         it('reports adjustments apart', () => {
             expect(section().ajustes).toEqual({ ingresos: 0, gastos: 30000 });
         });
@@ -326,6 +331,31 @@ describe('toHistoryMarkdown', () => {
         const md = render(sixMonths());
         expect(md).toContain('| octubre 2026 | $ 700.000 | Categoría 2 ($ 700.000; mediana $ 100.000) |');
         expect(md).toContain('Mediana de gastos sin meses atípicos: $ 100.000 (5 meses).');
+    });
+
+    describe('median without outliers with few months', () => {
+        const oneMonth = () =>
+            build({ budgetItems: [], transactions: [makeTx({ type: 'expense', amount: 500000, date: ts(2026, 10, 5), categoryId: 'cat-2' })] });
+
+        it('shows "no aplica" with the singular month', () => {
+            const md = render(oneMonth());
+            expect(md).toContain('Mediana de gastos sin meses atípicos: no aplica (1 mes sin picos; se necesitan al menos 3).');
+            expect(md).not.toContain('1 meses');
+        });
+
+        it('uses the singular in English too', () => {
+            const md = toHistoryMarkdown(oneMonth(), {
+                labels: getTranslationDictionary('en').reports.historyExport,
+                formatMoney: formatCurrency,
+                dateLocale,
+            });
+            expect(md).toContain('(1 month without spikes');
+            expect(md).not.toContain('1 months');
+        });
+
+        it('keeps the plural with several months', () => {
+            expect(render(sixMonths())).toContain('(5 meses).');
+        });
     });
 
     it('reports adjustments apart from the medians', () => {
