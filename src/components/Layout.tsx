@@ -41,7 +41,8 @@ export default function Layout() {
                                 data-tour={`nav-${href === '/' ? 'dashboard' : href.slice(1)}`}
                                 className={cn(
                                     // Width follows the label: fixed columns made long labels overlap on phones.
-                                    "flex flex-auto flex-col items-center justify-center min-w-0 h-full space-y-1 transition-colors",
+                                    // min-w-11 keeps the 44 px touch target for short labels.
+                                    "flex flex-auto flex-col items-center justify-center min-w-11 h-full space-y-1 transition-colors",
                                     isActive
                                         ? "text-blue-600 dark:text-blue-400"
                                         : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
