@@ -779,6 +779,8 @@ export const fr: TranslationSchema = {
         pitch: 'J’ai créé cette app pour moi et je la partage gratuitement, sans publicité ni pistage. Toutes les fonctionnalités sont ouvertes. Si elle vous est utile, vous pouvez m’offrir un café.',
         note: 'C’est une contribution volontaire : vous choisissez le montant et elle ne débloque rien.',
         button: 'M’offrir un café',
+        dashboardText: 'Cette app est gratuite et sans publicité. Si elle vous est utile, vous pouvez m’offrir un café.',
+        dismiss: 'Ne plus afficher',
     },
     demo: {
         emptyTitle: 'Votre budget est vide',

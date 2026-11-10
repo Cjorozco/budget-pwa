@@ -14,7 +14,7 @@ PRO bloqueaba la IA, la exportación a CSV y ponía límites al plan básico (2 
 ## Decisión
 - **Todo es gratis.** Sin límites de cuentas, reservas ni plantillas. IA (BYOK) y exportación CSV abiertas para todos.
 - **Se elimina el sistema de licencias completo:** `licenseStore`, `src/lib/license/`, `UpgradeModal`, `ProBadge`, sus pruebas, las variables `VITE_LEMON_STORE_ID` y `VITE_LEMON_PRO_*`, y `api.lemonsqueezy.com` del CSP. La app ya no llama a la API de Lemon Squeezy.
-- **El apoyo es voluntario.** En Ajustes queda la sección "Apoya el proyecto" con el botón "Invítame un café": un enlace al checkout de Lemon Squeezy (`VITE_LEMON_CHECKOUT_URL`) que se abre en otra pestaña. No desbloquea nada y el texto lo dice. Si la variable está vacía, la sección no se muestra.
+- **El apoyo es voluntario.** En Ajustes queda la sección "Apoya el proyecto" con el botón "Invítame un café": un enlace al checkout de Lemon Squeezy (`VITE_LEMON_CHECKOUT_URL`) que se abre en otra pestaña. No desbloquea nada y el texto lo dice. Si la variable está vacía, la sección no se muestra. Desde la 2.12.0 el mismo enlace aparece en una tarjeta discreta al final del Resumen, solo con 10 movimientos propios o más, nunca con datos de ejemplo, y se puede cerrar para siempre. No se repite en las demás pantallas para que no se sienta como publicidad.
 - **No se limpia `localStorage`.** La entrada `personal_budget_license` de quien tenía una licencia queda sin uso; no contiene datos financieros.
 
 ## Consecuencias

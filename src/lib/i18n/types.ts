@@ -736,6 +736,8 @@ export interface TranslationSchema {
         pitch: string;
         note: string;
         button: string;
+        dashboardText: string;
+        dismiss: string;
     };
     demo: {
         emptyTitle: string;
