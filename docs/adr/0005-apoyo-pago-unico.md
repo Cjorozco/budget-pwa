@@ -1,5 +1,5 @@
 # 0005 — Un solo plan: aporte único "invítame un café"
-- Estado: aceptada
+- Estado: reemplazada por 0010 (el aporte sigue, pero ya no desbloquea nada)
 - Fecha: 2026-10-15
 
 ## Contexto
