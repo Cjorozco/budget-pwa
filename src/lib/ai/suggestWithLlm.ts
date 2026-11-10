@@ -21,7 +21,6 @@ export function shouldCallGemini(local: CategorySuggestion | null): boolean {
 }
 
 export interface SuggestWithLlmOptions {
-    isPro: boolean;
     signal?: AbortSignal;
     online?: boolean;
     forceRegenerate?: boolean;
@@ -100,10 +99,8 @@ export async function suggestCategoryWithLlm(
         return localSuccess(localRule, { skippedAi: true });
     }
 
-    let aiUnavailableReason: 'not-pro' | 'no-api-key' | 'offline' | null = null;
-    if (!options.isPro) {
-        aiUnavailableReason = 'not-pro';
-    } else if (!hasKey) {
+    let aiUnavailableReason: 'no-api-key' | 'offline' | null = null;
+    if (!hasKey) {
         aiUnavailableReason = 'no-api-key';
     } else if (!online) {
         aiUnavailableReason = 'offline';

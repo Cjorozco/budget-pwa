@@ -16,7 +16,6 @@ import { getProviderMeta, getSelectedAiProvider, hasAiApiKey } from '@/lib/ai/ga
 import { learnCategoryForDescription, shouldAutoCallAi, getValidatedSuggestion, suggestionFromValidation } from '@/lib/ai/suggestionValidation';
 import type { AiProviderType } from '@/lib/ai/types';
 import { useUIStore } from '@/store/ui';
-import { useLicenseStore } from '@/store/licenseStore';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 import { format } from 'date-fns';
@@ -38,7 +37,6 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
     const accounts = useLiveQuery(() => db.accounts.filter(a => a.isActive).toArray()) || [];
     const allCategories = useLiveQuery(() => db.categories.filter(c => c.isActive).toArray()) || [];
 
-    const isPro = useLicenseStore((s) => s.isPro);
     const addToast = useUIStore((s) => s.addToast);
     const [aiSuggestion, setAiSuggestion] = useState<CategorySuggestion | null>(null);
     const [showAiSuggestion, setShowAiSuggestion] = useState(false);
@@ -161,7 +159,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
         const delay = forceRegenerate ? 0 : 500;
         const timer = setTimeout(async () => {
             const activeProvider = getSelectedAiProvider();
-            const mayCallAi = isPro && hasAiApiKey(activeProvider);
+            const mayCallAi = hasAiApiKey(activeProvider);
             const providerName = getProviderMeta(activeProvider).label;
             const validated = await getValidatedSuggestion(description, type);
             if (controller.signal.aborted) return;
@@ -177,7 +175,6 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
             setAiProgressMessage(mayCallAi ? t.forms.consultingProvider.replace('{provider}', providerName) : null);
             try {
                 const result = await suggestCategoryWithLlm(description, type, {
-                    isPro,
                     signal: controller.signal,
                     forceRegenerate,
                     onProgress: (_attempt, msg) => {
@@ -228,11 +225,10 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
             setAiPending(false);
             setAiProgressMessage(null);
         };
-    }, [description, type, initialData, isPro, t, regenerateNonce, isDescriptionFocused]);
+    }, [description, type, initialData, t, regenerateNonce, isDescriptionFocused]);
 
     const canRegenerateAi =
         !initialData &&
-        isPro &&
         (type === 'income' || type === 'expense') &&
         Boolean(description && description.length >= 3) &&
         hasAiApiKey(getSelectedAiProvider());

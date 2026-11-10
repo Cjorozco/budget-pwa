@@ -4,7 +4,6 @@ import userEvent from '@testing-library/user-event';
 import { TransactionForm } from '@/components/forms/TransactionForm';
 import { db } from '@/lib/db';
 import { useUIStore } from '@/store/ui';
-import { useLicenseStore } from '@/store/licenseStore';
 import type { ResolverResult } from '@/lib/ai/types';
 import { saveValidatedSuggestion } from '@/lib/ai/suggestionValidation';
 import { setAiApiKey, setSelectedAiProvider } from '@/lib/ai/gateway/config';
@@ -26,7 +25,6 @@ describe('TransactionForm AI diagnostic notice', () => {
     beforeEach(async () => {
         vi.clearAllMocks();
         localStorage.clear();
-        useLicenseStore.setState({ isPro: true });
         useUIStore.setState({ toasts: [] });
         await db.transactions.clear();
         await db.accounts.clear();
@@ -61,28 +59,6 @@ describe('TransactionForm AI diagnostic notice', () => {
         const notice = await screen.findByTestId('ai-diagnostic-notice', undefined, { timeout: 3000 });
         expect(notice).toHaveTextContent(/cuota/i);
         expect(notice).toHaveTextContent(/reglas locales/i);
-    });
-
-    it('gates the AI on the real license: no Pro flag in localStorage can unlock it, and a new license applies without reloading', async () => {
-        const result: ResolverResult = { status: 'no-match', aiDiagnosis: { status: 'unavailable', reason: 'not-pro' } };
-        vi.mocked(suggestCategoryWithLlm).mockResolvedValue(result);
-        localStorage.setItem('budget_is_pro', 'true');
-        useLicenseStore.setState({ isPro: false });
-
-        const user = userEvent.setup();
-        render(<TransactionForm onSuccess={vi.fn()} />);
-        await user.type(screen.getByTestId('description-input'), 'almuerzo');
-        await user.tab();
-        await waitFor(() => expect(suggestCategoryWithLlm).toHaveBeenCalled(), { timeout: 3000 });
-        expect(vi.mocked(suggestCategoryWithLlm).mock.calls.at(-1)?.[2]).toMatchObject({ isPro: false });
-
-        // activating a license while the form is open takes effect on the next suggestion
-        vi.mocked(suggestCategoryWithLlm).mockClear();
-        useLicenseStore.setState({ isPro: true });
-        await user.type(screen.getByTestId('description-input'), ' hoy');
-        await user.tab();
-        await waitFor(() => expect(suggestCategoryWithLlm).toHaveBeenCalled(), { timeout: 3000 });
-        expect(vi.mocked(suggestCategoryWithLlm).mock.calls.at(-1)?.[2]).toMatchObject({ isPro: true });
     });
 
     it('shows no notice when the AI is simply not configured', async () => {

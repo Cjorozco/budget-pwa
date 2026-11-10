@@ -3,7 +3,6 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TransactionForm } from '@/components/forms/TransactionForm';
 import { db } from '@/lib/db';
-import { useLicenseStore } from '@/store/licenseStore';
 import { useUIStore } from '@/store/ui';
 import type { Category, Transaction } from '@/lib/types';
 
@@ -40,7 +39,6 @@ const save = (user: ReturnType<typeof userEvent.setup>) =>
 
 describe('TransactionForm subcategory suggestion', () => {
     beforeEach(async () => {
-        useLicenseStore.setState({ isPro: false });
         useUIStore.setState({ toasts: [] });
         await Promise.all([
             db.transactions.clear(),

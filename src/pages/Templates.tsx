@@ -9,8 +9,6 @@ import { useUIStore } from '@/store/ui';
 import { Save, Plus, Trash2, Edit2 } from 'lucide-react';
 import type { QuickTemplate } from '@/lib/types';
 import { v4 as uuidv4 } from 'uuid';
-import { useLicenseStore } from '@/store/licenseStore';
-import { ProBadge } from '@/components/ui/ProBadge';
 import { useTranslation } from '@/lib/i18n';
 
 export default function TemplatesPage() {
@@ -19,13 +17,8 @@ export default function TemplatesPage() {
     const [editingTemplate, setEditingTemplate] = useState<QuickTemplate | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const { addToast, confirm } = useUIStore();
-    const { canCreateTemplate, openUpgradeModal, isPro } = useLicenseStore();
 
     const handleOpenNewTemplate = () => {
-        if (!canCreateTemplate(templates.length)) {
-            openUpgradeModal(t.templates.proLimitTemplates);
-            return;
-        }
         setEditingTemplate({
             id: 'new-' + Date.now(),
             name: '',
@@ -91,7 +84,6 @@ export default function TemplatesPage() {
                     <div>
                         <div className="flex items-center gap-2">
                             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t.templates.templatesTitle}</h1>
-                            {!isPro && <ProBadge showUnlockAction size="sm" />}
                         </div>
                         <p className="text-sm text-slate-500">{t.templates.templatesSubtitle}</p>
                     </div>

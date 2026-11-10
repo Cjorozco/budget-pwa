@@ -1,5 +1,5 @@
 # 0004 — Licencias: solo Lemon Squeezy, verificado en línea
-- Estado: aceptada (los niveles y planes los reemplaza 0005: un solo plan PRO de pago único, sin GOD)
+- Estado: reemplazada por 0010 (la app es gratis y ya no hay licencias)
 - Fecha: 2026-10-10
 
 ## Contexto

@@ -302,7 +302,6 @@ describe('end-to-end resilience integration (fallback to local heuristic/regex e
         const fetchSpy = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Failed to fetch'));
 
         const result = await suggestCategoryWithLlm('Pago recibo de Enel Codensa', 'expense', {
-            isPro: true,
             online: true,
         });
 
@@ -350,7 +349,6 @@ describe('end-to-end resilience integration (fallback to local heuristic/regex e
         );
 
         const result = await suggestCategoryWithLlm('Mercado en Carulla', 'expense', {
-            isPro: true,
             online: true,
         });
 
@@ -388,7 +386,6 @@ describe('end-to-end resilience integration (fallback to local heuristic/regex e
         );
 
         const result = await suggestCategoryWithLlm('Mercado en Carulla', 'expense', {
-            isPro: true,
             online: true,
         });
 
