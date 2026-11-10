@@ -343,6 +343,8 @@ export interface TranslationSchema {
             mdTrend: string;
             mdNotApplicable: string;
             mdExpenseNoOutliers: string;
+            mdMonthOne: string;
+            mdMonthOther: string;
             mdExpenseNoOutliersNone: string;
             mdAdjustmentsApart: string;
             mdOutlierMonths: string;

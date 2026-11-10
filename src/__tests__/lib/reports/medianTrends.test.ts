@@ -119,10 +119,16 @@ describe('categories used in few months', () => {
     });
 
     it('marks a large one-off purchase and names its category', () => {
+        const result = build([...steady(), ...series([0, 0, 0, 0, 0, 1500], { categoryId: 'cat-1a' })]);
+        expect(expenseRow(result, 'cat-1')?.outlier).toBe(true);
+        expect(result.outlierMonths).toMatchObject([{ month: '2026-10', categories: [{ categoryId: 'cat-1', amount: 1500, median: 0 }] }]);
+        expect(result.totals.expenseWithoutOutliers.monthsUsed).toBe(5);
+    });
+
+    it('flags the category but not the month when the month total stays normal', () => {
         const result = build([...steady(), ...series([0, 0, 0, 0, 0, 600], { categoryId: 'cat-1a' })]);
         expect(expenseRow(result, 'cat-1')?.outlier).toBe(true);
-        expect(result.outlierMonths).toMatchObject([{ month: '2026-10', categories: [{ categoryId: 'cat-1', amount: 600, median: 0 }] }]);
-        expect(result.totals.expenseWithoutOutliers.monthsUsed).toBe(5);
+        expect(result.outlierMonths).toEqual([]);
     });
 
     it('measures a subcategory against the same typical total', () => {
@@ -302,9 +308,21 @@ describe('period totals', () => {
         expect(build(rows).totals.expenseWithoutOutliers).toEqual({ median: 130, monthsUsed: 5 });
     });
 
-    it('lists every category behind the same outlier month', () => {
+    it('names the category with the largest excess over its own median', () => {
         const rows = [...series([100, 100, 100, 100, 100, 900]), ...series([50, 50, 50, 50, 50, 500], { categoryId: 'cat-1a' })];
-        expect(build(rows).outlierMonths[0].categories.map((c) => c.categoryId)).toEqual(['cat-2', 'cat-1']);
+        expect(build(rows).outlierMonths[0].categories.map((c) => c.categoryId)).toEqual(['cat-2']);
+    });
+
+    it('judges each month by its total, not by a spike in any category', () => {
+        const rows = [
+            ...series([1000, 1000, 1000, 1000, 1000, 1000]),
+            ...series([0, 400, 0, 400, 0, 0], { categoryId: 'cat-1a' }),
+            ...series([0, 0, 5000, 0, 400, 400], { categoryId: 'cat-adj' }),
+        ];
+        const result = build(rows);
+        expect(result.outlierMonths.map((m) => m.month)).toEqual(['2026-07']);
+        expect(result.outlierMonths[0].categories).toMatchObject([{ categoryId: 'cat-adj', amount: 5000 }]);
+        expect(result.totals.expenseWithoutOutliers).toEqual({ median: 1400, monthsUsed: 5 });
     });
 
     it('marks every month above the threshold, not only the maximum', () => {
@@ -313,10 +331,11 @@ describe('period totals', () => {
         expect(result.totals.expenseWithoutOutliers).toEqual({ median: 25, monthsUsed: 4 });
     });
 
-    it('has no median without spikes when every month is an outlier', () => {
-        const rows = [...series([900, 0, 0]), ...series([0, 900, 0], { categoryId: 'cat-1a' }), ...series([0, 0, 900], { categoryId: 'cat-adj' })];
-        const result = build(rows);
-        expect(result.outlierMonths).toHaveLength(3);
-        expect(result.totals.expenseWithoutOutliers).toEqual({ median: null, monthsUsed: 0 });
+    it('has no median without spikes when fewer than 3 months remain', () => {
+        expect(build(series([100, 500])).totals.expenseWithoutOutliers).toEqual({ median: null, monthsUsed: 2 });
+    });
+
+    it('computes the median without spikes with exactly 3 months', () => {
+        expect(build(series([100, 200, 300])).totals.expenseWithoutOutliers).toEqual({ median: 200, monthsUsed: 3 });
     });
 });
