@@ -19,6 +19,13 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    {
+      // El CSP de index.html permite localhost solo para el HMR de Vite; el build de producción no lo necesita.
+      name: 'strip-localhost-from-csp',
+      apply: 'build',
+      transformIndexHtml: (html: string) =>
+        html.replace(/\s+(?:ws|http):\/\/localhost:\*/g, ''),
+    },
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['vite.svg', 'robots.txt'],
