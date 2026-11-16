@@ -600,7 +600,7 @@ export const en: TranslationSchema = {
             label: 'Google Gemini',
             subLabel: 'Google AI',
             keyUrlLabel: 'Create API key in Google AI Studio',
-            modelDescription: 'Model: Gemini 3.5 Flash Lite (with fallback to Flash Lite 3.1 → Flash 3.6 → 3.8)',
+            modelDescription: 'Model: Gemini 4 Hydrogen (with fallback to 3.5 Flash Lite → Flash Lite 3.1 → Flash 3.6 → 3.8)',
             helpText: 'Free or paid API key created in Google AI Studio. ChatGPT Plus or Claude.ai subscriptions do not work.',
             placeholder: 'Paste your Google AI Studio key (AIzaSy...)',
             costNote: 'Has a free tier with per-minute and per-day usage limits. You don\'t need a card to start.',

@@ -7,7 +7,7 @@ Los IDs de modelo vivían repartidos entre cada adaptador, `geminiConfig.ts`, lo
 
 ## Decisión
 - `src/lib/ai/models.ts` es la única fuente de IDs, etiquetas, orden de respaldo y `thinkingLevel` por modelo.
-- Cadena Gemini: `gemini-3.5-flash-lite` → `gemini-3.1-flash-lite` → `gemini-3.6-flash` → `gemini-3.8-flash`.
+- Cadena Gemini: `gemini-4-hydrogen` → `gemini-3.5-flash-lite` → `gemini-3.1-flash-lite` → `gemini-3.6-flash` → `gemini-3.8-flash`. Hydrogen (2026-11-16) va primero con `thinkingLevel: "low"`: rechaza `minimal` según la documentación de Google y tiene capa gratuita; no se verificó contra la API real. `gemini-4-argon` y `gemini-4-carbon` quedan comentados en `models.ts` (sin capa gratuita y demasiado lentos para el plazo por intento).
 - No se envían `temperature`, `top_p`, `top_k` ni `candidateCount` a Gemini.
 - Plazo total de 8 s para la cadena Gemini (4 s por intento, para que quepa al menos un respaldo); al agotarse, actúa el motor local.
 - Se elimina el flujo Gemini duplicado; sus tests de resiliencia pasaron a `geminiAdapter.test.ts`.

@@ -47,5 +47,5 @@ export const GEMINI_KEY_HELP = {
     what: `API key de ${GEMINI_PROVIDER_LABEL}, creada en Google AI Studio. Sirve la gratuita o la de pago.`,
     whatNot:
         'Por ahora no sirven ChatGPT Plus, Claude.ai, ni keys de OpenAI (sk-…) o Anthropic: esta PWA no tiene servidor.',
-    model: `Modelo principal: ${getFriendlyModelName(GEMINI_MODEL)} (con respaldo en Flash Lite 3.1 → Flash 3.6 → 3.8).`,
+    model: `Modelo principal: ${getFriendlyModelName(GEMINI_MODEL)} (con respaldo en Flash Lite 3.5 → Flash Lite 3.1 → Flash 3.6 → 3.8).`,
 } as const;
