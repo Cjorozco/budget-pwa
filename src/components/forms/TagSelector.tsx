@@ -189,7 +189,7 @@ export function TagSelector({ selectedTagIds, onChange }: TagSelectorProps) {
                             value={newTagName}
                             onChange={(e) => setNewTagName(e.target.value)}
                             onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
+                                if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
                                     e.preventDefault();
                                     handleCreateTag();
                                 }
