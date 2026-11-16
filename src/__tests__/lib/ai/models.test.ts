@@ -34,4 +34,11 @@ describe('AI model chains (single source of truth)', () => {
         }
         expect(getModelSpec('gemini', 'gemini-3.8-flash')?.thinkingLevel).not.toBe('minimal');
     });
+
+    it('puts Gemini 4 Hydrogen first, without the "minimal" level it rejects', () => {
+        expect(AI_MODEL_CHAINS.gemini[0].id).toBe('gemini-4-hydrogen');
+        expect(AI_MODEL_CHAINS.gemini[0].thinkingLevel).toBe('low');
+        expect(getModelLabel('gemini', 'gemini-4-hydrogen')).toBe('Gemini 4 Hydrogen');
+        expect(getModelSpec('gemini', 'gemini-4-carbon')).toBeUndefined();
+    });
 });

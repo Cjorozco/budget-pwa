@@ -5,6 +5,7 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). V
 ## [Sin publicar]
 
 ### Agregado
+- Gemini 4 Hydrogen como primer modelo de la cadena de Gemini; los Gemini 3.x pasan a respaldo. Argon y Carbon quedan preparados pero desactivados (`2.13.0`).
 - Tarjeta "Invítame un café" al final del Resumen, para que el apoyo voluntario no quede solo en Ajustes. Aparece con 10 movimientos propios o más, nunca con los datos de ejemplo, y se puede cerrar para no volver a verla (`2.12.0`).
 - Sugerencia de subcategoría a partir de la descripción: usa la misma descripción ya registrada, las palabras clave propias (nuevas, en Categorías) y luego el motor local y la IA. La sugerencia nunca se guarda sin que la apliques, lo que eliges se recuerda al guardar y las reglas se pueden ver y borrar. Nueva tabla `userKeywordRules` en Dexie versión 11, incluida en el respaldo (`2.10.0`).
 - Sección "Medianas y tendencias de los últimos 6 meses" al exportar 6 meses, 12 meses o todo, con tendencia y detección de meses atípicos por categoría y subcategoría. En esos períodos reemplaza a los promedios y el JSON pasa a `schemaVersion` 2: `summary` cambia por `medianas_y_tendencias`. "Solo este mes" no cambia (`2.9.0`).
