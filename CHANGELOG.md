@@ -11,6 +11,7 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). V
 - Exportación del historial financiero desde Informes en JSON y Markdown, por rango de meses (este mes, 6, 12 o todo), para análisis y proyecciones externas. Se genera en el dispositivo y funciona sin conexión (`2.8.0`).
 
 ### Corregido
+- El build de producción ya no permite conexiones a `localhost` en su política de seguridad (CSP); solo se mantienen en desarrollo para el recargado en caliente (`2.12.3`).
 - Al crear una etiqueta con un teclado IME (japonés, chino, coreano), el Enter que confirma la composición ya no crea la etiqueta antes de tiempo (`2.12.2`).
 - En móvil, las etiquetas de la barra inferior ya no se pisan en español ("Presupuesto" sobre "Movimientos"): cada pestaña toma el ancho de su texto, con un mínimo de 44 px, y la etiqueta se recorta si no cabe (`2.12.1`).
 - En el historial exportado, un mes solo se lista como atípico si su gasto total cumple el criterio, no por un pico en una categoría. La mediana sin atípicos muestra "no aplica" con menos de 3 meses, y la etiqueta distingue "1 mes" de varios meses (`2.10.2`).
