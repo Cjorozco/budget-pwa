@@ -140,7 +140,7 @@ describe('GeminiProviderClient (REST Adapter)', () => {
 
         const genConfig = capturedBody.generationConfig as { responseMimeType: string; thinkingConfig: { thinkingLevel: string; thinkingBudget?: number }; temperature?: number };
         expect(genConfig.responseMimeType).toBe('application/json');
-        expect(genConfig.thinkingConfig.thinkingLevel).toBe('low');
+        expect(genConfig.thinkingConfig.thinkingLevel).toBe('minimal');
         expect(genConfig.thinkingConfig.thinkingBudget).toBeUndefined();
         expect(genConfig.temperature).toBeUndefined();
 

@@ -21,14 +21,16 @@ type ChainedProvider = 'gemini' | 'openai' | 'anthropic' | 'groq';
 
 export const AI_MODEL_CHAINS: Record<ChainedProvider, readonly ModelSpec[]> = {
     // Verified against the live API: 3.5-flash-lite rejects `thinkingBudget` (400),
-    // 3.8-flash rejects thinkingLevel "minimal" (400). Gemini 4 rejects it too (per Google docs, not yet
-    // verified against the live API) and defaults to a deep level, so we pin "low" for speed.
+    // 3.8-flash rejects thinkingLevel "minimal" (400). Gemini 4 rejects it too (per Google docs); "low" is
+    // still unverified against the live API, since Hydrogen never answered in the eval.
     gemini: [
-        { id: 'gemini-4-hydrogen', label: 'Gemini 4 Hydrogen', thinkingLevel: 'low' },
         { id: 'gemini-3.5-flash-lite', label: 'Gemini 3.5 Flash Lite', thinkingLevel: 'minimal' },
         { id: 'gemini-3.1-flash-lite', label: 'Gemini 3.1 Flash Lite', thinkingLevel: 'minimal' },
         { id: 'gemini-3.6-flash', label: 'Gemini 3.6 Flash', thinkingLevel: 'medium' },
         { id: 'gemini-3.8-flash', label: 'Gemini 3.8 Flash', thinkingLevel: 'medium' },
+        // Disabled: no answer within 30 s in any eval case (docs/evals/2026-11-18-categorizacion-gemini-4-hydrogen.md),
+        // so as the first model it cost every suggestion the full 4 s attempt. Re-enable only after a re-test.
+        // { id: 'gemini-4-hydrogen', label: 'Gemini 4 Hydrogen', thinkingLevel: 'low' },
         // Disabled: no free tier and they think longer than the per-attempt timeout allows.
         // { id: 'gemini-4-argon', label: 'Gemini 4 Argon', thinkingLevel: 'low' },
         // { id: 'gemini-4-carbon', label: 'Gemini 4 Carbon', thinkingLevel: 'low' },

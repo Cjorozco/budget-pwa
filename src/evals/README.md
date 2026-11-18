@@ -31,7 +31,8 @@ La capa gratuita de Gemini limita las peticiones por minuto: con ~57 casos × 4 
 
 ## Resultados
 
-Primera corrida (parcial, solo los dos modelos Lite con datos válidos): `docs/evals/2026-10-10-categorizacion-gemini.md`.
+- Primera corrida (parcial, solo los dos modelos Lite con datos válidos): `docs/evals/2026-10-10-categorizacion-gemini.md`.
+- Segunda corrida (Gemini 4 Hydrogen sin respuesta dentro del tope; línea base `3.5-flash-lite` estable): `docs/evals/2026-11-18-categorizacion-gemini-4-hydrogen.md`.
 
 ## Límites
 

@@ -12,6 +12,7 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). V
 - Exportación del historial financiero desde Informes en JSON y Markdown, por rango de meses (este mes, 6, 12 o todo), para análisis y proyecciones externas. Se genera en el dispositivo y funciona sin conexión (`2.8.0`).
 
 ### Corregido
+- Las sugerencias de IA con Gemini ya no esperan 4 s a Gemini 4 Hydrogen, que no respondía dentro del plazo: se desactiva y Gemini 3.5 Flash Lite vuelve a ser el modelo principal. La prueba de key en Ajustes deja de esperarlo también. Ver `docs/evals/2026-11-18-categorizacion-gemini-4-hydrogen.md` y la enmienda al ADR 0001 (`2.13.1`).
 - El build de producción ya no permite conexiones a `localhost` en su política de seguridad (CSP); solo se mantienen en desarrollo para el recargado en caliente (`2.12.3`).
 - Al crear una etiqueta con un teclado IME (japonés, chino, coreano), el Enter que confirma la composición ya no crea la etiqueta antes de tiempo (`2.12.2`).
 - En móvil, las etiquetas de la barra inferior ya no se pisan en español ("Presupuesto" sobre "Movimientos"): cada pestaña toma el ancho de su texto, con un mínimo de 44 px, y la etiqueta se recorta si no cabe (`2.12.1`).
