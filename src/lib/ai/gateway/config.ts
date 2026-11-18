@@ -116,7 +116,7 @@ export const SUPPORTED_AI_PROVIDERS: ProviderMeta[] = [
         label: 'Google Gemini',
         keyUrl: 'https://aistudio.google.com/apikey',
         keyUrlLabel: 'Crear API key en Google AI Studio',
-        modelDescription: 'Modelo: Gemini 4 Hydrogen (con respaldo en Flash Lite 3.5 → Flash Lite 3.1 → Flash 3.6 → 3.8)',
+        modelDescription: 'Modelo: Gemini 3.5 Flash Lite (con respaldo en Flash Lite 3.1 → Flash 3.6 → 3.8)',
         helpText: 'API key gratuita o de pago creada en Google AI Studio. No sirven ChatGPT Plus ni Claude.ai.',
         placeholder: 'Pega tu key de Google AI Studio (AIzaSy...)',
         pricing: 'free-tier',
