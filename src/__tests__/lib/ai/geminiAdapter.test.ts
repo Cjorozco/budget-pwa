@@ -13,9 +13,9 @@ function errorResponse(status: number, message: string): Response {
 }
 
 describe('GeminiProviderClient model chain', () => {
-    it('starts with gemini-4-hydrogen and keeps the documented fallbacks', () => {
-        expect(GEMINI_MODEL).toBe('gemini-4-hydrogen');
-        expect(GEMINI_FALLBACK_MODELS).toEqual(['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.6-flash', 'gemini-3.8-flash']);
+    it('starts with gemini-3.5-flash-lite and keeps the documented fallbacks', () => {
+        expect(GEMINI_MODEL).toBe('gemini-3.5-flash-lite');
+        expect(GEMINI_FALLBACK_MODELS).toEqual(['gemini-3.1-flash-lite', 'gemini-3.6-flash', 'gemini-3.8-flash']);
     });
 });
 
@@ -33,8 +33,9 @@ describe('GeminiProviderClient request body', () => {
 
         await new GeminiProviderClient('test-key').generate({ prompt: 'p', systemPrompt: 's', temperature: 0.9 });
 
-        expect(urls[0]).toContain('/models/gemini-4-hydrogen:');
-        expect(urls[3]).toContain('/models/gemini-3.6-flash:');
+        expect(urls[0]).toContain('/models/gemini-3.5-flash-lite:');
+        expect(urls[2]).toContain('/models/gemini-3.6-flash:');
+        expect(urls[3]).toContain('/models/gemini-3.8-flash:');
         for (const body of bodies) {
             const cfg = body.generationConfig as Record<string, unknown>;
             for (const banned of ['temperature', 'topP', 'topK', 'candidateCount']) {
@@ -45,7 +46,8 @@ describe('GeminiProviderClient request body', () => {
             const contents = body.contents as Array<{ role?: string }>;
             expect(contents[contents.length - 1].role).not.toBe('model');
         }
-        expect((bodies[0].generationConfig as { thinkingConfig: unknown }).thinkingConfig).toEqual({ thinkingLevel: 'low' });
+        expect((bodies[0].generationConfig as { thinkingConfig: unknown }).thinkingConfig).toEqual({ thinkingLevel: 'minimal' });
+        expect((bodies[2].generationConfig as { thinkingConfig: unknown }).thinkingConfig).toEqual({ thinkingLevel: 'medium' });
         expect((bodies[3].generationConfig as { thinkingConfig: unknown }).thinkingConfig).toEqual({ thinkingLevel: 'medium' });
     });
 });

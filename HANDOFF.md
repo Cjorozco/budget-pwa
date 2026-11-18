@@ -30,7 +30,8 @@ PWA offline-first (React 19, Vite 7, Dexie, Zustand, TanStack Charts). Desde el 
 
 ## Pendiente / a verificar
 
-- **Evaluación de Gemini incompleta** (`docs/evals/2026-10-10-categorizacion-gemini.md`): solo `3.5-flash-lite` y `3.1-flash-lite` dieron datos válidos; `3.6-flash` agotó la cuota gratuita y `3.8-flash` no se ejecutó. Repetir con cuota disponible antes de fijar el modelo por defecto.
+- **Gemini 4 Hydrogen desactivado en `2.13.1`** (`docs/evals/2026-11-18-categorizacion-gemini-4-hydrogen.md`, enmienda al ADR 0001): 3/3 timeouts a 30 s con `thinkingLevel: "low"`, así que cada sugerencia perdía 4 s antes del respaldo. Queda comentado en `models.ts` y `3.5-flash-lite` vuelve a ser el principal. Pendiente: antes de reactivarlo, repetir la prueba con un tope mayor (puede haber sido sobrecarga de la semana de lanzamiento) y verificar si `low` es válido.
+- **Evaluación de Gemini incompleta** (`docs/evals/2026-10-10-categorizacion-gemini.md`, `docs/evals/2026-11-18-categorizacion-gemini-4-hydrogen.md`): `3.5-flash-lite` repitió estable (45/49 exacto, p95 2,2 s). Faltan `3.6-flash` y `3.8-flash` (requieren key de pago por la cuota gratuita) y repetir `3.1-flash-lite`.
 - **Lemon Squeezy (ADR 0010):** el producto "Buy me a Coffee" (`1443184`) sigue siendo el checkout de `VITE_LEMON_CHECKOUT_URL`. Falta desactivar las claves de licencia en ese producto y revisar que su nombre y descripción no prometan desbloquear PRO.
 - **Traducciones de la semilla (en/fr):** los 96 nombres de categorías (`src/lib/db/seedNames.ts`) son un borrador y necesitan revisión de un hablante nativo.
 - **Razones del motor local** (reglas e historial): siguen en español para todos los idiomas. Tampoco hay botón para traducir categorías ya creadas.
