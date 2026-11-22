@@ -1,14 +1,16 @@
 # HANDOFF — personal-buget-pwa
 
-Actualizado: 2026-10-30 · Rama: `docs/flujo-de-ramas` · Versión: `2.7.1`
+Actualizado: 2026-11-22 · Rama: `develop` · Versión: `2.13.1` (en producción, `master`)
 
-Lee primero `AGENTS.md` y `.agents/rules/*`. Las decisiones de diseño están en `docs/adr/` (0001–0007).
+Lee primero `AGENTS.md` y `.agents/rules/*`. Las decisiones de diseño están en `docs/adr/` (0001–0010).
 
-## Verificación (2026-10-30)
+Copia en Notion: "Handoff — My Real balance App" (Proyectos > My Real Balance App). Al editar uno, actualiza el otro.
 
-- `npx vitest run`: 59 archivos, 573 tests, todos pasan.
-- `npm run build`: OK (`tsc -b && vite build`).
-- `npx eslint src` y `tsc -p tsconfig.app.json --noEmit`: sin problemas.
+## Verificación (2026-11-22, `develop`)
+
+- `npm run test:run`: 64 archivos, 753 tests, todos pasan.
+- `npx tsc -b`: OK.
+- `npm run lint`: sin problemas.
 
 ## Flujo de ramas (ADR 0007)
 
@@ -26,7 +28,10 @@ PWA offline-first (React 19, Vite 7, Dexie, Zustand, TanStack Charts). Desde el 
 - **IA:** modelos centralizados (ADR 0001), Gemini con `thinkingLevel`, prompt con criterios por categoría y reglas locales para Canadá, avisos diferenciados (key, cuota, red, timeout), onboarding BYOK con Gemini recomendado, y arnés de evaluación (`npm run eval:ai`).
 - **UX:** tour de bienvenida (Movimientos y Cuentas), modo de datos de ejemplo, instalador PWA visible, separador de miles automático en campos de dinero, "Reconciliación" renombrado a "Cuadrar saldo", gráficas migradas a TanStack Charts.
 - **Tokens de diseño y movimiento (2.5.0, #55, ADR 0006):** paleta del kit FinWise de Figma como roles semánticos en `src/index.css` (claro/oscuro por `prefers-color-scheme`), Poppins opt-in (`font-brand`), componentes `TransactionItem` y `BalanceSummaryCard` en `src/components/transactions/`, `TransactionItem` ya usado en Movimientos con entrada animada (`motion`, respeta `prefers-reduced-motion`). Salió de una práctica del flujo Figma → código; la rama `practice/figma-mcp` se conserva para seguir practicando.
-- **Fixes:** transferencias entre cuentas (saldo real del destino y reversión al borrar), sin botón de editar en transferencias.
+- **Sugerencias de IA:** consulta al salir de la descripción (ADR 0008), asignación de subcategoría con aprendizaje al guardar (ADR 0009) y validación del tipo de categoría en las sugerencias.
+- **Resumen:** tarjeta del café al final (PR #86).
+- **Fixes:** transferencias entre cuentas (saldo real del destino y reversión al borrar), sin botón de editar en transferencias, meses atípicos por gasto total (2.10.2), barra inferior sin solape en móvil y con 44 px táctiles (2.12.1), Enter con IME en etiquetas (2.12.2), CSP de producción sin localhost (2.12.3).
+- **Gemini 4 Hydrogen:** primer modelo de Gemini en 2.13.0 y desactivado en 2.13.1 (ver Pendiente).
 
 ## Pendiente / a verificar
 
