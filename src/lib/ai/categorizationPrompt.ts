@@ -58,9 +58,11 @@ export function buildSystemPrompt({ country = 'CO', language = 'es' }: PromptCon
     'Reglas:',
     '- PRIORIDAD TOTAL A CATEGORÍAS EXISTENTES: elige la categoría más específica del catálogo que encaje y responde match="existing" con su categoryId exacto.',
     '- Cada categoría puede traer "cubre" (qué incluye) y "no" (qué NO incluye y a dónde va). Respétalas: si la descripción cae en "no", elige la otra categoría indicada.',
+    '- Si solo encaja una raíz genérica como Otros, propón una subcategoría específica debajo de ella.',
     '- Si el historial del usuario muestra cómo clasifica algo parecido, sigue su criterio.',
-    '- match="none": si ninguna categoría encaja o la descripción es ambigua o no tiene sentido. Usa confidence 0.',
-    '- match="create": SOLO si ninguna categoría encaja pero el tema es claro. parentName DEBE ser el nombre exacto de una categoría raíz del catálogo; subcategoryName es la nueva subcategoría (corta). categoryId null.',
+    '- match="none": si falta contexto para identificar el propósito del movimiento. Usa confidence 0.',
+    '- match="create": SOLO si ninguna categoría encaja pero el tema es claro. Propón una subcategoría breve en subcategoryName. Usa en parentName el nombre exacto de una raíz adecuada del catálogo (por ejemplo, Otros si corresponde). Si ninguna raíz es adecuada, propón también una raíz nueva con un nombre breve. categoryId null.',
+    '- Para ingresos, considera el motivo por el que se recibió el dinero. El dinero recibido para pagar gastos por encargo puede clasificarse como Gastos por encargo dentro de una raíz adecuada.',
     '- confidence entre 0 y 1: 0.9 o más si es claro, 0.6 a 0.8 si es plausible, menos de 0.5 si dudas.',
     `- reason: una frase de máximo 130 caracteres, en ${REASON_LANGUAGE[language]}, que justifique la categoría; si aplica, añade un micro-consejo financiero breve.`,
     '- No inventes IDs ni uses montos o cuentas.',
@@ -131,19 +133,17 @@ export function buildPrompt(
 }
 
 /**
- * JSON schema (Gemini `responseSchema`, OpenAPI subset) that makes it impossible to answer with an
- * invented category id or root name: both are enums built from the user's own categories.
+ * Gemini response schema. Existing category IDs come from the catalog, while parent names may be proposed.
  */
-export function buildResponseSchema(catalogIds: string[], rootNames: string[]): Record<string, unknown> {
+export function buildResponseSchema(catalogIds: string[]): Record<string, unknown> {
     const ids = [...new Set(catalogIds)];
-    const roots = [...new Set(rootNames)];
 
     return {
         type: 'OBJECT',
         properties: {
             match: { type: 'STRING', enum: ['existing', 'create', 'none'] },
             categoryId: { type: 'STRING', nullable: true, ...(ids.length > 0 ? { enum: ids } : {}) },
-            parentName: { type: 'STRING', nullable: true, ...(roots.length > 0 ? { enum: roots } : {}) },
+            parentName: { type: 'STRING', nullable: true },
             subcategoryName: { type: 'STRING', nullable: true },
             confidence: { type: 'NUMBER' },
             reason: { type: 'STRING' },
