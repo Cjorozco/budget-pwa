@@ -1,4 +1,4 @@
-import type { ModelAttempt, ResolverResult } from './types';
+import type { LlmResult, ModelAttempt, ResolverResult } from './types';
 
 export type AiNoticeKind =
     | 'invalid-key'
@@ -7,6 +7,7 @@ export type AiNoticeKind =
     | 'timeout'
     | 'server'
     | 'no-match'
+    | Extract<LlmResult, { status: 'rejected' }>['reason']
     | 'backup-model';
 
 export interface AiNotice {
@@ -26,6 +27,9 @@ export interface AiNoticeTexts {
     timeout: string;
     server: string;
     noMatch: string;
+    invalidResponseFormat: string;
+    incompleteResponse: string;
+    invalidCategoryReference: string;
     backupModel: string;
     usedLocal: string;
 }
@@ -64,8 +68,9 @@ export function getAiNotice(result: ResolverResult): AiNotice | null {
                     return { kind: 'network', usedLocal };
             }
         case 'no-match':
-        case 'rejected':
             return { kind: 'no-match', usedLocal };
+        case 'rejected':
+            return { kind: diagnosis.reason, usedLocal };
         case 'success': {
             const attempts = diagnosis.attempts ?? [];
             const failed = attempts.filter((a) => a.status === 'failed');
@@ -88,6 +93,9 @@ const KIND_TO_TEXT: Record<Exclude<AiNoticeKind, 'backup-model'>, keyof AiNotice
     timeout: 'timeout',
     server: 'server',
     'no-match': 'noMatch',
+    'invalid-json': 'invalidResponseFormat',
+    'invalid-schema': 'incompleteResponse',
+    'invalid-category-id': 'invalidCategoryReference',
 };
 
 export function formatAiNotice(notice: AiNotice, providerLabel: string, texts: AiNoticeTexts): string {
