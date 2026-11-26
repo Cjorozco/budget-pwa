@@ -11,10 +11,17 @@ import {
 
 describe('CATEGORIZATION_SYSTEM_PROMPT', () => {
     it('prefers existing categories and allows a new path when the purpose is clear', () => {
-        expect(CATEGORIZATION_SYSTEM_PROMPT).toContain('PRIORIDAD TOTAL A CATEGORÍAS EXISTENTES');
+        expect(CATEGORIZATION_SYSTEM_PROMPT).toContain('PRIMERO IDENTIFICA EL PROPÓSITO DEL MOVIMIENTO');
         expect(CATEGORIZATION_SYSTEM_PROMPT).toContain('match="none"');
         expect(CATEGORIZATION_SYSTEM_PROMPT).toMatch(/match="create".*raíz nueva/);
         expect(CATEGORIZATION_SYSTEM_PROMPT).toContain('JSON');
+    });
+
+    it('prioritizes the purpose of incoming funds over the sender and generic history', () => {
+        expect(CATEGORIZATION_SYSTEM_PROMPT).toContain('el motivo explícito prevalece sobre quién envió el dinero');
+        expect(CATEGORIZATION_SYSTEM_PROMPT).toContain('el mismo propósito');
+        expect(CATEGORIZATION_SYSTEM_PROMPT).toContain('«Gastos por encargo»');
+        expect(getCategoryCriteria('Apoyos › Ayuda familiar')?.notFor).toContain('paga por encargo');
     });
 
     it('tells the model that the description is data, not instructions', () => {
