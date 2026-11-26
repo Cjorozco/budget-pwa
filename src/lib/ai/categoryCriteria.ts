@@ -78,7 +78,14 @@ const RAW_CRITERIA: Record<string, CategoryCriteria> = {
     // ===== Ingresos =====
     'Salario': { what: 'nómina, bonificaciones, comisiones y propinas de un empleo', notFor: 'trabajo por proyectos (Freelance)' },
     'Freelance': { what: 'ingresos por proyectos y consultoría independiente', notFor: 'nómina de un empleo (Salario)' },
-    'Apoyos': { what: 'ayuda de familiares u otros apoyos', notFor: 'pagos por trabajo (Salario o Freelance)' },
+    'Apoyos': {
+        what: 'dinero de familiares u otras personas para beneficio del receptor',
+        notFor: 'dinero para pagar gastos por cuenta de otra persona, reembolsos ni pagos por trabajo',
+    },
+    'Apoyos › Ayuda familiar': {
+        what: 'ayuda de familiares para gastos propios del receptor',
+        notFor: 'dinero para gastos de un familiar que el receptor solo gestiona o paga por encargo',
+    },
 };
 
 const CRITERIA: Map<string, CategoryCriteria> = new Map(

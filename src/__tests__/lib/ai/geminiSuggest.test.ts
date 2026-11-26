@@ -509,7 +509,7 @@ describe('suggestWithAiProvider request shape', () => {
 
         expect(result.status).toBe('success');
         const system = (body.systemInstruction as { parts: Array<{ text: string }> }).parts[0].text;
-        expect(system).toContain('PRIORIDAD TOTAL A CATEGORÍAS EXISTENTES');
+        expect(system).toContain('PRIMERO IDENTIFICA EL PROPÓSITO DEL MOVIMIENTO');
         const schema = (body.generationConfig as { responseSchema: { properties: Record<string, { enum?: string[] }> } }).responseSchema;
         expect(schema.properties.categoryId.enum).toEqual(expect.arrayContaining(['cat-diarios', 'cat-super']));
         expect(schema.properties.parentName).not.toHaveProperty('enum');
