@@ -265,71 +265,84 @@ export async function suggestWithAiProvider(
     ]);
 
     const client = overrides?.client ?? createAiClient(provider, apiKey);
-    let genResult: { ok: true; text: string; modelUsed: string; attempts?: ModelAttempt[]; provider: typeof provider } | { ok: false; result: LlmResult };
+    const prompt = buildPrompt(description, type, catalog, recentExamples);
+    const systemPrompt = buildSystemPrompt({ country: getRegion().country, language: useI18nStore.getState().language });
+    const responseSchema = buildResponseSchema(catalog.map((row) => row.id));
+    const catalogIds = new Set(catalog.map((row) => row.id));
 
-    try {
-        const response = await client.generate({
-            prompt: buildPrompt(description, type, catalog, recentExamples),
-            systemPrompt: buildSystemPrompt({ country: getRegion().country, language: useI18nStore.getState().language }),
-            responseSchema: buildResponseSchema(catalog.map((row) => row.id)),
-            signal,
-            onProgress,
-        });
-        genResult = {
-            ok: true,
-            text: response.text,
-            modelUsed: response.modelUsed,
-            attempts: response.attempts,
-            provider: response.provider,
-        };
-    } catch (err: unknown) {
-        if (signal?.aborted) {
-            return { status: 'error', reason: 'network-error' };
-        }
-        if (err instanceof AiProviderError) {
-            return { status: 'error', reason: err.reason, attempts: err.attempts };
-        }
-        const errorReason = err instanceof Error && err.message.includes('401')
-            ? 'http-401'
-            : err instanceof Error && err.message.includes('429')
-            ? 'http-429'
-            : err instanceof Error && err.message.includes('timeout')
-            ? 'timeout'
-            : 'network-error';
-        return { status: 'error', reason: errorReason };
-    }
+    const requestSuggestion = async (instructions: string): Promise<LlmResult> => {
+        let genResult: Awaited<ReturnType<AiProviderClient['generate']>>;
 
-    const parseResult = parseLlmSuggestion(genResult.text);
-    if (!parseResult.ok) {
+        try {
+            genResult = await client.generate({
+                prompt,
+                systemPrompt: instructions,
+                responseSchema,
+                signal,
+                onProgress,
+            });
+        } catch (err: unknown) {
+            if (signal?.aborted) {
+                return { status: 'error', reason: 'network-error' };
+            }
+            if (err instanceof AiProviderError) {
+                return { status: 'error', reason: err.reason, attempts: err.attempts };
+            }
+            const errorReason = err instanceof Error && err.message.includes('401')
+                ? 'http-401'
+                : err instanceof Error && err.message.includes('429')
+                ? 'http-429'
+                : err instanceof Error && err.message.includes('timeout')
+                ? 'timeout'
+                : 'network-error';
+            return { status: 'error', reason: errorReason };
+        }
+
+        const parseResult = parseLlmSuggestion(genResult.text);
+        if (!parseResult.ok) {
+            if (import.meta.env?.DEV) {
+                console.debug(`[suggestWithAiProvider] Parsing failed on ${provider}:`, parseResult.result);
+            }
+            const res = parseResult.result;
+            if (res.status === 'rejected' || res.status === 'no-match' || res.status === 'success') {
+                res.modelUsed = genResult.modelUsed;
+                res.providerUsed = genResult.provider;
+                res.attempts = genResult.attempts;
+            }
+            return res;
+        }
+
+        const mapped = await mapLlmPayloadToSuggestion(
+            parseResult.payload,
+            type,
+            catalogIds
+        );
+
+        if (mapped.status === 'success' || mapped.status === 'no-match' || mapped.status === 'rejected') {
+            mapped.modelUsed = genResult.modelUsed;
+            mapped.providerUsed = genResult.provider;
+            mapped.attempts = genResult.attempts;
+            if (mapped.status === 'success') {
+                mapped.suggestion.source = genResult.provider;
+            }
+        }
+
         if (import.meta.env?.DEV) {
-            console.debug(`[suggestWithAiProvider] Parsing failed on ${provider}:`, parseResult.result);
+            console.debug(`[suggestWithAiProvider] Final mapped result for ${provider}:`, mapped);
         }
-        const res = parseResult.result;
-        if (res.status === 'rejected' || res.status === 'no-match' || res.status === 'success') {
-            res.modelUsed = genResult.modelUsed;
-            res.providerUsed = genResult.provider;
-            res.attempts = genResult.attempts;
-        }
-        return res;
-    }
+        return mapped;
+    };
 
-    const mapped = await mapLlmPayloadToSuggestion(
-        parseResult.payload,
-        type,
-        new Set(catalog.map((row) => row.id))
-    );
+    const first = await requestSuggestion(systemPrompt);
+    if (first.status !== 'rejected' || signal?.aborted) return first;
 
-    if (mapped.status === 'success' || mapped.status === 'no-match' || mapped.status === 'rejected') {
-        mapped.modelUsed = genResult.modelUsed;
-        mapped.providerUsed = genResult.provider;
-        mapped.attempts = genResult.attempts;
-        if (mapped.status === 'success') {
-            mapped.suggestion.source = genResult.provider;
-        }
-    }
-
-    if (import.meta.env?.DEV) {
-        console.debug(`[suggestWithAiProvider] Final mapped result for ${provider}:`, mapped);
-    }
-    return mapped;
+    const correction = first.reason === 'invalid-category-id'
+        ? 'La propuesta anterior señaló una categoría que no se pudo identificar. Usa match="existing" solo si puedes copiar el ID exacto de una categoría específica del catálogo.'
+        : 'La app no pudo leer la propuesta anterior. Devuelve un solo objeto JSON válido con los campos y tipos indicados, sin bloques de código ni texto adicional.';
+    const corrected = await requestSuggestion([
+        systemPrompt,
+        correction,
+        'Si ninguna categoría encaja y el propósito es claro, usa match="create", categoryId null y escribe parentName y subcategoryName.',
+    ].join('\n'));
+    return corrected.status === 'success' ? corrected : first;
 }

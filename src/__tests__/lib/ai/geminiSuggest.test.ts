@@ -8,6 +8,7 @@ import {
 } from '@/lib/ai/geminiSuggest';
 import { db } from '@/lib/db';
 import { findOrCreateCategory } from '@/lib/ai/categoryResolver';
+import type { AiProviderClient } from '@/lib/ai/gateway/types';
 import { setGeminiApiKey } from '@/lib/ai/geminiKey';
 import { suggestCategoryWithLlm } from '@/lib/ai/suggestWithLlm';
 import { suggestWithAiProvider } from '@/lib/ai/geminiSuggest';
@@ -434,6 +435,65 @@ describe('suggestWithAiProvider request shape', () => {
             { id: 'cat-diarios', name: 'Gastos diarios', type: 'expense', color: '#10b981', usageCount: 0, isActive: true },
             { id: 'cat-super', name: 'Supermercado', type: 'expense', color: '#10b981', parentId: 'cat-diarios', usageCount: 0, isActive: true },
         ]);
+    });
+
+    it('requests a corrected proposal once when Gemini references an unknown catalog ID', async () => {
+        const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
+            const request = JSON.parse(String((init as RequestInit).body));
+            const isCorrection = request.systemInstruction.parts[0].text.includes('La propuesta anterior');
+            const payload = isCorrection
+                ? { match: 'create', parentName: 'Fondos de terceros', subcategoryName: 'Gastos por encargo' }
+                : { match: 'existing', categoryId: 'unknown-id' };
+            return new Response(JSON.stringify({
+                candidates: [{ finishReason: 'STOP', content: { parts: [{ text: JSON.stringify(payload) }] } }],
+            }));
+        });
+
+        try {
+            const result = await suggestWithAiProvider('Dinero recibido para pagar mano de obra por encargo', 'income');
+
+            expect(fetchSpy).toHaveBeenCalledTimes(2);
+            expect(result).toMatchObject({
+                status: 'success',
+                suggestion: {
+                    categoryId: null,
+                    categoryPath: 'Fondos de terceros › Gastos por encargo',
+                    needsCategoryCreation: true,
+                },
+            });
+            expect(await db.categories.where('type').equals('income').count()).toBe(0);
+        } finally {
+            fetchSpy.mockRestore();
+        }
+    });
+
+    it('asks Claude for valid JSON once when the first response is unreadable', async () => {
+        const generate = vi.fn<AiProviderClient['generate']>()
+            .mockResolvedValueOnce({ text: 'Podrías usar Gastos por encargo.', modelUsed: 'claude', provider: 'anthropic' })
+            .mockResolvedValueOnce({
+                text: '{"match":"create","parentName":"Fondos de terceros","subcategoryName":"Gastos por encargo"}',
+                modelUsed: 'claude',
+                provider: 'anthropic',
+            });
+        const client: AiProviderClient = { provider: 'anthropic', generate, testConnection: vi.fn() };
+
+        const result = await suggestWithAiProvider(
+            'Dinero recibido para pagar mano de obra por encargo',
+            'income',
+            undefined,
+            undefined,
+            { client }
+        );
+
+        expect(generate).toHaveBeenCalledTimes(2);
+        expect(generate.mock.calls[1][0].systemPrompt).toContain('Devuelve un solo objeto JSON válido');
+        expect(result).toMatchObject({
+            status: 'success',
+            suggestion: {
+                categoryPath: 'Fondos de terceros › Gastos por encargo',
+                source: 'anthropic',
+            },
+        });
     });
 
     it('sends the stable rules as system prompt and a schema restricted to the user categories', async () => {

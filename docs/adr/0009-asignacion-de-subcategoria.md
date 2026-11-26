@@ -14,7 +14,7 @@ La sugerencia nunca llena la categoría. El usuario la aplica o elige otra, y la
 
 Las palabras clave viven en la tabla `userKeywordRules` (Dexie versión 11), coinciden por palabra completa y gana la más larga. Se incluyen en el respaldo. Una categoría con subcategorías no se propone: se muestran sus subcategorías para elegir.
 
-Si la IA identifica el propósito y no encuentra una categoría apropiada, puede proponer una subcategoría bajo una raíz existente o proponer ambos niveles. Al aceptar la propuesta, la app crea la ruta y selecciona la subcategoría en el formulario.
+Si la IA identifica el propósito y no encuentra una categoría apropiada, puede proponer una subcategoría bajo una raíz existente o proponer ambos niveles. Al aceptar la propuesta, la app crea la ruta y selecciona la subcategoría en el formulario. Si la app rechaza la respuesta por una referencia al catálogo o por su formato o contenido, pide una corrección una vez antes de usar la sugerencia local.
 
 No se crea una categoría «Sin clasificar», porque la categoría es obligatoria y un grupo nuevo alteraría los informes. El historial exportado sigue sin descripciones.
 
