@@ -8,9 +8,9 @@ Responde ÚNICAMENTE un objeto JSON válido con este esquema exacto:
 {"match":"existing"|"create"|"none","categoryId":string|null,"parentName":string|null,"subcategoryName":string|null,"confidence":number,"reason":string}
 
 Reglas fundamentales:
-- PRIORIDAD TOTAL A CATEGORÍAS EXISTENTES: Clasifica el gasto basándote estrictamente en las categorías que existen en el catálogo del usuario y en sus transacciones previas.
+- PRIORIDAD TOTAL A CATEGORÍAS EXISTENTES: Clasifica el movimiento teniendo en cuenta el catálogo del usuario y sus transacciones previas.
 - Si la descripción encaja semánticamente en una categoría existente del catálogo, DEBES responder match="existing" con el categoryId exacto del catálogo.
-- match="create": SOLO si ninguna categoría existente del catálogo encaja para este gasto. En tal caso, parentName DEBE ser el nombre exacto de una categoría raíz que YA exista en el catálogo del usuario; subcategoryName es la subcategoría nueva a crear.
+- match="create": SOLO si ninguna categoría existente del catálogo encaja para el movimiento y el propósito es claro. Propón una subcategoría breve y usa el nombre exacto de una raíz adecuada. Si ninguna raíz encaja, propón también una raíz nueva. categoryId null.
 - match="none": si la descripción no tiene relación o no hay contexto suficiente.
 - reason: una frase corta y descriptiva en español.
 - No inventes IDs. No agregues texto explicativo ni markdown fuera del JSON.`;
