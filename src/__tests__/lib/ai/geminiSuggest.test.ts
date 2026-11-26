@@ -7,6 +7,7 @@ import {
     sanitizePii,
 } from '@/lib/ai/geminiSuggest';
 import { db } from '@/lib/db';
+import { findOrCreateCategory } from '@/lib/ai/categoryResolver';
 import { setGeminiApiKey } from '@/lib/ai/geminiKey';
 import { suggestCategoryWithLlm } from '@/lib/ai/suggestWithLlm';
 import { suggestWithAiProvider } from '@/lib/ai/geminiSuggest';
@@ -170,8 +171,7 @@ describe('mapLlmPayloadToSuggestion', () => {
                 reason: 'Predial',
             },
             'expense',
-            new Set(['fin', 'imp']),
-            new Set(['gastos financieros'])
+            new Set(['fin', 'imp'])
         );
 
         expect(result.status).toBe('success');
@@ -197,29 +197,52 @@ describe('mapLlmPayloadToSuggestion', () => {
                 reason: 'Sin padre',
             },
             'expense',
-            new Set(['fin', 'imp']),
-            new Set(['gastos financieros'])
+            new Set(['fin', 'imp'])
         );
 
         expect(result).toEqual({ status: 'rejected', reason: 'invalid-schema' });
     });
 
-    it('rejects creating a subcategory under a root parent that does not exist in rootParentNames (rejected: unknown-root)', async () => {
+    it('proposes both levels for a reimbursement or funds received for someone else', async () => {
         const result = await mapLlmPayloadToSuggestion(
             {
                 match: 'create',
                 categoryId: null,
-                parentName: 'Niños',
-                subcategoryName: 'Transporte',
-                confidence: 0.85,
-                reason: 'Transporte niños',
+                parentName: 'Fondos de terceros',
+                subcategoryName: 'Gastos por encargo',
+                confidence: 0.92,
+                reason: 'Dinero recibido para pagar arreglos por encargo.',
             },
-            'expense',
-            new Set(['fin', 'imp']),
-            new Set(['gastos financieros']) // User only has Gastos financieros, not Niños
+            'income',
+            new Set()
         );
 
-        expect(result).toEqual({ status: 'rejected', reason: 'unknown-root' });
+        expect(result).toMatchObject({
+            status: 'success',
+            suggestion: {
+                categoryId: null,
+                categoryPath: 'Fondos de terceros › Gastos por encargo',
+                needsCategoryCreation: true,
+                pendingCategory: {
+                    type: 'income',
+                    parentName: 'Fondos de terceros',
+                    subcategoryName: 'Gastos por encargo',
+                },
+            },
+        });
+
+        const pendingCategory = result.status === 'success' ? result.suggestion.pendingCategory : undefined;
+        expect(pendingCategory).toBeDefined();
+        expect(await db.categories.where('type').equals('income').count()).toBe(0);
+        if (!pendingCategory) throw new Error('Expected a pending category');
+
+        const { type, parentName, subcategoryName } = pendingCategory;
+        const childId = await findOrCreateCategory(type, parentName, subcategoryName);
+        const child = await db.categories.get(childId);
+        expect(child).toMatchObject({ name: 'Gastos por encargo', type: 'income', parentId: expect.any(String) });
+        expect(await db.categories.get(child!.parentId!)).toMatchObject({ name: 'Fondos de terceros', type: 'income' });
+        expect(await findOrCreateCategory(type, parentName, subcategoryName)).toBe(childId);
+        expect(await db.categories.where('type').equals('income').count()).toBe(2);
     });
 
     it('maps to existing subcategory when Gemini proposes parentName matching an active child category', async () => {
@@ -233,8 +256,7 @@ describe('mapLlmPayloadToSuggestion', () => {
                 reason: 'Impuesto predial',
             },
             'expense',
-            new Set(['fin', 'imp']),
-            new Set(['gastos financieros'])
+            new Set(['fin', 'imp'])
         );
 
         expect(result.status).toBe('success');
@@ -430,7 +452,7 @@ describe('suggestWithAiProvider request shape', () => {
         expect(system).toContain('PRIORIDAD TOTAL A CATEGORÍAS EXISTENTES');
         const schema = (body.generationConfig as { responseSchema: { properties: Record<string, { enum?: string[] }> } }).responseSchema;
         expect(schema.properties.categoryId.enum).toEqual(expect.arrayContaining(['cat-diarios', 'cat-super']));
-        expect(schema.properties.parentName.enum).toEqual(['Gastos diarios']);
+        expect(schema.properties.parentName).not.toHaveProperty('enum');
         const userText = (body.contents as Array<{ parts: Array<{ text: string }> }>)[0].parts[0].text;
         expect(userText).toContain('cat-super | Gastos diarios › Supermercado');
         fetchSpy.mockRestore();

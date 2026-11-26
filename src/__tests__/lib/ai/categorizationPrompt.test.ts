@@ -10,10 +10,10 @@ import {
 } from '@/lib/ai/categorizationPrompt';
 
 describe('CATEGORIZATION_SYSTEM_PROMPT', () => {
-    it('keeps the hybrid rules: existing first, create only under a root, none when unclear', () => {
+    it('prefers existing categories and allows a new path when the purpose is clear', () => {
         expect(CATEGORIZATION_SYSTEM_PROMPT).toContain('PRIORIDAD TOTAL A CATEGORÍAS EXISTENTES');
         expect(CATEGORIZATION_SYSTEM_PROMPT).toContain('match="none"');
-        expect(CATEGORIZATION_SYSTEM_PROMPT).toMatch(/match="create".*categoría raíz/);
+        expect(CATEGORIZATION_SYSTEM_PROMPT).toMatch(/match="create".*raíz nueva/);
         expect(CATEGORIZATION_SYSTEM_PROMPT).toContain('JSON');
     });
 
@@ -53,20 +53,20 @@ describe('buildPrompt catalog', () => {
 });
 
 describe('buildResponseSchema', () => {
-    it('restricts categoryId and parentName to the user\'s real ids and root names', () => {
-        const schema = buildResponseSchema(['a', 'b', 'a'], ['Hogar', 'Hogar', 'Ocio']) as {
+    it('restricts categoryId to the user\'s real ids and allows a new parent name', () => {
+        const schema = buildResponseSchema(['a', 'b', 'a']) as {
             properties: Record<string, { enum?: string[] }>;
             required: string[];
         };
 
         expect(schema.properties.categoryId.enum).toEqual(['a', 'b']);
-        expect(schema.properties.parentName.enum).toEqual(['Hogar', 'Ocio']);
+        expect(schema.properties.parentName).not.toHaveProperty('enum');
         expect(schema.properties.match.enum).toEqual(['existing', 'create', 'none']);
         expect(schema.required).toEqual(['match', 'confidence', 'reason']);
     });
 
     it('omits empty enums, which the API would reject', () => {
-        const schema = buildResponseSchema([], []) as { properties: Record<string, { enum?: string[] }> };
+        const schema = buildResponseSchema([]) as { properties: Record<string, { enum?: string[] }> };
         expect(schema.properties.categoryId).not.toHaveProperty('enum');
         expect(schema.properties.parentName).not.toHaveProperty('enum');
     });

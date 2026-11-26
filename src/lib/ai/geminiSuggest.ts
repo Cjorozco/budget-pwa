@@ -140,8 +140,7 @@ export async function loadRecentTransactionExamples(
 export async function mapLlmPayloadToSuggestion(
     payload: LlmSuggestionPayload,
     type: 'income' | 'expense',
-    catalogIds: Set<string>,
-    rootParentNames?: Set<string>
+    catalogIds: Set<string>
 ): Promise<GeminiResult> {
     const confidence = payload.confidence;
     const reason = payload.reason;
@@ -230,15 +229,6 @@ export async function mapLlmPayloadToSuggestion(
         };
     }
 
-    // Grounding: Si el modelo intenta crear bajo una categoría raíz que NO existe en la base de datos
-    // del usuario, no permitimos crear raíces arbitrarias (ej. 'Niños').
-    if (rootParentNames && !rootParentNames.has(normalizeForMatch(parentName))) {
-        if (import.meta.env?.DEV) {
-            console.debug('[mapLlmPayloadToSuggestion] Rejected: unknown-root. Proposed parentName:', parentName, 'Known root parents:', Array.from(rootParentNames));
-        }
-        return { status: 'rejected', reason: 'unknown-root' };
-    }
-
     return {
         status: 'success',
         suggestion: {
@@ -269,10 +259,9 @@ export async function suggestWithAiProvider(
         return { status: 'unavailable', reason: 'no-api-key' };
     }
 
-    const [catalog, recentExamples, rootCategories] = await Promise.all([
+    const [catalog, recentExamples] = await Promise.all([
         loadCategoryCatalog(type),
         loadRecentTransactionExamples(type, 10),
-        db.categories.filter((c) => c.isActive && c.type === type && !c.parentId).toArray(),
     ]);
 
     const client = overrides?.client ?? createAiClient(provider, apiKey);
@@ -282,7 +271,7 @@ export async function suggestWithAiProvider(
         const response = await client.generate({
             prompt: buildPrompt(description, type, catalog, recentExamples),
             systemPrompt: buildSystemPrompt({ country: getRegion().country, language: useI18nStore.getState().language }),
-            responseSchema: buildResponseSchema(catalog.map((row) => row.id), rootCategories.map((c) => c.name)),
+            responseSchema: buildResponseSchema(catalog.map((row) => row.id)),
             signal,
             onProgress,
         });
@@ -324,13 +313,10 @@ export async function suggestWithAiProvider(
         return res;
     }
 
-    const rootParentNames = new Set(rootCategories.map((c) => normalizeForMatch(c.name)));
-
     const mapped = await mapLlmPayloadToSuggestion(
         parseResult.payload,
         type,
-        new Set(catalog.map((row) => row.id)),
-        rootParentNames
+        new Set(catalog.map((row) => row.id))
     );
 
     if (mapped.status === 'success' || mapped.status === 'no-match' || mapped.status === 'rejected') {

@@ -260,9 +260,9 @@ describe('suggestCategoryWithLlm', () => {
         });
     });
 
-    it('explicit fallback: uses local suggestion ("Sofia › Ropa") when AI returns rejected: unknown-root', async () => {
+    it('explicit fallback: uses local suggestion ("Sofia › Ropa") when AI returns rejected: invalid-schema', async () => {
         vi.mocked(suggestCategory).mockResolvedValue(sofiaRopaLocal);
-        vi.mocked(suggestWithAiProvider).mockResolvedValue({ status: 'rejected', reason: 'unknown-root' });
+        vi.mocked(suggestWithAiProvider).mockResolvedValue({ status: 'rejected', reason: 'invalid-schema' });
         setGeminiApiKey('AIzaSyDummyKeyForUnitTests1234567890');
 
         const result = await suggestCategoryWithLlm('Uniforme de Sofia en Falabella', 'expense', { online: true });
@@ -272,7 +272,7 @@ describe('suggestCategoryWithLlm', () => {
             expect(result.source).toBe('local');
             expect(result.suggestion.categoryId).toBe('sofia-ropa');
             expect(result.suggestion.categoryPath).toBe('Sofia › Ropa');
-            expect(result.aiDiagnosis).toEqual({ status: 'rejected', reason: 'unknown-root' });
+            expect(result.aiDiagnosis).toEqual({ status: 'rejected', reason: 'invalid-schema' });
         }
     });
 
@@ -406,15 +406,15 @@ describe('suggestCategoryWithLlm', () => {
 
     it('returns no-match with diagnosis when both AI and Local fail to find a match', async () => {
         vi.mocked(suggestCategory).mockResolvedValue(null);
-        vi.mocked(suggestWithAiProvider).mockResolvedValue({ status: 'rejected', reason: 'unknown-root' });
+        vi.mocked(suggestWithAiProvider).mockResolvedValue({ status: 'rejected', reason: 'invalid-schema' });
         setGeminiApiKey('AIzaSyDummyKeyForUnitTests1234567890');
 
         const result = await suggestCategoryWithLlm('gasto totalmente nuevo', 'expense', { online: true });
 
         expect(result).toEqual({
             status: 'no-match',
-            geminiDiagnosis: { status: 'rejected', reason: 'unknown-root' },
-            aiDiagnosis: { status: 'rejected', reason: 'unknown-root' },
+            geminiDiagnosis: { status: 'rejected', reason: 'invalid-schema' },
+            aiDiagnosis: { status: 'rejected', reason: 'invalid-schema' },
         });
     });
 
