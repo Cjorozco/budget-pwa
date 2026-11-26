@@ -75,6 +75,31 @@ describe('Budget Page - Generate budget from actuals', () => {
     });
   });
 
+  it('saves an edited recurring expense only after confirmation and preserves the recorded movements', async () => {
+    const payments = [7, 8, 9].map((month) => {
+      const date = new Date(2099, month - 1, 15).getTime();
+      return {
+        id: `internet-${month}`, type: 'expense' as const, amount: 100000, description: 'Internet casa',
+        categoryId: 'cat-services', accountId: 'acc-1', date, tagIds: [], createdAt: date, updatedAt: date,
+      };
+    });
+    await db.transactions.bulkAdd(payments);
+    render(<MemoryRouter initialEntries={['/budget?month=2099-10']}><Budget /></MemoryRouter>);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Buscar posibles gastos fijos' }));
+    const name = await screen.findByDisplayValue('Internet casa');
+    fireEvent.change(name, { target: { value: 'Internet mensual' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Sí, es un gasto fijo mío' }));
+    expect(await db.budgetItems.count()).toBe(0);
+    const dialog = screen.getByRole('dialog', { name: 'Buscar posibles gastos fijos' });
+    fireEvent.submit(dialog.querySelector('form')!);
+
+    await waitFor(async () => expect(await db.budgetItems.toArray()).toMatchObject([
+      { name: 'Internet mensual', amount: 100000, type: 'expense', month: '2099-10', categoryId: 'cat-services' },
+    ]));
+    expect(await db.transactions.toArray()).toEqual(payments);
+  });
+
   it('shows option to generate budget from previous month actuals when current month is empty', async () => {
     // Add transactions in 2099-09 (previous month to 2099-10)
     const prevMonthDate = new Date(2099, 8, 15).getTime(); // September 2099
