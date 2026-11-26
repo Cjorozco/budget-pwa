@@ -58,6 +58,8 @@ Quien quiera apoyar el proyecto puede "invitar un café" desde Ajustes. Es un en
 - ✅ **Ajustes Explícitos**: Cierre de brechas mediante transacciones automáticas marcadas.
 - ✅ **Reservas por Cuenta**: Crea, edita y elimina montos apartados sin alterar el saldo real bancario.
 - ✅ **Reportes Avanzados**: Desglose jerárquico por categorías padre y subcategorías, comparativa de ingresos y cumplimiento del presupuesto fijo.
+- ✅ **Revisión de categorías y finanzas**: En Categorías puedes revisar un período en el dispositivo, ver el uso de «Otros», aclarar movimientos dudosos y preparar pautas para registros futuros. Las subcategorías propuestas se crean al confirmar.
+- ✅ **Revisión de gastos fijos**: En Presupuesto puedes buscar posibles gastos fijos del mes elegido a partir de los tres meses anteriores. Cada propuesta muestra los pagos de referencia y deja editar el importe antes de guardar la partida.
 - ✅ **Categorización Inteligente**: Motor local instantáneo con reglas colombianas (Rappi, D1, Éxito, PSE, etc.) + IA Multi-proveedor (Gemini, Claude, OpenAI, Groq).
 - ✅ **Modo Demo**: Un visitante nuevo puede explorar la app con ~3 meses de datos de ejemplo en COP (ES/EN/FR). Los datos llevan el prefijo de id `demo-`, y "Borrar datos de ejemplo" en Ajustes elimina solo esos, nunca lo que crea el usuario.
 - ✅ **Tour de bienvenida**: 13 pasos con foco sobre el saldo, la navegación y las pantallas de Movimientos y Cuentas (sin librerías externas). Se abre una sola vez en el Resumen para usuarios nuevos y se repite desde Ajustes → "Tour de bienvenida".

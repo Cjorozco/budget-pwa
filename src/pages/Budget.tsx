@@ -17,6 +17,9 @@ import {
 } from 'lucide-react';
 import { format, subMonths, addMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { Modal } from '@/components/ui/Modal';
+import { Button } from '@/components/ui/Button';
+import { FixedExpenseReview } from '@/components/finance/FixedExpenseReview';
+import { reviewCopy } from '@/lib/financeReviewCopy';
 import { MoneyInput } from '@/components/ui/MoneyInput';
 import type { BudgetItem } from '@/lib/types';
 import type { ActualBudgetCandidate } from '@/lib/budget';
@@ -49,6 +52,7 @@ export default function Budget() {
   });
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isFixedReviewOpen, setIsFixedReviewOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [actualsDraft, setActualsDraft] = useState<ActualsDraftItem[] | null>(null);
   const [editingItem, setEditingItem] = useState<BudgetItem | null>(null);
@@ -483,6 +487,10 @@ export default function Budget() {
           </div>
         </div>
 
+        <Button variant="outline" className="mb-3 min-h-11 whitespace-normal" onClick={() => setIsFixedReviewOpen(true)}>
+          {reviewCopy(language)('budgetAction')}
+        </Button>
+        {isFixedReviewOpen && <FixedExpenseReview month={currentDate} onClose={() => setIsFixedReviewOpen(false)} />}
         <div className="space-y-2">
           {sortedFixedExpenses.length === 0 ? (
             <p className="text-sm text-slate-600 dark:text-slate-400 text-center py-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">

@@ -5,19 +5,22 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { CategoryForm } from '@/components/forms/CategoryForm';
 import { SuggestionRulesSection } from '@/components/categories/SuggestionRulesSection';
+import { FinanceReview } from '@/components/categories/FinanceReview';
 import { Plus, Pencil, Trash2, ChevronRight } from 'lucide-react';
 import type { Category } from '@/lib/types';
 import { useUIStore } from '@/store/ui';
 import { useTranslation } from '@/lib/i18n';
+import { reviewCopy } from '@/lib/financeReviewCopy';
 
 export default function CategoriesPage() {
-    const { t } = useTranslation();
+    const { t, language } = useTranslation();
     const { confirm, addToast } = useUIStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState<Category | null>(null);
     const [defaultType, setDefaultType] = useState<'income' | 'expense'>('expense');
     const [defaultParentId, setDefaultParentId] = useState<string | undefined>(undefined);
     const [isRulesOpen, setIsRulesOpen] = useState(false);
+    const [isReviewOpen, setIsReviewOpen] = useState(false);
 
     const categories = useLiveQuery(() => db.categories.filter(c => c.isActive).toArray()) || [];
 
@@ -160,6 +163,11 @@ export default function CategoriesPage() {
                     {t.categories.suggestionRulesOpen}
                 </Button>
             </section>
+
+            <Button className="min-h-11 w-full whitespace-normal" variant="outline" onClick={() => setIsReviewOpen(true)}>
+                {reviewCopy(language)('title')}
+            </Button>
+            {isReviewOpen && <FinanceReview onClose={() => setIsReviewOpen(false)} />}
 
             {/* Income Categories */}
             <section className="space-y-3">
