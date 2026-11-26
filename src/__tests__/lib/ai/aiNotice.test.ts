@@ -11,6 +11,9 @@ const texts: AiNoticeTexts = {
     timeout: '{provider}: lento.',
     server: '{provider}: servidor.',
     noMatch: '{provider}: sin categoría clara.',
+    invalidResponseFormat: '{provider}: formato inválido.',
+    incompleteResponse: '{provider}: datos inválidos.',
+    invalidCategoryReference: '{provider}: categoría desconocida.',
     backupModel: '{failed} falló; se usó {used}.',
     usedLocal: 'Reglas locales.',
 };
@@ -70,10 +73,18 @@ describe('getAiNotice', () => {
         expect(getAiNotice(localSuccess({ status: 'error', reason }))).toEqual({ kind, usedLocal: true });
     });
 
-    it('maps model-none and rejected answers to no-match', () => {
+    it('distinguishes an explicit no-match from a rejected response', () => {
         expect(getAiNotice(noMatch({ status: 'no-match', reason: 'model-none' }))?.kind).toBe('no-match');
-        expect(getAiNotice(localSuccess({ status: 'rejected', reason: 'invalid-category-id' }))?.kind).toBe('no-match');
     });
+
+    it.each(['invalid-json', 'invalid-schema', 'invalid-category-id'] as const)(
+        'shows the reason for a rejected suggestion (%s)',
+        (reason) => {
+            const notice = getAiNotice(localSuccess({ status: 'rejected', reason }));
+            expect(notice).toEqual({ kind: reason, usedLocal: true });
+            expect(formatAiNotice(notice!, 'Gemini', texts)).not.toContain('sin categoría clara');
+        }
+    );
 
     it('stays silent when AI is simply unavailable or there is no diagnosis', () => {
         expect(getAiNotice(localSuccess({ status: 'unavailable', reason: 'no-api-key' }))).toBeNull();

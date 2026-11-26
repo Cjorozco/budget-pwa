@@ -477,6 +477,9 @@ export interface TranslationSchema {
             timeout: string;
             server: string;
             noMatch: string;
+            invalidResponseFormat: string;
+            incompleteResponse: string;
+            invalidCategoryReference: string;
             backupModel: string;
             usedLocal: string;
         };
